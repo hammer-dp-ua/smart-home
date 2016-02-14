@@ -83,7 +83,7 @@ public class DiscFilesHandlerBean {
       }
 
       if (LOGGER.isTraceEnabled()) {
-         LOGGER.trace("Old files size: " + OLD_FILES.size());
+         LOGGER.trace("Old files count: " + OLD_FILES.size());
          for (Path filePath : files) {
             try {
                LOGGER.trace(filePath + " hash code: " + filePath.hashCode() + "; modification time: " + Files.getLastModifiedTime(filePath));
@@ -97,7 +97,7 @@ public class DiscFilesHandlerBean {
       OLD_FILES.addAll(files);
 
       if (LOGGER.isTraceEnabled()) {
-         LOGGER.trace("Old files size: " + OLD_FILES.size());
+         LOGGER.trace("Old files count: " + OLD_FILES.size());
       }
 
       if (files.size() > 0 && LOGGER.isInfoEnabled()) {

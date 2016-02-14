@@ -2,9 +2,12 @@ package ua.dp.hammer.smarthome.beans;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -24,6 +27,18 @@ public class VpsUploader implements InternetUploader {
    private static final String FILE_IS_READY_TO_UPLOAD = " file if ready to upload. Size: ";
    private static final String UPLOADING_INFO_MSG = "Uploading has been completed. %s file has been uploaded at %.1f seconds. Average speed: %.1fKB/s";
 
+   private String serverSocket;
+   private int serverSocketPort;
+
+   @Autowired
+   private Environment environment;
+
+   @PostConstruct
+   public void init() {
+      serverSocket = environment.getRequiredProperty("serverSocket");
+      serverSocketPort = Integer.parseInt(environment.getRequiredProperty("serverSocketPort"));
+   }
+
    @Async
    @Override
    public void transferFile(Path path) {
@@ -35,7 +50,7 @@ public class VpsUploader implements InternetUploader {
       LOGGER.info(path.getFileName() + FILE_IS_READY_TO_UPLOAD + (fileLength / 1024) + "KB");
 
       fileToUpload.setWritable(false);
-      try (Socket echoSocket = new Socket("192.168.0.201", 8081);
+      try (Socket echoSocket = new Socket(serverSocket, serverSocketPort);
            BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(echoSocket.getOutputStream(), BUFFER_SIZE);
            BufferedInputStream bufferedInputStream = new BufferedInputStream(Files.newInputStream(path), BUFFER_SIZE)) {
 
