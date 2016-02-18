@@ -5,8 +5,6 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
-import org.springframework.scheduling.annotation.EnableAsync;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -15,8 +13,6 @@ import java.util.Iterator;
 import java.util.SortedSet;
 
 @Component
-@EnableAsync
-@EnableScheduling
 public class EntryPointBean {
 
    private static final Logger LOGGER = LogManager.getLogger(EntryPointBean.class);
