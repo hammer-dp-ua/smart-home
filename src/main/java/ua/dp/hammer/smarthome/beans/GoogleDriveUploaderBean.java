@@ -1,39 +1,14 @@
 package ua.dp.hammer.smarthome.beans;
 
-import com.google.api.client.auth.oauth2.Credential;
-import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
-import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
-import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
-import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.googleapis.json.GoogleJsonResponseException;
-import com.google.api.client.googleapis.media.MediaHttpUploader;
-import com.google.api.client.googleapis.media.MediaHttpUploaderProgressListener;
-import com.google.api.client.http.HttpTransport;
-import com.google.api.client.http.InputStreamContent;
-import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.api.client.util.store.FileDataStoreFactory;
-import com.google.api.services.drive.Drive;
-import com.google.api.services.drive.DriveScopes;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import java.io.*;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.GeneralSecurityException;
-import java.util.*;
 
 @Component
 public class GoogleDriveUploaderBean implements InternetUploader {
 
-   private static final Logger LOGGER = LogManager.getLogger(GoogleDriveUploaderBean.class);
+   /*private static final Logger LOGGER = LogManager.getLogger(GoogleDriveUploaderBean.class);
 
    private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
    private static final List<String> SCOPES = Arrays.asList(DriveScopes.DRIVE);
@@ -79,12 +54,12 @@ public class GoogleDriveUploaderBean implements InternetUploader {
       } catch (IOException e) {
          LOGGER.error(e);
       }
-   }
+   }*/
 
    @Async
    @Override
    public void transferFile(Path path) {
-      if (!Files.isReadable(path)) {
+      /*if (!Files.isReadable(path)) {
          LOGGER.error(path + READ_ERROR_MSG);
          return;
       }
@@ -124,13 +99,13 @@ public class GoogleDriveUploaderBean implements InternetUploader {
                LOGGER.error(e);
             }
          }
-      }
+      }*/
    }
 
    /**
     * @return an authorized Drive client service
     */
-   private Drive getDriveService() {
+   /*private Drive getDriveService() {
       Credential credential = authorize();
 
       if (credential == null) {
@@ -140,12 +115,12 @@ public class GoogleDriveUploaderBean implements InternetUploader {
       return new Drive.Builder(httpTransport, JSON_FACTORY, credential)
             .setApplicationName(CREDENTIALS_APPLICATION_NAME)
             .build();
-   }
+   }*/
 
    /**
     * @return an authorized Credential object
     */
-   private Credential authorize() {
+   /*private Credential authorize() {
       InputStreamReader in = null;
       Credential credential = null;
 
@@ -218,5 +193,5 @@ public class GoogleDriveUploaderBean implements InternetUploader {
       public String getFileName() {
          return fileName;
       }
-   }
+   }*/
 }

@@ -16,6 +16,7 @@
                <source>1.7</source>
                <target>1.7</target>
             </configuration>
+            <version>3.1</version>
          </plugin>
          <plugin>
             <artifactId>maven-antrun-plugin</artifactId>
@@ -34,13 +35,21 @@
                </execution>
             </executions>
          </plugin>
+         <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-war-plugin</artifactId>
+            <configuration>
+               <failOnMissingWebXml>false</failOnMissingWebXml>
+            </configuration>
+            <version>2.2</version>
+         </plugin>
       </plugins>
       <finalName>${project.artifactId}</finalName>
    </build>
    <packaging>war</packaging>
 
    <dependencies>
-      <dependency>
+      <!--<dependency>
          <groupId>com.google.api-client</groupId>
          <artifactId>google-api-client</artifactId>
          <version>1.21.0</version>
@@ -54,7 +63,7 @@
          <groupId>com.google.apis</groupId>
          <artifactId>google-api-services-drive</artifactId>
          <version>v2-rev194-1.21.0</version>
-      </dependency>
+      </dependency>-->
 
       <dependency>
          <groupId>org.springframework</groupId>
@@ -86,6 +95,11 @@
          <artifactId>spring-test</artifactId>
          <version>4.2.3.RELEASE</version>
       </dependency>
+      <dependency>
+         <groupId>com.fasterxml.jackson.core</groupId>
+         <artifactId>jackson-databind</artifactId>
+         <version>2.5.0</version>
+      </dependency>
 
       <dependency>
          <groupId>org.apache.logging.log4j</groupId>
@@ -115,6 +129,11 @@
          <artifactId>log4j-jul</artifactId>
          <version>2.4.1</version>
       </dependency>
+      <dependency>
+         <groupId>org.apache.logging.log4j</groupId>
+         <artifactId>log4j-web</artifactId>
+         <version>2.4.1</version>
+      </dependency>
 
       <dependency>
          <groupId>org.apache.httpcomponents</groupId>
@@ -132,6 +151,17 @@
          <artifactId>junit</artifactId>
          <version>4.12</version>
          <scope>test</scope>
+      </dependency>
+
+      <dependency>
+         <groupId>javax.servlet</groupId>
+         <artifactId>javax.servlet-api</artifactId>
+         <version>3.1.0</version>
+      </dependency>
+      <dependency>
+         <groupId>javax.servlet</groupId>
+         <artifactId>jstl</artifactId>
+         <version>1.2</version>
       </dependency>
    </dependencies>
 </project>

@@ -10,7 +10,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.support.AnnotationConfigContextLoader;
-import ua.dp.hammer.smarthome.AppConfig;
+import ua.dp.hammer.smarthome.config.AppConfig;
 import ua.dp.hammer.smarthome.beans.DiscFilesHandlerBean;
 
 import java.io.File;
