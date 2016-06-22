@@ -44,14 +44,11 @@ public class DiscFilesHandlerBean {
 
    @PostConstruct
    public void init() {
-      LOGGER.info("Init");
-
       ramVideosDir = environment.getRequiredProperty("ramVideosDir");
       discVideosDir = environment.getRequiredProperty("discVideosDir");
       criticalFreeSpaceMb = Integer.decode(environment.getRequiredProperty("criticalFreeSpaceMb"));
 
       getNewFiles();
-      LOGGER.info("End of init");
    }
 
    public boolean isRamDiscFull() {

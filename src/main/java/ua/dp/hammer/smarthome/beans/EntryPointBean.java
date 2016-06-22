@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
 import java.util.Iterator;
-import java.util.SortedSet;
 
 @Component
 public class EntryPointBean {
@@ -32,12 +31,12 @@ public class EntryPointBean {
     */
    @Scheduled(fixedDelay=10000)
    public void checkFilesAndTransfer() {
-      SortedSet<Path> newFiles = discFilesHandlerBean.getNewFiles();
+      /*SortedSet<Path> newFiles = discFilesHandlerBean.getNewFiles();
       Iterator<Path> newFilesIterator = newFiles.iterator();
       while (newFilesIterator.hasNext()) {
          Path newFile = newFilesIterator.next();
          internetUploader.transferFile(newFile);
-      }
+      }*/
 
       Iterator<Path> oldFilesIterator = discFilesHandlerBean.getOldFilesCopy().iterator();
       while (oldFilesIterator.hasNext() && discFilesHandlerBean.isRamDiscFull()) {

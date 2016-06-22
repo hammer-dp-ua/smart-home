@@ -16,14 +16,19 @@ public class Esp8266ExternalDevicesCommunicatorController {
    public ServerStatus receiveStatusInfo(@RequestBody Esp8266Data esp8266Data, @RequestHeader("X-FORWARDED-FOR") String clientIp) {
       String gain = esp8266Data.getGain() != null ? esp8266Data.getGain().trim() : null;
 
-      LOGGER.info("Gain of " + clientIp + ": " + gain);
-      return new ServerStatus(StatusCodes.OK);
+      LOGGER.info("Gain of " + clientIp + ": " + gain + "\r\nErrors: " + esp8266Data.getErrors() + "\r\nOverrun Errors: " + esp8266Data.getUsartOverrunErrors() +
+            "\r\nIdle Line Detections: " + esp8266Data.getUsartIdleLineDetections() + "\r\nNoise Detection: " + esp8266Data.getUsartNoiseDetection() +
+            "\r\nFraming Errors: " + esp8266Data.getUsartFramingErrors() + "\r\nLast Error Task: " + esp8266Data.getLastErrorTask() + "\r\nUSART data: " +
+            esp8266Data.getUsartData());
+      ServerStatus serverStatus = new ServerStatus(StatusCodes.OK);
+      serverStatus.setIncludeDebugInfo(true);
+      return serverStatus;
    }
 
    @RequestMapping(path = "/alarm", method = RequestMethod.GET)
-   public ServerStatus receiveAlarm() {
+   public ServerStatus receiveAlarm(@RequestHeader("X-FORWARDED-FOR") String clientIp) {
 
-
+      LOGGER.info("Alarm: " + clientIp);
       return new ServerStatus(StatusCodes.OK);
    }
 }
