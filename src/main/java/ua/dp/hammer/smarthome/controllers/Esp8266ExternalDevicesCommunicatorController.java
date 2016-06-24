@@ -2,7 +2,9 @@ package ua.dp.hammer.smarthome.controllers;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import ua.dp.hammer.smarthome.beans.CameraBean;
 import ua.dp.hammer.smarthome.models.Esp8266Data;
 import ua.dp.hammer.smarthome.models.ServerStatus;
 import ua.dp.hammer.smarthome.models.StatusCodes;
@@ -11,6 +13,9 @@ import ua.dp.hammer.smarthome.models.StatusCodes;
 @RequestMapping(path = "/server/esp8266")
 public class Esp8266ExternalDevicesCommunicatorController {
    private static final Logger LOGGER = LogManager.getLogger(Esp8266ExternalDevicesCommunicatorController.class);
+
+   @Autowired
+   private CameraBean cameraBean;
 
    @RequestMapping(path = "/statusInfo", method = RequestMethod.POST, consumes="application/json")
    public ServerStatus receiveStatusInfo(@RequestBody Esp8266Data esp8266Data, @RequestHeader("X-FORWARDED-FOR") String clientIp) {
@@ -27,8 +32,8 @@ public class Esp8266ExternalDevicesCommunicatorController {
 
    @RequestMapping(path = "/alarm", method = RequestMethod.GET)
    public ServerStatus receiveAlarm(@RequestHeader("X-FORWARDED-FOR") String clientIp) {
-
       LOGGER.info("Alarm: " + clientIp);
+      cameraBean.startVideoRecording();
       return new ServerStatus(StatusCodes.OK);
    }
 }
