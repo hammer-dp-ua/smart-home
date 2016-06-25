@@ -9,15 +9,14 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,6 +35,7 @@ public class CameraBean {
          "&ID=%2$s&AlarmOutDeviceType=1&AlarmOutFlag=1&languageType=1";
    private static final String KEEP_HEART_URL = "http://%s/asppage/common/keepHeart.asp";
    private static final String KEEP_HEART_REFERRER = "http://%s/asppage/common/top.asp";
+   private static final int[] KEEP_HEART_SUCCESSFULLY_RESPONSE = {239, 187, 191, 48};
    private static final String CAMERA_ID = "0018A2";
    private static final String POST_METHOD = "POST";
    private static final String HOST_HEADER = "Host";
@@ -43,12 +43,12 @@ public class CameraBean {
    private static final Pattern ID_FROM_RESPONSE_PATTERN = Pattern.compile("ID=(\\d+)");
 
    private static final ScheduledThreadPoolExecutor STOP_VIDEO_RECORDING_EXECUTOR = new ScheduledThreadPoolExecutor(1);
+   private static final AtomicReference<String> CREDENTIAL_ID = new AtomicReference<>();
 
    private String cameraIp;
    private String cameraLogin;
    private String cameraPassword;
    private long cameraRecordingTimeSec;
-   private String credentialId;
 
    static {
       STOP_VIDEO_RECORDING_EXECUTOR.setRemoveOnCancelPolicy(true);
@@ -63,34 +63,6 @@ public class CameraBean {
       cameraLogin = environment.getRequiredProperty("cameraLogin");
       cameraPassword = environment.getRequiredProperty("cameraPassword");
       cameraRecordingTimeSec = Long.parseLong(environment.getRequiredProperty("cameraRecordingTimeSec"));
-
-      final long startTime = System.currentTimeMillis();
-      LOGGER.info("~~~ 0. Thread: " + Thread.currentThread().getId() + "; Time: " + 0);
-      /*startVideoRecording();
-
-      new Timer().schedule(new TimerTask() {
-         @Override
-         public void run() {
-            LOGGER.info("~~~ 1. Thread: " + Thread.currentThread().getId() + "; Time: " + (System.currentTimeMillis() - startTime));
-            startVideoRecording();
-         }
-      }, 10000L);
-
-      new Timer().schedule(new TimerTask() {
-         @Override
-         public void run() {
-            LOGGER.info("~~~ 2. Thread: " + Thread.currentThread().getId() + "; Time: " + (System.currentTimeMillis() - startTime));
-            startVideoRecording();
-         }
-      }, 15000L);
-
-      new Timer().schedule(new TimerTask() {
-         @Override
-         public void run() {
-            LOGGER.info("~~~ 3. Thread: " + Thread.currentThread().getId() + "; Time: " + (System.currentTimeMillis() - startTime));
-            startVideoRecording();
-         }
-      }, 20000L);*/
    }
 
    public String login() {
@@ -112,8 +84,6 @@ public class CameraBean {
          return null;
       }
 
-
-
       String response = readResponseBody(httpURLConnection);
       Matcher matcher = ID_FROM_RESPONSE_PATTERN.matcher(response);
       String id = null;
@@ -121,13 +91,31 @@ public class CameraBean {
       if (matcher.find(1)) {
          id = matcher.group(1);
       }
+
+      if (id != null && LOGGER.isDebugEnabled()) {
+         LOGGER.debug("Logged in successfully. ID: " + id);
+      }
       return id;
    }
 
    @Async
    public void startVideoRecording() {
-      startStopVideoRecording(true);
+      if (startStopVideoRecording(true)) {
+         scheduleStopVideoRecording(cameraRecordingTimeSec, TimeUnit.SECONDS);
+      } else {
+         try {
+            Thread.sleep(10000);
+            if (LOGGER.isDebugEnabled()) {
+               LOGGER.debug("Retrying to start video recording");
+            }
+         } catch (InterruptedException e) {
+            LOGGER.error(e);
+         }
+         startVideoRecording();
+      }
+   }
 
+   public void scheduleStopVideoRecording(long time, TimeUnit timeUnit) {
       BlockingQueue<Runnable> queue = STOP_VIDEO_RECORDING_EXECUTOR.getQueue();
       if (queue.size() > 0) {
          queue.remove(queue.element());
@@ -136,9 +124,11 @@ public class CameraBean {
       STOP_VIDEO_RECORDING_EXECUTOR.schedule(new Runnable() {
          @Override
          public void run() {
-            startStopVideoRecording(false);
+            if (!startStopVideoRecording(false)) {
+               scheduleStopVideoRecording(10, TimeUnit.SECONDS);
+            }
          }
-      }, cameraRecordingTimeSec, TimeUnit.SECONDS);
+      }, time, timeUnit);
    }
 
    /**
@@ -146,34 +136,49 @@ public class CameraBean {
     * @return true if started successfully
     */
    public boolean startStopVideoRecording(boolean start) {
-      String id = login();
-      int responseCode = 0;
+      if (CREDENTIAL_ID.get() == null) {
+         loginAndKeepHeart();
+      }
 
-      if (id == null) {
-         return false;
+      if (LOGGER.isDebugEnabled()) {
+         LOGGER.debug("Video recording is " + (start ? "starting" : "stopping"));
       }
 
       HttpURLConnection httpURLConnection = createPostRequest(String.format(ALARM_IO_PARAM_URL, cameraIp),
             String.format(REFERRER_IO_PARAM_URL, cameraIp),
-            String.format(START_STOP_RECORDING, start ? 2 : 1, id));
+            String.format(START_STOP_RECORDING, start ? 2 : 1, CREDENTIAL_ID));
+      int responseCode = getResponseCode(httpURLConnection);
 
-      if (httpURLConnection != null) {
-         try {
-            responseCode = httpURLConnection.getResponseCode();
-         } catch (IOException e) {
-            LOGGER.error(e);
-         }
+      if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP) {
+         return true;
+      } else {
+         LOGGER.error("Video recording wasn't " + (start ? "started" : "stopped") + ". Response code: " + responseCode);
+         return false;
       }
-      return responseCode == HttpURLConnection.HTTP_MOVED_TEMP;
    }
 
-   @Scheduled(fixedDelay=60000)
+   @Scheduled(fixedDelay=30000)
    public void loginAndKeepHeart() {
-      if (credentialId == null) {
-         credentialId = login();
+      if (CREDENTIAL_ID.get() == null) {
+         LOGGER.debug("Logging in starting...");
+         CREDENTIAL_ID.set(login());
       } else {
-         createPostRequest(String.format(KEEP_HEART_URL, cameraIp), String.format(KEEP_HEART_REFERRER, cameraIp),
-               "ID=" + credentialId);
+         HttpURLConnection httpURLConnection = createPostRequest(String.format(KEEP_HEART_URL, cameraIp),
+               String.format(KEEP_HEART_REFERRER, cameraIp), "ID=" + CREDENTIAL_ID);
+         int responseCode = getResponseCode(httpURLConnection);
+         int[] responseContent = null;
+
+         if (responseCode != HttpURLConnection.HTTP_OK) {
+            LOGGER.error("Invalid response code on keep heart: " + responseCode);
+         } else {
+            responseContent = readRawResponseBody(httpURLConnection);
+         }
+
+         if (!Arrays.equals(KEEP_HEART_SUCCESSFULLY_RESPONSE, responseContent)) {
+            CREDENTIAL_ID.set(null);
+            LOGGER.error("Invalid response body on keep heart: " + Arrays.toString(responseContent));
+            loginAndKeepHeart();
+         }
       }
    }
 
@@ -181,11 +186,10 @@ public class CameraBean {
       HttpURLConnection httpURLConnection = null;
 
       try {
-         URL url = new URL(urlParam);
+         URL url = new URL (urlParam);
          httpURLConnection = (HttpURLConnection) url.openConnection();
          httpURLConnection.setDoOutput(true);
          httpURLConnection.setInstanceFollowRedirects(false);
-         httpURLConnection.setReadTimeout(60000);
          httpURLConnection.setRequestMethod(POST_METHOD);
          httpURLConnection.setRequestProperty(HOST_HEADER, cameraIp);
          httpURLConnection.setRequestProperty(REFERRER_HEADER, referrerHeaderValue);
@@ -211,6 +215,10 @@ public class CameraBean {
    }
 
    private String readResponseBody(HttpURLConnection httpURLConnection) {
+      if (httpURLConnection == null) {
+         return null;
+      }
+
       StringBuilder responseStringBuilder = new StringBuilder();
 
       try (BufferedReader in = new BufferedReader(new InputStreamReader(httpURLConnection.getInputStream()))) {
@@ -222,6 +230,47 @@ public class CameraBean {
       } catch (IOException e) {
          LOGGER.error(e);
       }
-      return responseStringBuilder.toString();
+      return responseStringBuilder.length() > 0 ? responseStringBuilder.toString() : null;
+   }
+
+   private int[] readRawResponseBody(HttpURLConnection httpURLConnection) {
+      if (httpURLConnection == null) {
+         return null;
+      }
+
+      List<Integer> bytes = new LinkedList<>();
+      int inputByte;
+
+      try (BufferedInputStream in = new BufferedInputStream(httpURLConnection.getInputStream())) {
+         while ((inputByte = in.read()) != -1) {
+            bytes.add(inputByte);
+         }
+      } catch (IOException e) {
+         LOGGER.error(e);
+      }
+
+      if (bytes.size() > 0) {
+         int[] result = new int[bytes.size()];
+
+         for (int i = 0; i < bytes.size(); i++) {
+            result[i] = bytes.get(i);
+         }
+         return result;
+      } else {
+         return new int[0];
+      }
+   }
+
+   private int getResponseCode(HttpURLConnection httpURLConnection) {
+      int responseCode = 0;
+
+      if (httpURLConnection != null) {
+         try {
+            responseCode = httpURLConnection.getResponseCode();
+         } catch (IOException e) {
+            LOGGER.error(e);
+         }
+      }
+      return responseCode;
    }
 }
