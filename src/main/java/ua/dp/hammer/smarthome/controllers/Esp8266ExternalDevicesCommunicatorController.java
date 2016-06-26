@@ -23,7 +23,7 @@ public class Esp8266ExternalDevicesCommunicatorController {
       ServerStatus serverStatus = new ServerStatus(StatusCodes.OK);
 
       if (LOGGER.isDebugEnabled()) {
-         LOGGER.info("Gain of " + clientIp + ": " + gain +
+         LOGGER.debug("Gain of " + clientIp + ": " + gain +
                "\r\nErrors: " + esp8266Data.getErrors() +
                "\r\nOverrun Errors: " + esp8266Data.getUsartOverrunErrors() +
                "\r\nIdle Line Detections: " + esp8266Data.getUsartIdleLineDetections() +

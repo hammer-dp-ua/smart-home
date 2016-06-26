@@ -12,7 +12,9 @@ import javax.annotation.PostConstruct;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.*;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -30,17 +32,35 @@ public class CameraBean {
    private static final String SET_VALUE_BY_AJAX_URL = "http://%s/goform/WEB_SetValueByAjax";
    private static final String ALARM_IO_PARAM_URL = "http://%s/goform/WEB_setAlarmIOParam";
    private static final String REFERRER_IO_PARAM_URL = "http://%1$s/asppage/common/alarmIOparam.asp";
-   private static final String START_STOP_RECORDING = "AlarmInId=1&AlarmInName=1&AlarmInValidLevel=%1$s&AlarmOutId=1" +
-         "&AlarmOutName=&AlarmOutValidSignal=2&AlarmMode=1&Frequency=0&AlarmTime=0&B1=OK" +
-         "&ID=%2$s&AlarmOutDeviceType=1&AlarmOutFlag=1&languageType=1";
+   private static final String START_STOP_RECORDING = "AlarmInId=1" +
+         "&AlarmInName=1" +
+         "&AlarmInValidLevel=%1$s" +
+         "&AlarmOutId=1" +
+         "&AlarmOutName=" +
+         "&AlarmOutValidSignal=2" +
+         "&AlarmMode=1" +
+         "&Frequency=0.01" +
+         "&AlarmTime=%2$s" +
+         "&B1=OK" +
+         "&ID=%3$s" +
+         "&AlarmOutDeviceType=1" +
+         "&AlarmOutFlag=0" +
+         "&languageType=1";
    private static final String KEEP_HEART_URL = "http://%s/asppage/common/keepHeart.asp";
    private static final String KEEP_HEART_REFERRER = "http://%s/asppage/common/top.asp";
+   private static final String KEEP_HEART_POST_BODY = "ID=%1$s&sand=%2$s";
+   private static final String KEEP_HEART_COOKIES = "coobjMenuTree=Alarm; csobjMenuTree=DeviceInfo";
    private static final int[] KEEP_HEART_SUCCESSFULLY_RESPONSE = {239, 187, 191, 48};
+   private static final String MANUAL_RECORDING_URL = "http://%s/asppage/common/Ajax_getAlarm_Request.asp";
+   private static final String MANUAL_RECORDING_REFERRER = "http://%s/asppage/common/alarmIOparam.asp?alarminid=1&alarmoutid=1&ret=0";
+   private static final String MANUAL_RECORDING_POST_BODY = "AlarmOutFlag=%1$s&AlarmOutId=1&AlarmOutDeviceType=1&ID=%2$s";
    private static final String CAMERA_ID = "0018A2";
    private static final String POST_METHOD = "POST";
    private static final String HOST_HEADER = "Host";
    private static final String REFERRER_HEADER = "Referer";
+   private static final String COOKIE_HEADER = "Cookie";
    private static final Pattern ID_FROM_RESPONSE_PATTERN = Pattern.compile("ID=(\\d+)");
+   private static final String CONNECTION_TIMEOUT = "Connection timed out";
 
    private static final ScheduledThreadPoolExecutor STOP_VIDEO_RECORDING_EXECUTOR = new ScheduledThreadPoolExecutor(1);
    private static final AtomicReference<String> CREDENTIAL_ID = new AtomicReference<>();
@@ -67,7 +87,8 @@ public class CameraBean {
 
    public String login() {
       HttpURLConnection httpURLConnection = createPostRequest(String.format(LOGIN_URL, cameraIp),
-            String.format(LOGIN_REFERRER_URL, cameraIp), String.format(LOGIN_POST_BODY, cameraLogin, cameraPassword));
+            String.format(LOGIN_REFERRER_URL, cameraIp), String.format(LOGIN_POST_BODY, cameraLogin, cameraPassword),
+            null);
 
       if (httpURLConnection == null) {
          return null;
@@ -125,7 +146,7 @@ public class CameraBean {
          @Override
          public void run() {
             if (!startStopVideoRecording(false)) {
-               scheduleStopVideoRecording(10, TimeUnit.SECONDS);
+               scheduleStopVideoRecording(5, TimeUnit.SECONDS);
             }
          }
       }, time, timeUnit);
@@ -144,12 +165,18 @@ public class CameraBean {
          LOGGER.debug("Video recording is " + (start ? "starting" : "stopping"));
       }
 
-      HttpURLConnection httpURLConnection = createPostRequest(String.format(ALARM_IO_PARAM_URL, cameraIp),
-            String.format(REFERRER_IO_PARAM_URL, cameraIp),
-            String.format(START_STOP_RECORDING, start ? 2 : 1, CREDENTIAL_ID));
+      HttpURLConnection httpURLConnection = createPostRequest(String.format(MANUAL_RECORDING_URL, cameraIp),
+            String.format(MANUAL_RECORDING_REFERRER, cameraIp),
+            String.format(MANUAL_RECORDING_POST_BODY, start ? 1 : 0, CREDENTIAL_ID.get()),
+            null);
       int responseCode = getResponseCode(httpURLConnection);
 
-      if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP) {
+      disconnectConnection(httpURLConnection);
+
+      if (responseCode == HttpURLConnection.HTTP_OK) {
+         if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Video recording " + (start ? "started" : "stopped"));
+         }
          return true;
       } else {
          LOGGER.error("Video recording wasn't " + (start ? "started" : "stopped") + ". Response code: " + responseCode);
@@ -163,36 +190,51 @@ public class CameraBean {
          LOGGER.debug("Logging in starting...");
          CREDENTIAL_ID.set(login());
       } else {
-         HttpURLConnection httpURLConnection = createPostRequest(String.format(KEEP_HEART_URL, cameraIp),
-               String.format(KEEP_HEART_REFERRER, cameraIp), "ID=" + CREDENTIAL_ID);
-         int responseCode = getResponseCode(httpURLConnection);
-         int[] responseContent = null;
-
-         if (responseCode != HttpURLConnection.HTTP_OK) {
-            LOGGER.error("Invalid response code on keep heart: " + responseCode);
-         } else {
-            responseContent = readRawResponseBody(httpURLConnection);
-         }
-
-         if (!Arrays.equals(KEEP_HEART_SUCCESSFULLY_RESPONSE, responseContent)) {
-            CREDENTIAL_ID.set(null);
-            LOGGER.error("Invalid response body on keep heart: " + Arrays.toString(responseContent));
-            loginAndKeepHeart();
-         }
+         keepHeart("ID=" + CREDENTIAL_ID.get());
+         //keepHeart(String.format(KEEP_HEART_POST_BODY, CREDENTIAL_ID.get(), Math.random()));
       }
    }
 
-   private HttpURLConnection createPostRequest(String urlParam, String referrerHeaderValue, String postBody) {
+   private void keepHeart(String requestBody) {
+      HttpURLConnection httpURLConnection = createPostRequest(String.format(KEEP_HEART_URL, cameraIp),
+            String.format(KEEP_HEART_REFERRER, cameraIp), requestBody, KEEP_HEART_COOKIES);
+
+      int responseCode = getResponseCode(httpURLConnection);
+      int[] responseContent = null;
+
+      if (responseCode != HttpURLConnection.HTTP_OK) {
+         LOGGER.error("Invalid response code on keep heart: " + responseCode);
+      } else {
+         responseContent = readRawResponseBody(httpURLConnection);
+      }
+
+      disconnectConnection(httpURLConnection);
+
+      if (!Arrays.equals(KEEP_HEART_SUCCESSFULLY_RESPONSE, responseContent)) {
+         CREDENTIAL_ID.set(null);
+         LOGGER.error("Invalid response body on keep heart: " + Arrays.toString(responseContent));
+         loginAndKeepHeart();
+      }
+   }
+
+   private HttpURLConnection createPostRequest(String urlParam, String referrerHeaderValue, String postBody,
+                                               String cookies) {
       HttpURLConnection httpURLConnection = null;
 
       try {
          URL url = new URL (urlParam);
          httpURLConnection = (HttpURLConnection) url.openConnection();
          httpURLConnection.setDoOutput(true);
+         httpURLConnection.setConnectTimeout(5000);
+         httpURLConnection.setReadTimeout(5000);
          httpURLConnection.setInstanceFollowRedirects(false);
          httpURLConnection.setRequestMethod(POST_METHOD);
          httpURLConnection.setRequestProperty(HOST_HEADER, cameraIp);
          httpURLConnection.setRequestProperty(REFERRER_HEADER, referrerHeaderValue);
+
+         if (cookies != null) {
+            httpURLConnection.setRequestProperty(COOKIE_HEADER, cookies);
+         }
       } catch (IOException e) {
          LOGGER.error(e);
       }
@@ -272,5 +314,11 @@ public class CameraBean {
          }
       }
       return responseCode;
+   }
+
+   private void disconnectConnection(HttpURLConnection httpURLConnection) {
+      if (httpURLConnection != null) {
+         httpURLConnection.disconnect();
+      }
    }
 }
