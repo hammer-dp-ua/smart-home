@@ -37,7 +37,7 @@ public class CameraBean {
          "&AlarmInValidLevel=%1$s" +
          "&AlarmOutId=1" +
          "&AlarmOutName=" +
-         "&AlarmOutValidSignal=2" +
+         "&AlarmOutValidSignal=1" +
          "&AlarmMode=1" +
          "&Frequency=0.01" +
          "&AlarmTime=%2$s" +
