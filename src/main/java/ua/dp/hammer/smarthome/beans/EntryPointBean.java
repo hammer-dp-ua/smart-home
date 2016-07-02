@@ -32,11 +32,11 @@ public class EntryPointBean {
     */
    @Scheduled(fixedDelay=10000)
    public void checkFilesAndTransfer() {
-      SortedSet<Path> newFiles = discFilesHandlerBean.getNewFiles();
+      SortedSet<Path> newFiles = discFilesHandlerBean.getNewVideoFiles();
       /*Iterator<Path> newFilesIterator = newFiles.iterator();
       while (newFilesIterator.hasNext()) {
          Path newFile = newFilesIterator.next();
-         internetUploader.transferFile(newFile);
+         internetUploader.transferVideoFile(newFile);
       }*/
 
       Iterator<Path> oldFilesIterator = discFilesHandlerBean.getOldFilesCopy().iterator();

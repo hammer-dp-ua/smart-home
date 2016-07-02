@@ -23,9 +23,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Formatter;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 
 @Component
 public class VpsUploader implements InternetUploader {
@@ -33,11 +31,13 @@ public class VpsUploader implements InternetUploader {
    private static final Logger LOGGER = LogManager.getLogger(VpsUploader.class);
 
    private static final int BUFFER_SIZE = 10 * 1024 * 1024;
-   private static final String FILE_IS_READY_TO_UPLOAD = " file is ready to upload. Size: ";
+   private static final String FILE_IS_READY_TO_UPLOAD = " video file is ready to upload. Size: ";
    private static final String UPLOADING_INFO_MSG = "Uploading has been completed. %s file has been uploaded at %.1f seconds. Average speed: %.1fKB/s";
 
    private String serverSocket;
    private int serverSocketPort;
+   private String vpsServerMultipartVideoFileUrl;
+   private String vpsServerMultipartImageFilesUrl;
 
    @Autowired
    private Environment environment;
@@ -46,6 +46,8 @@ public class VpsUploader implements InternetUploader {
    public void init() {
       serverSocket = environment.getRequiredProperty("serverSocket");
       serverSocketPort = Integer.parseInt(environment.getRequiredProperty("serverSocketPort"));
+      vpsServerMultipartVideoFileUrl = environment.getRequiredProperty("vpsServerMultipartVideoFileUrl");
+      vpsServerMultipartImageFilesUrl = environment.getRequiredProperty("vpsServerMultipartImageFilesUrl");
 
       new Timer().schedule(new TimerTask() {
          @Override
@@ -58,25 +60,32 @@ public class VpsUploader implements InternetUploader {
 
    @Async
    @Override
-   public void transferFile(Path filePath) {
-      boolean errorOccurred = false;
+   public void transferVideoFile(Path filePath) {
       File fileToUpload = filePath.toFile();
       long fileLength = fileToUpload.length();
-      long startTransferringFileTime = System.currentTimeMillis();
 
       LOGGER.info(filePath.getFileName() + FILE_IS_READY_TO_UPLOAD + (fileLength / 1024 / 1024) + "MB");
+
+      long startTransferringFileTime = System.currentTimeMillis();
+      boolean errorOccurred = transferFileWithMultipart(vpsServerMultipartVideoFileUrl, fileToUpload);
 
       if (!errorOccurred) {
          logTransferSpeed(startTransferringFileTime, fileLength, fileToUpload.getName());
       }
    }
 
-   private void logTransferSpeed(long startTime, long fileLength, String fileName) {
-      long endTime = System.currentTimeMillis();
-      float elapsedTimeS = (float)(endTime - startTime) / 1000f;
-      float speedKbs = (float)(fileLength) / elapsedTimeS / 1024f;
+   public void transferImageFiles(String videoFileName, List<Path> filesPath) {
+      List<File> files = toFiles(filesPath);
+      long fileLength = 0;
 
-      LOGGER.info(new Formatter().format(UPLOADING_INFO_MSG, fileName, elapsedTimeS, speedKbs));
+      for (File file : files) {
+         fileLength += file.length();
+      }
+
+      LOGGER.info(files.size() + " image files are ready to upload. Total size: " + (fileLength / 1024 / 1024) + "MB");
+
+
+      long startTransferringFileTime = System.currentTimeMillis();
    }
 
    private boolean transferFileWithMultipart(String url, File file) {
@@ -130,5 +139,26 @@ public class VpsUploader implements InternetUploader {
          fileToUpload.setWritable(true);
       }
       return errorOccurred;
+   }
+
+   private void logTransferSpeed(long startTime, long fileLength, String fileName) {
+      long endTime = System.currentTimeMillis();
+      float elapsedTimeS = (float)(endTime - startTime) / 1000f;
+      float speedKbs = (float)(fileLength) / elapsedTimeS / 1024f;
+
+      LOGGER.info(new Formatter().format(UPLOADING_INFO_MSG, fileName, elapsedTimeS, speedKbs));
+   }
+
+   private List<File> toFiles(List<Path> filesPath) {
+      if (filesPath == null) {
+         return Collections.EMPTY_LIST;
+      }
+
+      List<File> files = new ArrayList<>(filesPath.size());
+
+      for (Path filePath : filesPath) {
+         files.add(filePath.toFile());
+      }
+      return files;
    }
 }

@@ -58,7 +58,7 @@ public class GoogleDriveUploaderBean implements InternetUploader {
 
    @Async
    @Override
-   public void transferFile(Path path) {
+   public void transferVideoFile(Path path) {
       /*if (!Files.isReadable(path)) {
          LOGGER.error(path + READ_ERROR_MSG);
          return;

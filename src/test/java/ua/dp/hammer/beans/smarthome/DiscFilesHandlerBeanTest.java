@@ -65,7 +65,7 @@ public class DiscFilesHandlerBeanTest {
       Path filePath3 = Files.createFile(FileSystems.getDefault().getPath(ramVideosDir + "/File3.tmp"));
       Files.setLastModifiedTime(filePath3, FileTime.fromMillis(System.currentTimeMillis() + 2));
 
-      SortedSet<Path> newFiles = discFilesHandlerBean.getNewFiles();
+      SortedSet<Path> newFiles = discFilesHandlerBean.getNewVideoFiles();
       newFiles.add(filePath2);
       Iterator<Path> newFilesIterator = newFiles.iterator();
 

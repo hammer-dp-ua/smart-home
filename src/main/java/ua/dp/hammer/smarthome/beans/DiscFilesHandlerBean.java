@@ -38,6 +38,7 @@ public class DiscFilesHandlerBean {
    private String ramVideosDir;
    private String discVideosDir;
    private int criticalFreeSpaceMb;
+   private String videoFileExtension;
 
    @Autowired
    private Environment environment;
@@ -47,8 +48,9 @@ public class DiscFilesHandlerBean {
       ramVideosDir = environment.getRequiredProperty("ramVideosDir");
       discVideosDir = environment.getRequiredProperty("discVideosDir");
       criticalFreeSpaceMb = Integer.decode(environment.getRequiredProperty("criticalFreeSpaceMb"));
+      videoFileExtension = environment.getRequiredProperty("videoFileExtension");
 
-      getNewFiles();
+      getNewVideoFiles();
    }
 
    public boolean isRamDiscFull() {
@@ -56,20 +58,21 @@ public class DiscFilesHandlerBean {
       File ramDiscDrive = new File(ramDiscDriveLetter);
       int freeSpaceMb = (int) (ramDiscDrive.getFreeSpace() / 1024 / 1024);
       boolean ramDiscIsFull = freeSpaceMb < criticalFreeSpaceMb;
-      if (ramDiscIsFull && LOGGER.isInfoEnabled()) {
+
+      if (ramDiscIsFull) {
          LOGGER.info(FULL_RAM_DISC_MSG + freeSpaceMb + "MB");
       }
       return ramDiscIsFull;
    }
 
-   public SortedSet<Path> getNewFiles() {
+   public SortedSet<Path> getNewVideoFiles() {
       final SortedSet<Path> files = new TreeSet<Path>(FILES_COMPARATOR_ASC);
 
       try {
          Files.walkFileTree(FileSystems.getDefault().getPath(ramVideosDir), new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult visitFile(Path filePath, BasicFileAttributes attrs) throws IOException {
-               if (Files.isReadable(filePath)) {
+               if (Files.isReadable(filePath) && filePath.toString().endsWith(videoFileExtension)) {
                   files.add(filePath);
                }
                return FileVisitResult.CONTINUE;
@@ -79,11 +82,13 @@ public class DiscFilesHandlerBean {
          LOGGER.error(e);
       }
 
-      if (LOGGER.isTraceEnabled()) {
-         LOGGER.trace("Old files count: " + OLD_FILES.size());
+      if (LOGGER.isDebugEnabled()) {
+         LOGGER.debug("Old files count: " + OLD_FILES.size());
+
          for (Path filePath : files) {
             try {
-               LOGGER.trace(filePath + " hash code: " + filePath.hashCode() + "; modification time: " + Files.getLastModifiedTime(filePath));
+               LOGGER.debug(filePath + " hash code: " + filePath.hashCode() + "; modification time: " +
+                     Files.getLastModifiedTime(filePath));
             } catch (IOException e) {
                LOGGER.error(e);
             }
@@ -97,7 +102,7 @@ public class DiscFilesHandlerBean {
          LOGGER.trace("Old files count: " + OLD_FILES.size());
       }
 
-      if (files.size() > 0 && LOGGER.isInfoEnabled()) {
+      if (files.size() > 0) {
          StringBuilder stringBuilder = new StringBuilder(NEW_FILES_MSG);
 
          for (Path filePath : files) {
@@ -115,26 +120,29 @@ public class DiscFilesHandlerBean {
    }
 
    public SortedSet<Path> getOldFilesCopy() {
-      return new TreeSet<Path>(OLD_FILES);
+      return new TreeSet<>(OLD_FILES);
    }
 
    public void relocateFileToDisk(Path filePath) {
       if (!Files.isReadable(filePath) || !Files.isWritable(filePath)) {
-         if (NON_RELOCATABLE_FILES.contains(filePath))
-         {
+         if (NON_RELOCATABLE_FILES.contains(filePath)) {
             return;
          }
 
          LOGGER.info(filePath.getFileName() + RELOCATION_FILE_ERROR_MSG + " Readable: " + Files.isReadable(filePath)
                + ". Writable: " + Files.isWritable(filePath));
+
          NON_RELOCATABLE_FILES.add(filePath);
          return;
       }
 
       NON_RELOCATABLE_FILES.remove(filePath);
+
       try {
-         Files.move(filePath, FileSystems.getDefault().getPath(discVideosDir + "/" + filePath.getFileName()), StandardCopyOption.REPLACE_EXISTING);
+         Files.move(filePath, FileSystems.getDefault().getPath(discVideosDir + "/" + filePath.getFileName()),
+               StandardCopyOption.REPLACE_EXISTING);
          OLD_FILES.remove(filePath);
+
          LOGGER.info(filePath.getFileName() + RELOCATION_FILE_SUCCEED_MSG);
       } catch (IOException e) {
          LOGGER.error(filePath.getFileName() + RELOCATION_FILE_ERROR_MSG, e);
