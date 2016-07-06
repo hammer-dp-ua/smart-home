@@ -32,7 +32,7 @@ public class VpsUploader implements InternetUploader {
 
    private static final int BUFFER_SIZE = 10 * 1024 * 1024;
    private static final String FILE_IS_READY_TO_UPLOAD = " video file is ready to upload. Size: ";
-   private static final String UPLOADING_INFO_MSG = "Uploading has been completed. %s file has been uploaded at %.1f seconds. Average speed: %.1fKB/s";
+   private static final String UPLOADING_INFO_MSG = "Uploading has been completed. %s file(s) has been uploaded at %.1f seconds. Average speed: %.1fKB/s";
 
    private String serverSocket;
    private int serverSocketPort;
@@ -60,21 +60,23 @@ public class VpsUploader implements InternetUploader {
 
    @Async
    @Override
-   public void transferVideoFile(Path filePath) {
+   public boolean transferVideoFile(Path filePath) {
       File fileToUpload = filePath.toFile();
       long fileLength = fileToUpload.length();
 
       LOGGER.info(filePath.getFileName() + FILE_IS_READY_TO_UPLOAD + (fileLength / 1024 / 1024) + "MB");
 
       long startTransferringFileTime = System.currentTimeMillis();
-      boolean errorOccurred = transferFileWithMultipart(vpsServerMultipartVideoFileUrl, fileToUpload);
+      boolean errorOccurred = transferFileWithMultipart(vpsServerMultipartVideoFileUrl,
+            createHttpEntityForVideoFile(fileToUpload));
 
       if (!errorOccurred) {
          logTransferSpeed(startTransferringFileTime, fileLength, fileToUpload.getName());
       }
+      return !errorOccurred;
    }
 
-   public void transferImageFiles(String videoFileName, List<Path> filesPath) {
+   public boolean transferImageFiles(String videoFileName, List<Path> filesPath) {
       List<File> files = toFiles(filesPath);
       long fileLength = 0;
 
@@ -84,23 +86,23 @@ public class VpsUploader implements InternetUploader {
 
       LOGGER.info(files.size() + " image files are ready to upload. Total size: " + (fileLength / 1024 / 1024) + "MB");
 
-
       long startTransferringFileTime = System.currentTimeMillis();
+
+      boolean errorOccurred = transferFileWithMultipart(vpsServerMultipartImageFilesUrl,
+            createHttpEntityForImageFiles(videoFileName, files));
+
+      if (!errorOccurred) {
+         logTransferSpeed(startTransferringFileTime, fileLength, String.valueOf(files.size()));
+      }
+      return !errorOccurred;
    }
 
-   private boolean transferFileWithMultipart(String url, File file) {
+   private boolean transferFileWithMultipart(String url, HttpEntity httpEntity) {
       boolean errorOccurred = false;
       CloseableHttpClient httpClient = HttpClients.createDefault();
       HttpPost httppost = new HttpPost(url);
-      FileBody bin = new FileBody(file);
-      HttpEntity reqEntity = MultipartEntityBuilder.create()
-            .addTextBody("name", file.getName())
-            .addPart("file", bin)
-            .build();
 
-      httppost.setEntity(reqEntity);
-
-      LOGGER.info(file.getName() + FILE_IS_READY_TO_UPLOAD + (file.length() / 1024 / 1024) + "MB");
+      httppost.setEntity(httpEntity);
 
       try (CloseableHttpResponse response = httpClient.execute(httppost)) {
          StatusLine statusLine = response.getStatusLine();
@@ -117,6 +119,23 @@ public class VpsUploader implements InternetUploader {
          }
       }
       return errorOccurred;
+   }
+
+   private HttpEntity createHttpEntityForVideoFile(File file) {
+      return MultipartEntityBuilder.create()
+            .addPart("file", new FileBody(file))
+            .build();
+   }
+
+   private HttpEntity createHttpEntityForImageFiles(String videoFileName, List<File> files) {
+      
+      MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create()
+            .addTextBody("videoFileName", videoFileName);
+
+      for (File file : files) {
+         multipartEntityBuilder.addPart("file", new FileBody(file));
+      }
+      return multipartEntityBuilder.build();
    }
 
    private boolean transferFileWithSocket(Path path) {
