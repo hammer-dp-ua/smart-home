@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 import java.nio.file.Path;
 
 @Component
-public class GoogleDriveUploaderBean implements InternetUploader {
+public class GoogleDriveUploaderBean {
 
    /*private static final Logger LOGGER = LogManager.getLogger(GoogleDriveUploaderBean.class);
 
@@ -57,7 +57,6 @@ public class GoogleDriveUploaderBean implements InternetUploader {
    }*/
 
    @Async
-   @Override
    public void transferVideoFile(Path path) {
       /*if (!Files.isReadable(path)) {
          LOGGER.error(path + READ_ERROR_MSG);

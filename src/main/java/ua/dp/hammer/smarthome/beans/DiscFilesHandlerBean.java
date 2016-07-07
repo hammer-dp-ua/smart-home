@@ -4,11 +4,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
@@ -66,14 +69,14 @@ public class DiscFilesHandlerBean {
    }
 
    public SortedSet<Path> getNewVideoFiles() {
-      final SortedSet<Path> files = new TreeSet<Path>(FILES_COMPARATOR_ASC);
+      final SortedSet<Path> newFiles = new TreeSet<Path>(FILES_COMPARATOR_ASC);
 
       try {
          Files.walkFileTree(FileSystems.getDefault().getPath(ramVideosDir), new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult visitFile(Path filePath, BasicFileAttributes attrs) throws IOException {
                if (Files.isReadable(filePath) && filePath.toString().endsWith(videoFileExtension)) {
-                  files.add(filePath);
+                  newFiles.add(filePath);
                }
                return FileVisitResult.CONTINUE;
             }
@@ -85,7 +88,7 @@ public class DiscFilesHandlerBean {
       if (LOGGER.isDebugEnabled()) {
          LOGGER.debug("Old files count: " + OLD_FILES.size());
 
-         for (Path filePath : files) {
+         for (Path filePath : newFiles) {
             try {
                LOGGER.debug(filePath + " hash code: " + filePath.hashCode() + "; modification time: " +
                      Files.getLastModifiedTime(filePath));
@@ -95,24 +98,24 @@ public class DiscFilesHandlerBean {
          }
       }
 
-      files.removeAll(OLD_FILES);
-      OLD_FILES.addAll(files);
+      newFiles.removeAll(OLD_FILES);
+      OLD_FILES.addAll(newFiles);
 
       if (LOGGER.isTraceEnabled()) {
          LOGGER.trace("Old files count: " + OLD_FILES.size());
       }
 
-      if (files.size() > 0) {
+      if (newFiles.size() > 0) {
          StringBuilder stringBuilder = new StringBuilder(NEW_FILES_MSG);
 
-         for (Path filePath : files) {
+         for (Path filePath : newFiles) {
             stringBuilder.append(filePath.getFileName());
             stringBuilder.append(FILES_DELIMITER);
          }
          stringBuilder.delete(stringBuilder.length() - FILES_DELIMITER.length(), stringBuilder.length() - 1);
          LOGGER.info(stringBuilder);
       }
-      return files;
+      return newFiles;
    }
 
    public SortedSet<Path> getOldFiles() {
@@ -139,13 +142,45 @@ public class DiscFilesHandlerBean {
       NON_RELOCATABLE_FILES.remove(filePath);
 
       try {
-         Files.move(filePath, FileSystems.getDefault().getPath(discVideosDir + "/" + filePath.getFileName()),
+         Files.move(filePath, FileSystems.getDefault().getPath(discVideosDir + File.separator + filePath.getFileName()),
                StandardCopyOption.REPLACE_EXISTING);
          OLD_FILES.remove(filePath);
 
          LOGGER.info(filePath.getFileName() + RELOCATION_FILE_SUCCEED_MSG);
       } catch (IOException e) {
          LOGGER.error(filePath.getFileName() + RELOCATION_FILE_ERROR_MSG, e);
+      }
+   }
+
+   @Async
+   public void createImageFiles(Set<Path> videoFiles) {
+      for (Path videoFilePath : videoFiles) {
+         String newDirectoryName = videoFilePath.getFileName().toString().replace(videoFileExtension, "");
+         Path newDirectoryPath = FileSystems.getDefault().getPath(ramVideosDir, newDirectoryName);
+
+         try {
+            Files.createDirectory(newDirectoryPath);
+
+            long startTime = System.currentTimeMillis();
+            Process process = Runtime.getRuntime().exec("ffmpeg.exe -i " + videoFilePath.toString() + " -r 0.2 " +
+                  newDirectoryPath.toString() + File.separator + "%3d.jpeg");
+
+            process.waitFor();
+
+            // InputStream have to be read
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+
+            while (reader.readLine() != null) {
+            }
+            process.destroy();
+
+            int execTimeSec = (int) ((System.currentTimeMillis() - startTime) / 1000);
+            LOGGER.info(videoFilePath.getFileName().toString() + " video file converted in " + execTimeSec + " seconds");
+         } catch (IOException e) {
+            LOGGER.error(newDirectoryName + " directory could not be created", e);
+         } catch (InterruptedException e) {
+            LOGGER.error("Error executing shell command", e);
+         }
       }
    }
 }

@@ -26,7 +26,7 @@ import java.nio.file.Path;
 import java.util.*;
 
 @Component
-public class VpsUploader implements InternetUploader {
+public class VpsUploader {
 
    private static final Logger LOGGER = LogManager.getLogger(VpsUploader.class);
 
@@ -49,17 +49,16 @@ public class VpsUploader implements InternetUploader {
       vpsServerMultipartVideoFileUrl = environment.getRequiredProperty("vpsServerMultipartVideoFileUrl");
       vpsServerMultipartImageFilesUrl = environment.getRequiredProperty("vpsServerMultipartImageFilesUrl");
 
-      new Timer().schedule(new TimerTask() {
+      /*new Timer().schedule(new TimerTask() {
          @Override
          public void run() {
             sendPostRequest("http://localhost:8080/vps-server/videoUpload",
                   new File("C:/Videos/0018A2_192.168.0.200_1_20160625001228.ts"));
          }
-      }, 5000);
+      }, 5000);*/
    }
 
    @Async
-   @Override
    public boolean transferVideoFile(Path filePath) {
       File fileToUpload = filePath.toFile();
       long fileLength = fileToUpload.length();
@@ -76,6 +75,7 @@ public class VpsUploader implements InternetUploader {
       return !errorOccurred;
    }
 
+   @Async
    public boolean transferImageFiles(String videoFileName, List<Path> filesPath) {
       List<File> files = toFiles(filesPath);
       long fileLength = 0;
@@ -128,7 +128,7 @@ public class VpsUploader implements InternetUploader {
    }
 
    private HttpEntity createHttpEntityForImageFiles(String videoFileName, List<File> files) {
-      
+
       MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create()
             .addTextBody("videoFileName", videoFileName);
 
