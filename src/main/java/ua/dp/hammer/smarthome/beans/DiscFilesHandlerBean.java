@@ -6,12 +6,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import ua.dp.hammer.smarthome.interfaces.ImageFilesUploader;
 
 import javax.annotation.PostConstruct;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
@@ -27,7 +25,7 @@ public class DiscFilesHandlerBean {
    private static final String NEW_FILES_MSG = "New files: ";
    private static final String FILES_DELIMITER = "; ";
 
-   private final static Comparator<Path> FILES_COMPARATOR_ASC = new Comparator<Path>() {
+   public final static Comparator<Path> PATH_FILES_COMPARATOR_ASC = new Comparator<Path>() {
       @Override
       public int compare(Path filePath1, Path filePath2) {
          long diff = filePath1.toFile().lastModified() - filePath2.toFile().lastModified();
@@ -35,7 +33,15 @@ public class DiscFilesHandlerBean {
       }
    };
 
-   private final static SortedSet<Path> OLD_FILES = new TreeSet<Path>(FILES_COMPARATOR_ASC);
+   public final static Comparator<File> FILES_COMPARATOR_ASC = new Comparator<File>() {
+      @Override
+      public int compare(File file1, File file2) {
+         long diff = file1.lastModified() - file2.lastModified();
+         return (diff == 0) ? 0 : (diff > 0 ? 1 : -1);
+      }
+   };
+
+   private final static SortedSet<Path> OLD_FILES = new TreeSet<>(PATH_FILES_COMPARATOR_ASC);
    private final static Set<Path> NON_RELOCATABLE_FILES = Collections.synchronizedSet(new HashSet<Path>());
 
    private String ramVideosDir;
@@ -69,7 +75,7 @@ public class DiscFilesHandlerBean {
    }
 
    public SortedSet<Path> getNewVideoFiles() {
-      final SortedSet<Path> newFiles = new TreeSet<Path>(FILES_COMPARATOR_ASC);
+      final SortedSet<Path> newFiles = new TreeSet<>(PATH_FILES_COMPARATOR_ASC);
 
       try {
          Files.walkFileTree(FileSystems.getDefault().getPath(ramVideosDir), new SimpleFileVisitor<Path>() {
@@ -153,7 +159,7 @@ public class DiscFilesHandlerBean {
    }
 
    @Async
-   public void createImageFiles(Set<Path> videoFiles) {
+   public void createImageFiles(Set<Path> videoFiles, ImageFilesUploader imageFilesUploader) {
       for (Path videoFilePath : videoFiles) {
          String newDirectoryName = videoFilePath.getFileName().toString().replace(videoFileExtension, "");
          Path newDirectoryPath = FileSystems.getDefault().getPath(ramVideosDir, newDirectoryName);
@@ -168,19 +174,38 @@ public class DiscFilesHandlerBean {
             process.waitFor();
 
             // InputStream have to be read
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            InputStream inputStream = process.getInputStream();
 
-            while (reader.readLine() != null) {
+            while (inputStream.read() != -1) {
             }
             process.destroy();
 
             int execTimeSec = (int) ((System.currentTimeMillis() - startTime) / 1000);
             LOGGER.info(videoFilePath.getFileName().toString() + " video file converted in " + execTimeSec + " seconds");
+
+            imageFilesUploader.upload(videoFilePath.getFileName().toString(), getFiles(newDirectoryPath));
          } catch (IOException e) {
             LOGGER.error(newDirectoryName + " directory could not be created", e);
          } catch (InterruptedException e) {
             LOGGER.error("Error executing shell command", e);
          }
       }
+   }
+
+   private SortedSet<Path> getFiles(Path directoryPath) {
+      final SortedSet<Path> newFiles = new TreeSet<Path>(PATH_FILES_COMPARATOR_ASC);
+
+      try {
+         Files.walkFileTree(directoryPath, new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile(Path filePath, BasicFileAttributes attrs) throws IOException {
+               newFiles.add(filePath);
+               return FileVisitResult.CONTINUE;
+            }
+         });
+      } catch (IOException e) {
+         LOGGER.error(e);
+      }
+      return newFiles;
    }
 }

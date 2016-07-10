@@ -5,7 +5,6 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -184,7 +183,7 @@ public class CameraBean {
       }
    }
 
-   @Scheduled(fixedDelay=30000)
+   //@Scheduled(fixedDelay=30000)
    public void loginAndKeepHeart() {
       if (CREDENTIAL_ID.get() == null) {
          LOGGER.debug("Logging in starting...");

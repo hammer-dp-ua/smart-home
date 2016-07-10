@@ -59,7 +59,7 @@ public class VpsUploader {
    }
 
    @Async
-   public boolean transferVideoFile(Path filePath) {
+   public Boolean transferVideoFile(Path filePath) {
       File fileToUpload = filePath.toFile();
       long fileLength = fileToUpload.length();
 
@@ -76,8 +76,8 @@ public class VpsUploader {
    }
 
    @Async
-   public boolean transferImageFiles(String videoFileName, List<Path> filesPath) {
-      List<File> files = toFiles(filesPath);
+   public Boolean transferImageFiles(String directoryName, SortedSet<Path> filesPath) {
+      SortedSet<File> files = toFiles(filesPath);
       long fileLength = 0;
 
       for (File file : files) {
@@ -89,7 +89,7 @@ public class VpsUploader {
       long startTransferringFileTime = System.currentTimeMillis();
 
       boolean errorOccurred = transferFileWithMultipart(vpsServerMultipartImageFilesUrl,
-            createHttpEntityForImageFiles(videoFileName, files));
+            createHttpEntityForImageFiles(directoryName, files));
 
       if (!errorOccurred) {
          logTransferSpeed(startTransferringFileTime, fileLength, String.valueOf(files.size()));
@@ -127,7 +127,7 @@ public class VpsUploader {
             .build();
    }
 
-   private HttpEntity createHttpEntityForImageFiles(String videoFileName, List<File> files) {
+   private HttpEntity createHttpEntityForImageFiles(String videoFileName, Set<File> files) {
 
       MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create()
             .addTextBody("videoFileName", videoFileName);
@@ -168,12 +168,12 @@ public class VpsUploader {
       LOGGER.info(new Formatter().format(UPLOADING_INFO_MSG, fileName, elapsedTimeS, speedKbs));
    }
 
-   private List<File> toFiles(List<Path> filesPath) {
+   private SortedSet<File> toFiles(SortedSet<Path> filesPath) {
       if (filesPath == null) {
-         return Collections.EMPTY_LIST;
+         return new TreeSet<>();
       }
 
-      List<File> files = new ArrayList<>(filesPath.size());
+      final SortedSet<File> files = new TreeSet<>(DiscFilesHandlerBean.FILES_COMPARATOR_ASC);
 
       for (Path filePath : filesPath) {
          files.add(filePath.toFile());
