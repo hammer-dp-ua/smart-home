@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import ua.dp.hammer.smarthome.interfaces.ImageFilesUploader;
 
 import java.nio.file.Path;
 import java.util.Iterator;
@@ -37,12 +36,12 @@ public class EntryPointBean {
          Path newFile = newFilesIterator.next();
          vpsUploader.transferVideoFile(newFile);
       }
-      discFilesHandlerBean.createImageFiles(newFiles, new ImageFilesUploader() {
+      /*discFilesHandlerBean.createImageFiles(newFiles, new ImageFilesUploader() {
          @Override
          public void upload(String videoFileName, SortedSet<Path> imageFilesPath) {
             vpsUploader.transferImageFiles(videoFileName, imageFilesPath);
          }
-      });
+      });*/
 
       Iterator<Path> oldFilesIterator = discFilesHandlerBean.getOldFilesCopy().iterator();
       while (discFilesHandlerBean.isRamDiscFull() && oldFilesIterator.hasNext()) {

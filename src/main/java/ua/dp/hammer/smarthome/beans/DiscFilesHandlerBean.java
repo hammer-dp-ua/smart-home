@@ -91,8 +91,8 @@ public class DiscFilesHandlerBean {
          LOGGER.error(e);
       }
 
-      if (LOGGER.isDebugEnabled()) {
-         LOGGER.debug("Old files count: " + OLD_FILES.size());
+      if (LOGGER.isTraceEnabled()) {
+         LOGGER.trace("Old files count: " + OLD_FILES.size());
 
          for (Path filePath : newFiles) {
             try {
@@ -171,13 +171,13 @@ public class DiscFilesHandlerBean {
             Process process = Runtime.getRuntime().exec("ffmpeg.exe -i " + videoFilePath.toString() + " -r 0.2 " +
                   newDirectoryPath.toString() + File.separator + "%3d.jpeg");
 
-            process.waitFor();
-
-            // InputStream have to be read
-            InputStream inputStream = process.getInputStream();
-
-            while (inputStream.read() != -1) {
+            if (LOGGER.isDebugEnabled()) {
+               LOGGER.debug("Shell command is being executed from thread " + Thread.currentThread().getId());
             }
+
+            readInputStreamInSeparateThread(process);
+
+            process.waitFor();
             process.destroy();
 
             int execTimeSec = (int) ((System.currentTimeMillis() - startTime) / 1000);
@@ -190,6 +190,31 @@ public class DiscFilesHandlerBean {
             LOGGER.error("Error executing shell command", e);
          }
       }
+   }
+
+   private void readInputStreamInSeparateThread(final Process process) {
+      new Timer().schedule(new TimerTask() {
+         @Override
+         public void run() {
+            InputStream inputStream = process.getInputStream();
+
+            if (LOGGER.isDebugEnabled()) {
+               LOGGER.debug("Input stream is being read from thread " + Thread.currentThread().getId());
+            }
+
+            try {
+               while (inputStream.read() != -1) {
+               }
+               inputStream.close();
+
+               if (LOGGER.isDebugEnabled()) {
+                  LOGGER.debug("Input stream reading stopped");
+               }
+            } catch (IOException e) {
+               LOGGER.error(e);
+            }
+         }
+      }, 0);
    }
 
    private SortedSet<Path> getFiles(Path directoryPath) {

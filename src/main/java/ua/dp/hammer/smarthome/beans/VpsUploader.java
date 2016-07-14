@@ -84,7 +84,7 @@ public class VpsUploader {
          fileLength += file.length();
       }
 
-      LOGGER.info(files.size() + " image files are ready to upload. Total size: " + (fileLength / 1024 / 1024) + "MB");
+      LOGGER.info(files.size() + " image files are ready to be uploaded. Total size: " + (fileLength / 1024 / 1024) + "MB");
 
       long startTransferringFileTime = System.currentTimeMillis();
 
