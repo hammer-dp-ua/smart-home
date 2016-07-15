@@ -9,7 +9,9 @@ import org.springframework.stereotype.Component;
 import ua.dp.hammer.smarthome.interfaces.ImageFilesUploader;
 
 import javax.annotation.PostConstruct;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
@@ -168,17 +170,21 @@ public class DiscFilesHandlerBean {
             Files.createDirectory(newDirectoryPath);
 
             long startTime = System.currentTimeMillis();
-            Process process = Runtime.getRuntime().exec("ffmpeg.exe -i " + videoFilePath.toString() + " -r 0.2 " +
+            ProcessBuilder processBuilder = new ProcessBuilder("ffmpeg.exe", "-i", videoFilePath.toString(), "-r", "0.2",
                   newDirectoryPath.toString() + File.separator + "%3d.jpeg");
+            processBuilder.redirectErrorStream(true);
 
             if (LOGGER.isDebugEnabled()) {
                LOGGER.debug("Shell command is being executed from thread " + Thread.currentThread().getId());
             }
 
-            readInputStreamInSeparateThread(process);
+            //readInputStreamInSeparateThread(process);
 
-            process.waitFor();
-            process.destroy();
+            Process process = processBuilder.start();
+            InputStream inputStream = process.getInputStream();
+
+            while (inputStream.read() != -1) {
+            }
 
             int execTimeSec = (int) ((System.currentTimeMillis() - startTime) / 1000);
             LOGGER.info(videoFilePath.getFileName().toString() + " video file converted in " + execTimeSec + " seconds");
@@ -186,8 +192,6 @@ public class DiscFilesHandlerBean {
             imageFilesUploader.upload(videoFilePath.getFileName().toString(), getFiles(newDirectoryPath));
          } catch (IOException e) {
             LOGGER.error(newDirectoryName + " directory could not be created", e);
-         } catch (InterruptedException e) {
-            LOGGER.error("Error executing shell command", e);
          }
       }
    }
