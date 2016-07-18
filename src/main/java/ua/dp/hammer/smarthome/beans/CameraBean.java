@@ -165,15 +165,15 @@ public class CameraBean {
          LOGGER.debug("Video recording is " + (start ? "starting" : "stopping"));
       }
 
-      HttpURLConnection httpURLConnection = createPostRequest(String.format(ALARM_IO_PARAM_URL, cameraIp),
+      HttpURLConnection httpURLConnection = createPostRequest(String.format(MANUAL_RECORDING_URL, cameraIp),
             String.format(MANUAL_RECORDING_REFERRER, cameraIp),
-            String.format(START_STOP_RECORDING, start ? 2 : 1, CREDENTIAL_ID.get()),
+            String.format(MANUAL_RECORDING_POST_BODY, start ? 1 : 0, CREDENTIAL_ID.get()),
             null);
       int responseCode = getResponseCode(httpURLConnection);
 
       disconnectConnection(httpURLConnection);
 
-      if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP) {
+      if (responseCode == HttpURLConnection.HTTP_OK) {
          if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Video recording " + (start ? "started" : "stopped"));
          }
