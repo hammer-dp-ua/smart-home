@@ -184,7 +184,7 @@ public class CameraBean {
       }
    }
 
-   @Scheduled(fixedDelay=30000)
+   @Scheduled(fixedDelay=25000)
    public void loginAndKeepHeart() {
       if (CREDENTIAL_ID.get() == null) {
          LOGGER.debug("Logging in starting...");

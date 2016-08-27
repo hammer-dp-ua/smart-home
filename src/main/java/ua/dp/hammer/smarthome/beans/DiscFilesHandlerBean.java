@@ -174,10 +174,6 @@ public class DiscFilesHandlerBean {
                   newDirectoryPath.toString() + File.separator + "%3d.jpeg");
             processBuilder.redirectErrorStream(true);
 
-            if (LOGGER.isDebugEnabled()) {
-               LOGGER.debug("Shell command is being executed from thread " + Thread.currentThread().getId());
-            }
-
             //readInputStreamInSeparateThread(process);
 
             Process process = processBuilder.start();
@@ -201,10 +197,6 @@ public class DiscFilesHandlerBean {
          @Override
          public void run() {
             InputStream inputStream = process.getInputStream();
-
-            if (LOGGER.isDebugEnabled()) {
-               LOGGER.debug("Input stream is being read from thread " + Thread.currentThread().getId());
-            }
 
             try {
                while (inputStream.read() != -1) {
