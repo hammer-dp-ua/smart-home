@@ -23,7 +23,12 @@ import java.io.IOException;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
+import java.util.Formatter;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 @Component
 public class VpsUploader {
@@ -122,7 +127,18 @@ public class VpsUploader {
    }
 
    private HttpEntity createHttpEntityForVideoFile(File file) {
+      long creationTime = 0;
+
+      try {
+         BasicFileAttributes attributes = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
+         FileTime creationFileTime = attributes.creationTime();
+         creationTime = creationFileTime.toMillis();
+      } catch (IOException e) {
+         e.printStackTrace();
+      }
+
       return MultipartEntityBuilder.create()
+            .addTextBody("creationDate", String.valueOf(creationTime))
             .addPart("file", new FileBody(file))
             .build();
    }
