@@ -121,11 +121,11 @@ public class CameraBean {
 
    @Async
    public void startVideoRecording() {
-      if (startStopVideoRecording(true)) {
+      if (manageVideoRecording(VideoRecordingAction.START)) {
          scheduleStopVideoRecording(cameraRecordingTimeSec, TimeUnit.SECONDS);
       } else {
          try {
-            Thread.sleep(10000);
+            Thread.sleep(1000);
             if (LOGGER.isDebugEnabled()) {
                LOGGER.debug("Retrying to start video recording");
             }
@@ -145,7 +145,7 @@ public class CameraBean {
       STOP_VIDEO_RECORDING_EXECUTOR.schedule(new Runnable() {
          @Override
          public void run() {
-            if (!startStopVideoRecording(false)) {
+            if (!manageVideoRecording(VideoRecordingAction.STOP)) {
                scheduleStopVideoRecording(5, TimeUnit.SECONDS);
             }
          }
@@ -153,21 +153,20 @@ public class CameraBean {
    }
 
    /**
-    * @param start true to start, false to stop
     * @return true if started successfully
     */
-   public boolean startStopVideoRecording(boolean start) {
+   public boolean manageVideoRecording(VideoRecordingAction videoRecordingAction) {
       if (CREDENTIAL_ID.get() == null) {
          loginAndKeepHeart();
       }
 
       if (LOGGER.isDebugEnabled()) {
-         LOGGER.debug("Video recording is " + (start ? "starting" : "stopping"));
+         LOGGER.debug("Video recording is " + (videoRecordingAction == VideoRecordingAction.START ? "starting" : "stopping"));
       }
 
       HttpURLConnection httpURLConnection = createPostRequest(String.format(MANUAL_RECORDING_URL, cameraIp),
             String.format(MANUAL_RECORDING_REFERRER, cameraIp),
-            String.format(MANUAL_RECORDING_POST_BODY, start ? 1 : 0, CREDENTIAL_ID.get()),
+            String.format(MANUAL_RECORDING_POST_BODY, videoRecordingAction == VideoRecordingAction.START ? 1 : 0, CREDENTIAL_ID.get()),
             null);
       int responseCode = getResponseCode(httpURLConnection);
 
@@ -175,11 +174,11 @@ public class CameraBean {
 
       if (responseCode == HttpURLConnection.HTTP_OK) {
          if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Video recording " + (start ? "started" : "stopped"));
+            LOGGER.debug("Video recording " + (videoRecordingAction == VideoRecordingAction.START ? "started" : "stopped"));
          }
          return true;
       } else {
-         LOGGER.error("Video recording wasn't " + (start ? "started" : "stopped") + ". Response code: " + responseCode);
+         LOGGER.error("Video recording wasn't " + (videoRecordingAction == VideoRecordingAction.START ? "started" : "stopped") + ". Response code: " + responseCode);
          return false;
       }
    }
@@ -320,5 +319,9 @@ public class CameraBean {
       if (httpURLConnection != null) {
          httpURLConnection.disconnect();
       }
+   }
+
+   private enum VideoRecordingAction {
+      START, STOP
    }
 }

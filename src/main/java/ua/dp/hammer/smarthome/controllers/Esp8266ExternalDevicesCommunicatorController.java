@@ -17,7 +17,7 @@ public class Esp8266ExternalDevicesCommunicatorController {
    @Autowired
    private CameraBean cameraBean;
 
-   @RequestMapping(path = "/statusInfo", method = RequestMethod.POST, consumes="application/json")
+   @PostMapping(path = "/statusInfo", consumes="application/json")
    public ServerStatus receiveStatusInfo(@RequestBody Esp8266Data esp8266Data, @RequestHeader("X-FORWARDED-FOR") String clientIp) {
       String gain = esp8266Data.getGain() != null ? esp8266Data.getGain().trim() : null;
       ServerStatus serverStatus = new ServerStatus(StatusCodes.OK);
@@ -36,7 +36,7 @@ public class Esp8266ExternalDevicesCommunicatorController {
       return serverStatus;
    }
 
-   @RequestMapping(path = "/alarm", method = RequestMethod.GET)
+   @GetMapping(path = "/alarm")
    public ServerStatus receiveAlarm(@RequestHeader("X-FORWARDED-FOR") String clientIp) {
       LOGGER.info("Alarm: " + clientIp);
       cameraBean.startVideoRecording();

@@ -5,22 +5,20 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.BufferedReader;
 import java.io.IOException;
 
-@ControllerAdvice
+@RestControllerAdvice
 public class GlobalRestControllerExceptionHandler {
    private static final Logger LOGGER = LogManager.getLogger(GlobalRestControllerExceptionHandler.class);
 
    @ExceptionHandler
    @ResponseStatus(HttpStatus.BAD_REQUEST)
-   @ResponseBody
    String handleHttpMessageNotReadableException(HttpMessageNotReadableException ex, HttpServletRequest httpServletRequest) {
       LOGGER.error("Bad request: \r\n" + getRequestBody(httpServletRequest), ex);
       return null;
@@ -28,7 +26,6 @@ public class GlobalRestControllerExceptionHandler {
 
    @ExceptionHandler
    @ResponseStatus(HttpStatus.BAD_REQUEST)
-   @ResponseBody
    String handleJsonMappingException(JsonMappingException ex, HttpServletRequest httpServletRequest) {
       LOGGER.error("Bad request: \r\n" + getRequestBody(httpServletRequest), ex);
       return null;
