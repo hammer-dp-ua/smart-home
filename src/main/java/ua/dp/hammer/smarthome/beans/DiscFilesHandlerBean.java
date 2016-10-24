@@ -135,6 +135,13 @@ public class DiscFilesHandlerBean {
    }
 
    public void relocateFileToDisk(Path filePath) {
+      if (!filePath.toFile().exists()) {
+         LOGGER.info(filePath.getFileName() + " doesn't exist anymore");
+
+         NON_RELOCATABLE_FILES.remove(filePath);
+         OLD_FILES.remove(filePath);
+      }
+
       if (!Files.isReadable(filePath) || !Files.isWritable(filePath)) {
          if (NON_RELOCATABLE_FILES.contains(filePath)) {
             return;
