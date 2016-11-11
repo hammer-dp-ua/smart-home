@@ -42,4 +42,10 @@ public class Esp8266ExternalDevicesCommunicatorController {
       cameraBean.startVideoRecording();
       return new ServerStatus(StatusCodes.OK);
    }
+
+   @GetMapping(path = "/immobilizerActivated")
+   public ServerStatus receiveImmobilizerActivation(@RequestHeader("X-FORWARDED-FOR") String clientIp) {
+      LOGGER.info("Immobilizer activated: " + clientIp);
+      return new ServerStatus(StatusCodes.OK);
+   }
 }

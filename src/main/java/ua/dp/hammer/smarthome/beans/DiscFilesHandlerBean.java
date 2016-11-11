@@ -78,9 +78,10 @@ public class DiscFilesHandlerBean {
 
    public SortedSet<Path> getNewVideoFiles() {
       final SortedSet<Path> newFiles = new TreeSet<>(PATH_FILES_COMPARATOR_ASC);
+      Path videosDirectoryPath = FileSystems.getDefault().getPath(ramVideosDir);
 
       try {
-         Files.walkFileTree(FileSystems.getDefault().getPath(ramVideosDir), new SimpleFileVisitor<Path>() {
+         Files.walkFileTree(videosDirectoryPath, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult visitFile(Path filePath, BasicFileAttributes attrs) throws IOException {
                if (Files.isReadable(filePath) && filePath.toString().endsWith(videoFileExtension)) {
@@ -89,6 +90,15 @@ public class DiscFilesHandlerBean {
                return FileVisitResult.CONTINUE;
             }
          });
+      } catch (NoSuchFileException e) {
+         LOGGER.error(e);
+
+         try {
+            Files.createDirectory(videosDirectoryPath);
+            LOGGER.info(ramVideosDir + " has been created");
+         } catch (IOException directoryCreationException) {
+            LOGGER.error(directoryCreationException);
+         }
       } catch (IOException e) {
          LOGGER.error(e);
       }
