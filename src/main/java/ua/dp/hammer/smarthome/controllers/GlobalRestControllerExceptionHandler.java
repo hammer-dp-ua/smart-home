@@ -8,10 +8,9 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import ua.dp.hammer.smarthome.config.ApplicationInitializer;
 
 import javax.servlet.http.HttpServletRequest;
-import java.io.BufferedReader;
-import java.io.IOException;
 
 @RestControllerAdvice
 public class GlobalRestControllerExceptionHandler {
@@ -19,34 +18,17 @@ public class GlobalRestControllerExceptionHandler {
 
    @ExceptionHandler
    @ResponseStatus(HttpStatus.BAD_REQUEST)
-   String handleHttpMessageNotReadableException(HttpMessageNotReadableException ex, HttpServletRequest httpServletRequest) {
-      LOGGER.error("Bad request: \r\n" + getRequestBody(httpServletRequest), ex);
+   String handleHttpMessageNotReadableException(HttpMessageNotReadableException ex, HttpServletRequest request) {
+      request.setAttribute(ApplicationInitializer.ERROR_OCCURRED_ATTRIBUTE, true);
+      LOGGER.error("Bad request", ex);
       return null;
    }
 
    @ExceptionHandler
    @ResponseStatus(HttpStatus.BAD_REQUEST)
-   String handleJsonMappingException(JsonMappingException ex, HttpServletRequest httpServletRequest) {
-      LOGGER.error("Bad request: \r\n" + getRequestBody(httpServletRequest), ex);
+   String handleJsonMappingException(JsonMappingException ex, HttpServletRequest request) {
+      request.setAttribute(ApplicationInitializer.ERROR_OCCURRED_ATTRIBUTE, true);
+      LOGGER.error("Bad request", ex);
       return null;
-   }
-
-   private String getRequestBody(HttpServletRequest httpServletRequest) {
-      String requestBody = null;
-
-      try {
-         StringBuilder stringBuilder = new StringBuilder();
-         BufferedReader inputStream = httpServletRequest.getReader();
-         String line;
-
-         while ((line = inputStream.readLine()) != null) {
-            stringBuilder.append(line);
-            stringBuilder.append("\r\n");
-         }
-         requestBody = stringBuilder.toString();
-      } catch (IOException e) {
-         LOGGER.error(e);
-      }
-      return requestBody;
    }
 }

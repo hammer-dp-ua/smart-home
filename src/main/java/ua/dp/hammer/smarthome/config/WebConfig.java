@@ -15,6 +15,7 @@ import org.springframework.web.servlet.view.JstlView;
 @EnableWebMvc
 @ComponentScan("ua.dp.hammer.smarthome.controllers")
 public class WebConfig extends WebMvcConfigurerAdapter {
+
    @Override
    public void addViewControllers(ViewControllerRegistry registry) {
       registry.addViewController("/").setViewName("index");
