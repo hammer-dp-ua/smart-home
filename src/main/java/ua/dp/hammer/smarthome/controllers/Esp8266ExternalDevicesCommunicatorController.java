@@ -43,6 +43,13 @@ public class Esp8266ExternalDevicesCommunicatorController {
       return new ServerStatus(StatusCodes.OK);
    }
 
+   @GetMapping(path = "/falseAlarm")
+   public ServerStatus receiveFalseAlarm(@RequestHeader("X-FORWARDED-FOR") String clientIp,
+                                         @RequestParam("alarmSource") String alarmSource) {
+      LOGGER.info("False alarm from " + alarmSource + ": " + clientIp);
+      return new ServerStatus(StatusCodes.OK);
+   }
+
    @GetMapping(path = "/immobilizerActivated")
    public ServerStatus receiveImmobilizerActivation(@RequestHeader("X-FORWARDED-FOR") String clientIp) {
       LOGGER.info("Immobilizer activated: " + clientIp);

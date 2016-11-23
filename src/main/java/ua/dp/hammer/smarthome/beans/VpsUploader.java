@@ -99,6 +99,14 @@ public class VpsUploader {
       if (!errorOccurred) {
          logTransferSpeed(startTransferringFileTime, fileLength, String.valueOf(files.size()));
       }
+
+      files = toFiles(filesPath);
+      fileLength = 0;
+      for (File file : files) {
+         fileLength += file.length();
+      }
+      LOGGER.info(files.size() + " image files are present after uploading. Total size: " + (fileLength / 1024 / 1024) + "MB");
+
       return !errorOccurred;
    }
 
@@ -144,7 +152,6 @@ public class VpsUploader {
    }
 
    private HttpEntity createHttpEntityForImageFiles(String videoFileName, Set<File> files) {
-
       MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create()
             .addTextBody("videoFileName", videoFileName);
 
