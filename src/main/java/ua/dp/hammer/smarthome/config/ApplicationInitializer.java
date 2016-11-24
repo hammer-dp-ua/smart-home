@@ -63,7 +63,7 @@ public class ApplicationInitializer extends AbstractAnnotationConfigDispatcherSe
       };
 
       requestLoggingFilter.setIncludePayload(true);
-      requestLoggingFilter.setMaxPayloadLength(500);
+      requestLoggingFilter.setMaxPayloadLength(999);
       requestLoggingFilter.setIncludeQueryString(false);
       requestLoggingFilter.setBeforeMessagePrefix("");
       requestLoggingFilter.setAfterMessagePrefix("");

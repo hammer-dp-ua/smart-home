@@ -5,9 +5,13 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import ua.dp.hammer.smarthome.beans.CameraBean;
+import ua.dp.hammer.smarthome.beans.ImmobilizerBean;
 import ua.dp.hammer.smarthome.models.Esp8266Data;
 import ua.dp.hammer.smarthome.models.ServerStatus;
 import ua.dp.hammer.smarthome.models.StatusCodes;
+
+import java.time.Duration;
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping(path = "/server/esp8266")
@@ -16,6 +20,9 @@ public class Esp8266ExternalDevicesCommunicatorController {
 
    @Autowired
    private CameraBean cameraBean;
+
+   @Autowired
+   private ImmobilizerBean immobilizerBean;
 
    @PostMapping(path = "/statusInfo", consumes="application/json")
    public ServerStatus receiveStatusInfo(@RequestBody Esp8266Data esp8266Data, @RequestHeader("X-FORWARDED-FOR") String clientIp) {
@@ -39,7 +46,24 @@ public class Esp8266ExternalDevicesCommunicatorController {
    @GetMapping(path = "/alarm")
    public ServerStatus receiveAlarm(@RequestHeader("X-FORWARDED-FOR") String clientIp) {
       LOGGER.info("Alarm: " + clientIp);
-      cameraBean.startVideoRecording();
+
+      if ("192.168.0.20".equals(clientIp)) {
+         LocalDateTime immobilizerActivatedDateTime = immobilizerBean.getActivatedDateTime();
+
+         if (immobilizerActivatedDateTime != null) {
+            LocalDateTime currentDateTime = LocalDateTime.now();
+            long durationBetweenImmobilizerAndAlarm = Duration.between(currentDateTime, immobilizerActivatedDateTime).abs().getSeconds();
+
+            if (durationBetweenImmobilizerAndAlarm >= 120) {
+               cameraBean.startVideoRecording();
+            } else {
+               LOGGER.info("Video recording wasn't started because immobilizer was activated " + durationBetweenImmobilizerAndAlarm +
+               " seconds ago");
+            }
+         } else {
+            cameraBean.startVideoRecording();
+         }
+      }
       return new ServerStatus(StatusCodes.OK);
    }
 
@@ -53,6 +77,8 @@ public class Esp8266ExternalDevicesCommunicatorController {
    @GetMapping(path = "/immobilizerActivated")
    public ServerStatus receiveImmobilizerActivation(@RequestHeader("X-FORWARDED-FOR") String clientIp) {
       LOGGER.info("Immobilizer activated: " + clientIp);
+
+      immobilizerBean.setActivatedDateTime(LocalDateTime.now());
       return new ServerStatus(StatusCodes.OK);
    }
 }

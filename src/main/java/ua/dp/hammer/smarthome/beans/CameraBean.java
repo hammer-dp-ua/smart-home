@@ -138,7 +138,7 @@ public class CameraBean {
 
    public void scheduleStopVideoRecording(long time, TimeUnit timeUnit) {
       BlockingQueue<Runnable> queue = STOP_VIDEO_RECORDING_EXECUTOR.getQueue();
-      if (queue.size() > 0) {
+      if (!queue.isEmpty()) {
          queue.remove(queue.element());
       }
 
@@ -150,6 +150,10 @@ public class CameraBean {
             }
          }
       }, time, timeUnit);
+   }
+
+   public boolean isVideoRecordingInProcess() {
+      return !STOP_VIDEO_RECORDING_EXECUTOR.getQueue().isEmpty();
    }
 
    /**

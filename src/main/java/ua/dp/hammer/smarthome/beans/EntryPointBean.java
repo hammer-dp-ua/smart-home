@@ -9,8 +9,11 @@ import org.springframework.stereotype.Component;
 import ua.dp.hammer.smarthome.interfaces.ImageFilesUploader;
 
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Iterator;
 import java.util.SortedSet;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class EntryPointBean {
@@ -25,6 +28,12 @@ public class EntryPointBean {
 
    @Autowired
    private ApplicationContext appContext;
+
+   @Autowired
+   private CameraBean cameraBean;
+
+   @Autowired
+   private ImmobilizerBean immobilizerBean;
 
    /**
     * Period will be measured from the completion time of each preceding invocation
@@ -55,6 +64,18 @@ public class EntryPointBean {
       while (discFilesHandlerBean.isRamDiscFull() && oldFilesIterator.hasNext()) {
          Path oldFilePath = oldFilesIterator.next();
          discFilesHandlerBean.relocateFileToDisk(oldFilePath);
+      }
+
+      LocalDateTime immobilizerActivatedDateTime = immobilizerBean.getActivatedDateTime();
+      if (cameraBean.isVideoRecordingInProcess() && immobilizerActivatedDateTime != null) {
+         long immobilizerActivatedDuration = Duration.between(LocalDateTime.now(), immobilizerActivatedDateTime).abs().getSeconds();
+
+         if (immobilizerActivatedDuration <= 60) {
+            LOGGER.info("Video recording is stopping because immobilizer was activated " + immobilizerActivatedDuration +
+            " seconds ago");
+
+            cameraBean.scheduleStopVideoRecording(5, TimeUnit.SECONDS);
+         }
       }
    }
 }
