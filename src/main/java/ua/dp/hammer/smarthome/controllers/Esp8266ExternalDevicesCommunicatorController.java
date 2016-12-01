@@ -47,22 +47,20 @@ public class Esp8266ExternalDevicesCommunicatorController {
    public ServerStatus receiveAlarm(@RequestHeader("X-FORWARDED-FOR") String clientIp) {
       LOGGER.info("Alarm: " + clientIp);
 
-      if ("192.168.0.20".equals(clientIp)) {
-         LocalDateTime immobilizerActivatedDateTime = immobilizerBean.getActivatedDateTime();
+      LocalDateTime immobilizerActivatedDateTime = immobilizerBean.getActivationDateTime();
 
-         if (immobilizerActivatedDateTime != null) {
-            LocalDateTime currentDateTime = LocalDateTime.now();
-            long durationBetweenImmobilizerAndAlarm = Duration.between(currentDateTime, immobilizerActivatedDateTime).abs().getSeconds();
+      if (immobilizerActivatedDateTime != null) {
+         LocalDateTime currentDateTime = LocalDateTime.now();
+         long durationBetweenImmobilizerAndAlarm = Duration.between(currentDateTime, immobilizerActivatedDateTime).abs().getSeconds();
 
-            if (durationBetweenImmobilizerAndAlarm >= 120) {
-               cameraBean.startVideoRecording();
-            } else {
-               LOGGER.info("Video recording wasn't started because immobilizer was activated " + durationBetweenImmobilizerAndAlarm +
-               " seconds ago");
-            }
-         } else {
+         if (durationBetweenImmobilizerAndAlarm >= 120) {
             cameraBean.startVideoRecording();
+         } else {
+            LOGGER.info("Video recording wasn't started because immobilizer was activated " + durationBetweenImmobilizerAndAlarm +
+            " seconds ago");
          }
+      } else {
+         cameraBean.startVideoRecording();
       }
       return new ServerStatus(StatusCodes.OK);
    }
@@ -78,7 +76,15 @@ public class Esp8266ExternalDevicesCommunicatorController {
    public ServerStatus receiveImmobilizerActivation(@RequestHeader("X-FORWARDED-FOR") String clientIp) {
       LOGGER.info("Immobilizer activated: " + clientIp);
 
-      immobilizerBean.setActivatedDateTime(LocalDateTime.now());
+      immobilizerBean.setActivationDateTime(LocalDateTime.now());
+      return new ServerStatus(StatusCodes.OK);
+   }
+
+   @GetMapping(path = "/immobilizerDeactivated")
+   public ServerStatus receiveImmobilizerDeactivation(@RequestHeader("X-FORWARDED-FOR") String clientIp) {
+      LOGGER.info("Immobilizer deactivated: " + clientIp);
+
+      immobilizerBean.setDeactivationDateTime(LocalDateTime.now());
       return new ServerStatus(StatusCodes.OK);
    }
 }

@@ -69,6 +69,7 @@ public class ApplicationInitializer extends AbstractAnnotationConfigDispatcherSe
       requestLoggingFilter.setAfterMessagePrefix("");
       requestLoggingFilter.setBeforeMessageSuffix("");
       requestLoggingFilter.setAfterMessageSuffix("");
+      requestLoggingFilter.setIncludeClientInfo(true);
       return new Filter[]{requestLoggingFilter};
    }
 }

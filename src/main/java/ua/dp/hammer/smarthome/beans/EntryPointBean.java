@@ -66,7 +66,7 @@ public class EntryPointBean {
          discFilesHandlerBean.relocateFileToDisk(oldFilePath);
       }
 
-      LocalDateTime immobilizerActivatedDateTime = immobilizerBean.getActivatedDateTime();
+      LocalDateTime immobilizerActivatedDateTime = immobilizerBean.getActivationDateTime();
       if (cameraBean.isVideoRecordingInProcess() && immobilizerActivatedDateTime != null) {
          long immobilizerActivatedDuration = Duration.between(LocalDateTime.now(), immobilizerActivatedDateTime).abs().getSeconds();
 

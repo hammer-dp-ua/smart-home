@@ -7,13 +7,22 @@ import java.time.LocalDateTime;
 @Component
 public class ImmobilizerBean {
 
-   private LocalDateTime activatedDateTime;
+   private LocalDateTime activationDateTime;
+   private LocalDateTime deactivationDateTime;
 
-   public LocalDateTime getActivatedDateTime() {
-      return activatedDateTime;
+   public LocalDateTime getActivationDateTime() {
+      return activationDateTime;
    }
 
-   public void setActivatedDateTime(LocalDateTime activatedDateTime) {
-      this.activatedDateTime = activatedDateTime;
+   public void setActivationDateTime(LocalDateTime activatedDateTime) {
+      this.activationDateTime = activatedDateTime;
+   }
+
+   public LocalDateTime getDeactivationDateTime() {
+      return deactivationDateTime;
+   }
+
+   public void setDeactivationDateTime(LocalDateTime deactivationDateTime) {
+      this.deactivationDateTime = deactivationDateTime;
    }
 }
