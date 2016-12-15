@@ -10,6 +10,7 @@ public class Esp8266Data {
    private int usartFramingErrors;
    private int lastErrorTask;
    private String usartData;
+   private long timeStamp;
 
    public String getGain() {
       return gain;
@@ -81,5 +82,13 @@ public class Esp8266Data {
 
    public void setUsartData(String usartData) {
       this.usartData = usartData;
+   }
+
+   public long getTimeStamp() {
+      return timeStamp;
+   }
+
+   public void setTimeStamp(long timeStamp) {
+      this.timeStamp = timeStamp;
    }
 }
