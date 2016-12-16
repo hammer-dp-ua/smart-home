@@ -27,6 +27,10 @@ public class MainLogic {
    public void receiveAlarm() {
       if (scheduledFutureProjectorTurningOff != null && !scheduledFutureProjectorTurningOff.isDone()) {
          scheduledFutureProjectorTurningOff.cancel(false);
+
+         if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Projector turning off scheduled task has been canceled.");
+         }
       }
 
       scheduledFutureProjectorTurningOff = new ConcurrentTaskScheduler().schedule(new Runnable() {

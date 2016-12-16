@@ -71,13 +71,13 @@ public class Esp8266ExternalDevicesCommunicatorController {
          long durationBetweenImmobilizerAndAlarm = Duration.between(currentDateTime, immobilizerActivatedDateTime).abs().getSeconds();
 
          if (durationBetweenImmobilizerAndAlarm >= 120) {
-            //cameraBean.startVideoRecording();
+            cameraBean.startVideoRecording();
          } else {
             LOGGER.info("Video recording wasn't started because immobilizer was activated " + durationBetweenImmobilizerAndAlarm +
             " seconds ago");
          }
       } else {
-         //cameraBean.startVideoRecording();
+         cameraBean.startVideoRecording();
       }
       return new ServerStatus(StatusCodes.OK);
    }
