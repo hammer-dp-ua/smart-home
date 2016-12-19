@@ -8,7 +8,7 @@ import org.springframework.web.context.request.async.DeferredResult;
 import ua.dp.hammer.smarthome.beans.CameraBean;
 import ua.dp.hammer.smarthome.beans.ImmobilizerBean;
 import ua.dp.hammer.smarthome.beans.MainLogic;
-import ua.dp.hammer.smarthome.models.Esp8266Data;
+import ua.dp.hammer.smarthome.models.Esp8266Request;
 import ua.dp.hammer.smarthome.models.ProjectorResponse;
 import ua.dp.hammer.smarthome.models.ServerStatus;
 import ua.dp.hammer.smarthome.models.StatusCodes;
@@ -45,14 +45,14 @@ public class Esp8266ExternalDevicesCommunicatorController {
    private MainLogic mainLogic;
 
    @PostMapping(path = "/statusInfo", consumes="application/json")
-   public ServerStatus receiveStatusInfo(@RequestBody Esp8266Data esp8266Data, @RequestHeader("X-FORWARDED-FOR") String clientIp) {
+   public ServerStatus receiveStatusInfo(@RequestBody Esp8266Request esp8266Request, @RequestHeader("X-FORWARDED-FOR") String clientIp) {
       ServerStatus serverStatus = new ServerStatus(StatusCodes.OK);
 
       if (LOGGER.isDebugEnabled()) {
-         String gain = esp8266Data.getGain() != null ? esp8266Data.getGain().trim() : null;
-         LOGGER.debug(new Formatter().format(LOGGER_DEBUG_INFO, clientIp, gain, esp8266Data.getErrors(),
-               esp8266Data.getUsartOverrunErrors(), esp8266Data.getUsartIdleLineDetections(), esp8266Data.getUsartNoiseDetection(),
-               esp8266Data.getUsartFramingErrors(), esp8266Data.getLastErrorTask(), esp8266Data.getUsartData()));
+         String gain = esp8266Request.getGain() != null ? esp8266Request.getGain().trim() : null;
+         LOGGER.debug(new Formatter().format(LOGGER_DEBUG_INFO, clientIp, gain, esp8266Request.getErrors(),
+               esp8266Request.getUsartOverrunErrors(), esp8266Request.getUsartIdleLineDetections(), esp8266Request.getUsartNoiseDetection(),
+               esp8266Request.getUsartFramingErrors(), esp8266Request.getLastErrorTask(), esp8266Request.getUsartData()));
          serverStatus.setIncludeDebugInfo(true);
       }
       return serverStatus;
@@ -94,6 +94,7 @@ public class Esp8266ExternalDevicesCommunicatorController {
       LOGGER.info("Immobilizer activated: " + clientIp);
 
       immobilizerBean.setActivationDateTime(LocalDateTime.now());
+      mainLogic.turnProjectorsOn();
       return new ServerStatus(StatusCodes.OK);
    }
 
@@ -106,13 +107,13 @@ public class Esp8266ExternalDevicesCommunicatorController {
    }
 
    @PostMapping(path = "/projectorDeferred", consumes="application/json")
-   public DeferredResult<ProjectorResponse> sendProjectorDeferredResult(@RequestBody Esp8266Data esp8266Data,
+   public DeferredResult<ProjectorResponse> sendProjectorDeferredResult(@RequestBody Esp8266Request esp8266Request,
                                                                         @RequestHeader("X-FORWARDED-FOR") String clientIp) {
       if (LOGGER.isDebugEnabled()) {
-         String gain = esp8266Data.getGain() != null ? esp8266Data.getGain().trim() : null;
-         LOGGER.debug(new Formatter().format(LOGGER_DEBUG_INFO, clientIp, gain, esp8266Data.getErrors(),
-               esp8266Data.getUsartOverrunErrors(), esp8266Data.getUsartIdleLineDetections(), esp8266Data.getUsartNoiseDetection(),
-               esp8266Data.getUsartFramingErrors(), esp8266Data.getLastErrorTask(), esp8266Data.getUsartData()));
+         String gain = esp8266Request.getGain() != null ? esp8266Request.getGain().trim() : null;
+         LOGGER.debug(new Formatter().format(LOGGER_DEBUG_INFO, clientIp, gain, esp8266Request.getErrors(),
+               esp8266Request.getUsartOverrunErrors(), esp8266Request.getUsartIdleLineDetections(), esp8266Request.getUsartNoiseDetection(),
+               esp8266Request.getUsartFramingErrors(), esp8266Request.getLastErrorTask(), esp8266Request.getUsartData()));
       }
 
       DeferredResult<ProjectorResponse> projectorDeferredResult = new DeferredResult<>();

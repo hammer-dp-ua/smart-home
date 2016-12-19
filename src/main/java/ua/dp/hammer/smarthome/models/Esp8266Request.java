@@ -1,6 +1,6 @@
 package ua.dp.hammer.smarthome.models;
 
-public class Esp8266Data {
+public class Esp8266Request {
    private String gain;
    private boolean debugInfoIncluded;
    private int errors;

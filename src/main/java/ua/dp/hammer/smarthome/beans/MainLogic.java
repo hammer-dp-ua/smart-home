@@ -25,22 +25,7 @@ public class MainLogic {
    private LocalDateTime lastSentResponsesTime;
 
    public void receiveAlarm() {
-      if (scheduledFutureProjectorTurningOff != null && !scheduledFutureProjectorTurningOff.isDone()) {
-         scheduledFutureProjectorTurningOff.cancel(false);
-
-         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Projector turning off scheduled task has been canceled.");
-         }
-      }
-
-      scheduledFutureProjectorTurningOff = new ConcurrentTaskScheduler().schedule(new Runnable() {
-         @Override
-         public void run() {
-            switchProjectors(ProjectorState.TURN_OFF);
-         }
-      }, new Date(System.currentTimeMillis() + 60000));
-
-      switchProjectors(ProjectorState.TURN_ON);
+      turnProjectorsOn();
    }
 
    public void addProjectorsDeferredResult(DeferredResult<ProjectorResponse> projectorDeferredResult, String clientIp) {
@@ -58,6 +43,29 @@ public class MainLogic {
       }
    }
 
+   public void turnProjectorsOn() {
+      LocalDateTime localDateTime = LocalDateTime.now();
+
+      if (localDateTime.getHour() >= 16 || localDateTime.getHour() <= 7) {
+         if (scheduledFutureProjectorTurningOff != null && !scheduledFutureProjectorTurningOff.isDone()) {
+            scheduledFutureProjectorTurningOff.cancel(false);
+
+            if (LOGGER.isDebugEnabled()) {
+               LOGGER.debug("Projector turning off scheduled task has been canceled.");
+            }
+         }
+
+         scheduledFutureProjectorTurningOff = new ConcurrentTaskScheduler().schedule(new Runnable() {
+            @Override
+            public void run() {
+               switchProjectors(ProjectorState.TURN_OFF);
+            }
+         }, new Date(System.currentTimeMillis() + 60000));
+
+         switchProjectors(ProjectorState.TURN_ON);
+      }
+   }
+
    private void sendKeepHeartResponse() {
       switchProjectors(null);
    }
@@ -65,6 +73,10 @@ public class MainLogic {
    private void switchProjectors(ProjectorState newProjectorState) {
       if (newProjectorState != null) {
          turnProjectorOn = newProjectorState == ProjectorState.TURN_ON;
+      }
+
+      if (turnProjectorOn) {
+         LOGGER.info("Projectors are turning on");
       }
 
       if (LOGGER.isDebugEnabled()) {
