@@ -8,16 +8,11 @@ import org.springframework.web.context.request.async.DeferredResult;
 import ua.dp.hammer.smarthome.beans.CameraBean;
 import ua.dp.hammer.smarthome.beans.ImmobilizerBean;
 import ua.dp.hammer.smarthome.beans.MainLogic;
-import ua.dp.hammer.smarthome.models.Esp8266Request;
-import ua.dp.hammer.smarthome.models.ProjectorResponse;
-import ua.dp.hammer.smarthome.models.ServerStatus;
-import ua.dp.hammer.smarthome.models.StatusCodes;
+import ua.dp.hammer.smarthome.models.*;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Formatter;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 @RestController
 @RequestMapping(path = "/server/esp8266")
@@ -33,8 +28,6 @@ public class Esp8266ExternalDevicesCommunicatorController {
          "\r\nLast Error Task: %8$d" +
          "\r\nUSART data: %9$s";
 
-   private Queue<DeferredResult<ServerStatus>> deferredResults = new ConcurrentLinkedQueue<>();
-
    @Autowired
    private CameraBean cameraBean;
 
@@ -49,10 +42,7 @@ public class Esp8266ExternalDevicesCommunicatorController {
       ServerStatus serverStatus = new ServerStatus(StatusCodes.OK);
 
       if (LOGGER.isDebugEnabled()) {
-         String gain = esp8266Request.getGain() != null ? esp8266Request.getGain().trim() : null;
-         LOGGER.debug(new Formatter().format(LOGGER_DEBUG_INFO, clientIp, gain, esp8266Request.getErrors(),
-               esp8266Request.getUsartOverrunErrors(), esp8266Request.getUsartIdleLineDetections(), esp8266Request.getUsartNoiseDetection(),
-               esp8266Request.getUsartFramingErrors(), esp8266Request.getLastErrorTask(), esp8266Request.getUsartData()));
+         writeGeneralDebugInfo(clientIp, esp8266Request);
          serverStatus.setIncludeDebugInfo(true);
       }
       return serverStatus;
@@ -110,10 +100,7 @@ public class Esp8266ExternalDevicesCommunicatorController {
    public DeferredResult<ProjectorResponse> sendProjectorDeferredResult(@RequestBody Esp8266Request esp8266Request,
                                                                         @RequestHeader("X-FORWARDED-FOR") String clientIp) {
       if (LOGGER.isDebugEnabled()) {
-         String gain = esp8266Request.getGain() != null ? esp8266Request.getGain().trim() : null;
-         LOGGER.debug(new Formatter().format(LOGGER_DEBUG_INFO, clientIp, gain, esp8266Request.getErrors(),
-               esp8266Request.getUsartOverrunErrors(), esp8266Request.getUsartIdleLineDetections(), esp8266Request.getUsartNoiseDetection(),
-               esp8266Request.getUsartFramingErrors(), esp8266Request.getLastErrorTask(), esp8266Request.getUsartData()));
+         writeGeneralDebugInfo(clientIp, esp8266Request);
       }
 
       DeferredResult<ProjectorResponse> projectorDeferredResult = new DeferredResult<>();
@@ -121,14 +108,23 @@ public class Esp8266ExternalDevicesCommunicatorController {
       return projectorDeferredResult;
    }
 
-   /**
-    *
-    * @param serverStatus
-    */
-   public void setDeferredResult(ServerStatus serverStatus) {
-      if (!deferredResults.isEmpty()) {
-         DeferredResult<ServerStatus> deferredResult = deferredResults.peek();
-         deferredResult.setResult(serverStatus);
+   @PostMapping(path = "/bathroomFan", consumes="application/json")
+   public FanResponse receiveBathroomParameters(@RequestBody Esp8266Request esp8266Request,
+                                                @RequestHeader("X-FORWARDED-FOR") String clientIp) {
+      if (LOGGER.isDebugEnabled()) {
+         writeGeneralDebugInfo(clientIp, esp8266Request);
+         LOGGER.debug("Bathroom info. Humidity: " + esp8266Request.getHumidity() + "; Temperature: " + esp8266Request.getTemperature());
       }
+
+      FanResponse fanResponse = new FanResponse(StatusCodes.OK);
+      fanResponse.setTurnOn(true);
+      return fanResponse;
+   }
+
+   private void writeGeneralDebugInfo(String clientIp, Esp8266Request esp8266Request) {
+      String gain = esp8266Request.getGain() != null ? esp8266Request.getGain().trim() : null;
+      LOGGER.debug(new Formatter().format(LOGGER_DEBUG_INFO, clientIp, gain, esp8266Request.getErrors(),
+            esp8266Request.getUsartOverrunErrors(), esp8266Request.getUsartIdleLineDetections(), esp8266Request.getUsartNoiseDetection(),
+            esp8266Request.getUsartFramingErrors(), esp8266Request.getLastErrorTask(), esp8266Request.getUsartData()));
    }
 }

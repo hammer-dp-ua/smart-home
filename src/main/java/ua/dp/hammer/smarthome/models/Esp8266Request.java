@@ -11,6 +11,8 @@ public class Esp8266Request {
    private int lastErrorTask;
    private String usartData;
    private long timeStamp;
+   private float humidity;
+   private float temperature;
 
    public String getGain() {
       return gain;
@@ -90,5 +92,21 @@ public class Esp8266Request {
 
    public void setTimeStamp(long timeStamp) {
       this.timeStamp = timeStamp;
+   }
+
+   public float getHumidity() {
+      return humidity;
+   }
+
+   public void setHumidity(float humidity) {
+      this.humidity = humidity;
+   }
+
+   public float getTemperature() {
+      return temperature;
+   }
+
+   public void setTemperature(float temperature) {
+      this.temperature = temperature;
    }
 }

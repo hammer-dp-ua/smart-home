@@ -2,6 +2,8 @@ package ua.dp.hammer.smarthome.beans;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler;
 import org.springframework.stereotype.Component;
@@ -9,6 +11,7 @@ import org.springframework.web.context.request.async.DeferredResult;
 import ua.dp.hammer.smarthome.models.ProjectorResponse;
 import ua.dp.hammer.smarthome.models.StatusCodes;
 
+import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Queue;
@@ -20,9 +23,18 @@ public class MainLogic {
    private static final Logger LOGGER = LogManager.getLogger(MainLogic.class);
 
    private boolean turnProjectorOn;
+   private long projectorTurnOffTimeoutMs;
    private Queue<DeferredResult<ProjectorResponse>> projectorsDeferredResults = new ConcurrentLinkedQueue<>();
    private ScheduledFuture<?> scheduledFutureProjectorTurningOff;
    private LocalDateTime lastSentResponsesTime;
+
+   @Autowired
+   private Environment environment;
+
+   @PostConstruct
+   public void init() {
+      projectorTurnOffTimeoutMs = Long.parseLong(environment.getRequiredProperty("projectorTurnOffTimeoutMs"));
+   }
 
    public void receiveAlarm() {
       turnProjectorsOn();
@@ -60,7 +72,7 @@ public class MainLogic {
             public void run() {
                switchProjectors(ProjectorState.TURN_OFF);
             }
-         }, new Date(System.currentTimeMillis() + 60000));
+         }, new Date(System.currentTimeMillis() + projectorTurnOffTimeoutMs));
 
          switchProjectors(ProjectorState.TURN_ON);
       }
