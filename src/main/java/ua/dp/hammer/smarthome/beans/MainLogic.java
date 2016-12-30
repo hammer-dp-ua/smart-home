@@ -23,7 +23,8 @@ public class MainLogic {
    private static final Logger LOGGER = LogManager.getLogger(MainLogic.class);
 
    private boolean turnProjectorOn;
-   private long projectorTurnOffTimeoutMs;
+   private int projectorTurnOffTimeoutSec;
+   private int deferredResponseTimeoutSec;
    private Queue<DeferredResult<ProjectorResponse>> projectorsDeferredResults = new ConcurrentLinkedQueue<>();
    private ScheduledFuture<?> scheduledFutureProjectorTurningOff;
    private LocalDateTime lastSentResponsesTime;
@@ -33,14 +34,26 @@ public class MainLogic {
 
    @PostConstruct
    public void init() {
-      projectorTurnOffTimeoutMs = Long.parseLong(environment.getRequiredProperty("projectorTurnOffTimeoutMs"));
+      projectorTurnOffTimeoutSec = Integer.parseInt(environment.getRequiredProperty("projectorTurnOffTimeoutSec"));
+      deferredResponseTimeoutSec = Integer.parseInt(environment.getRequiredProperty("deferredResponseTimeoutSec"));
    }
 
    public void receiveAlarm() {
       turnProjectorsOn();
    }
 
-   public void addProjectorsDeferredResult(DeferredResult<ProjectorResponse> projectorDeferredResult, String clientIp) {
+   public void addProjectorsDeferredResult(DeferredResult<ProjectorResponse> projectorDeferredResult, String clientIp,
+                                           boolean serverIsAvailable) {
+      if (!serverIsAvailable) {
+         ProjectorResponse projectorResponse = createProjectorResponse();
+         projectorDeferredResult.setResult(projectorResponse);
+
+         if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Server availability hasn't been detected yet");
+         }
+         return;
+      }
+
       projectorsDeferredResults.add(projectorDeferredResult);
 
       if (LOGGER.isDebugEnabled()) {
@@ -48,9 +61,9 @@ public class MainLogic {
       }
    }
 
-   @Scheduled(fixedRate = 10000)
+   @Scheduled(fixedRate = 5000)
    public void setProjectorsDeferredResult() {
-      if (lastSentResponsesTime == null || LocalDateTime.now().minusMinutes(5).isAfter(lastSentResponsesTime)) {
+      if (lastSentResponsesTime == null || LocalDateTime.now().minusSeconds(deferredResponseTimeoutSec).isAfter(lastSentResponsesTime)) {
          sendKeepHeartResponse();
       }
    }
@@ -72,7 +85,7 @@ public class MainLogic {
             public void run() {
                switchProjectors(ProjectorState.TURN_OFF);
             }
-         }, new Date(System.currentTimeMillis() + projectorTurnOffTimeoutMs));
+         }, new Date(System.currentTimeMillis() + projectorTurnOffTimeoutSec * 1000));
 
          switchProjectors(ProjectorState.TURN_ON);
       }
@@ -103,16 +116,21 @@ public class MainLogic {
             return;
          }
 
-         ProjectorResponse projectorResponse = new ProjectorResponse(StatusCodes.OK);
-
-         projectorResponse.setTurnOn(turnProjectorOn);
-         if (LOGGER.isDebugEnabled()) {
-            projectorResponse.setIncludeDebugInfo(true);
-         }
+         ProjectorResponse projectorResponse = createProjectorResponse();
 
          projectorDeferredResult.setResult(projectorResponse);
       }
       lastSentResponsesTime = LocalDateTime.now();
+   }
+
+   private ProjectorResponse createProjectorResponse() {
+      ProjectorResponse projectorResponse = new ProjectorResponse(StatusCodes.OK);
+
+      projectorResponse.setTurnOn(turnProjectorOn);
+      if (LOGGER.isDebugEnabled()) {
+         projectorResponse.setIncludeDebugInfo(true);
+      }
+      return projectorResponse;
    }
 
    private enum ProjectorState {

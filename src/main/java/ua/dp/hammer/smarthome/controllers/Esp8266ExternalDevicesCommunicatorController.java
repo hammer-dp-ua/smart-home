@@ -104,7 +104,7 @@ public class Esp8266ExternalDevicesCommunicatorController {
       }
 
       DeferredResult<ProjectorResponse> projectorDeferredResult = new DeferredResult<>();
-      mainLogic.addProjectorsDeferredResult(projectorDeferredResult, clientIp);
+      mainLogic.addProjectorsDeferredResult(projectorDeferredResult, clientIp, esp8266Request.isServerIsAvailable());
       return projectorDeferredResult;
    }
 
