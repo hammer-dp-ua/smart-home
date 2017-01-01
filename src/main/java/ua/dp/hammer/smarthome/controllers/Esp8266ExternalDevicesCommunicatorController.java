@@ -111,12 +111,14 @@ public class Esp8266ExternalDevicesCommunicatorController {
    @PostMapping(path = "/bathroomFan", consumes="application/json")
    public FanResponse receiveBathroomParameters(@RequestBody Esp8266Request esp8266Request,
                                                 @RequestHeader("X-FORWARDED-FOR") String clientIp) {
+      FanResponse fanResponse = new FanResponse(StatusCodes.OK);
+
       if (LOGGER.isDebugEnabled()) {
          writeGeneralDebugInfo(clientIp, esp8266Request);
+         fanResponse.setIncludeDebugInfo(true);
          LOGGER.debug("Bathroom info. Humidity: " + esp8266Request.getHumidity() + "; Temperature: " + esp8266Request.getTemperature());
       }
 
-      FanResponse fanResponse = new FanResponse(StatusCodes.OK);
       fanResponse.setTurnOn(true);
       return fanResponse;
    }
