@@ -5,7 +5,7 @@
    <modelVersion>4.0.0</modelVersion>
 
    <properties>
-      <spring.version>4.3.3.RELEASE</spring.version>
+      <spring.version>4.3.5.RELEASE</spring.version>
    </properties>
 
    <groupId>ua.dp.hammer</groupId>

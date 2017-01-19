@@ -3,6 +3,7 @@ package ua.dp.hammer.smarthome.controllers;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.async.DeferredResult;
 import ua.dp.hammer.smarthome.beans.CameraBean;
@@ -10,6 +11,7 @@ import ua.dp.hammer.smarthome.beans.ImmobilizerBean;
 import ua.dp.hammer.smarthome.beans.MainLogic;
 import ua.dp.hammer.smarthome.models.*;
 
+import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Formatter;
@@ -19,14 +21,19 @@ import java.util.Formatter;
 public class Esp8266ExternalDevicesCommunicatorController {
    private static final Logger LOGGER = LogManager.getLogger(Esp8266ExternalDevicesCommunicatorController.class);
 
-   private static final String LOGGER_DEBUG_INFO = "Gain of %1$s: %2$s" +
-         "\r\nErrors: %3$d" +
-         "\r\nOverrun Errors: %4$d" +
-         "\r\nIdle Line Detections: %5$d" +
-         "\r\nNoise Detection: %6$d" +
-         "\r\nFraming Errors: %7$d" +
-         "\r\nLast Error Task: %8$d" +
-         "\r\nUSART data: %9$s";
+   private static final String LOGGER_DEBUG_INFO = "Gain of %1$s (%2$s): %3$sdB" +
+         "\r\nErrors: %4$d" +
+         "\r\nOverrun Errors: %5$d" +
+         "\r\nIdle Line Detections: %6$d" +
+         "\r\nNoise Detection: %7$d" +
+         "\r\nFraming Errors: %8$d" +
+         "\r\nLast Error Task: %9$d" +
+         "\r\nUSART data: %10$s";
+
+   private int manuallyTurnedOnFanTimeoutMinutes;
+
+   @Autowired
+   private Environment environment;
 
    @Autowired
    private CameraBean cameraBean;
@@ -36,6 +43,11 @@ public class Esp8266ExternalDevicesCommunicatorController {
 
    @Autowired
    private MainLogic mainLogic;
+
+   @PostConstruct
+   public void init() {
+      manuallyTurnedOnFanTimeoutMinutes = Integer.parseInt(environment.getRequiredProperty("manuallyTurnedOnFanTimeoutMinutes"));
+   }
 
    @PostMapping(path = "/statusInfo", consumes="application/json")
    public ServerStatus receiveStatusInfo(@RequestBody Esp8266Request esp8266Request, @RequestHeader("X-FORWARDED-FOR") String clientIp) {
@@ -115,17 +127,18 @@ public class Esp8266ExternalDevicesCommunicatorController {
 
       if (LOGGER.isDebugEnabled()) {
          writeGeneralDebugInfo(clientIp, esp8266Request);
-         fanResponse.setIncludeDebugInfo(true);
          LOGGER.debug("Bathroom info. Humidity: " + esp8266Request.getHumidity() + "; Temperature: " + esp8266Request.getTemperature());
+         fanResponse.setIncludeDebugInfo(true);
       }
 
-      fanResponse.setTurnOn(true);
+      fanResponse.setTurnOn(false);
+      fanResponse.setManuallyTurnedOnTimeout(manuallyTurnedOnFanTimeoutMinutes);
       return fanResponse;
    }
 
    private void writeGeneralDebugInfo(String clientIp, Esp8266Request esp8266Request) {
       String gain = esp8266Request.getGain() != null ? esp8266Request.getGain().trim() : null;
-      LOGGER.debug(new Formatter().format(LOGGER_DEBUG_INFO, clientIp, gain, esp8266Request.getErrors(),
+      LOGGER.debug(new Formatter().format(LOGGER_DEBUG_INFO, clientIp, esp8266Request.getDeviceName(), gain, esp8266Request.getErrors(),
             esp8266Request.getUsartOverrunErrors(), esp8266Request.getUsartIdleLineDetections(), esp8266Request.getUsartNoiseDetection(),
             esp8266Request.getUsartFramingErrors(), esp8266Request.getLastErrorTask(), esp8266Request.getUsartData()));
    }

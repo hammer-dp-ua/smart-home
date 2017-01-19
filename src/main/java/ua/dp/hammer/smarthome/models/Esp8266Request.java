@@ -14,6 +14,7 @@ public class Esp8266Request {
    private float humidity;
    private float temperature;
    private boolean serverIsAvailable;
+   private String deviceName;
 
    public String getGain() {
       return gain;
@@ -117,5 +118,13 @@ public class Esp8266Request {
 
    public void setServerIsAvailable(boolean serverIsAvailable) {
       this.serverIsAvailable = serverIsAvailable;
+   }
+
+   public String getDeviceName() {
+      return deviceName;
+   }
+
+   public void setDeviceName(String deviceName) {
+      this.deviceName = deviceName;
    }
 }
