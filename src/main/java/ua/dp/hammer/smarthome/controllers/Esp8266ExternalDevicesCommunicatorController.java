@@ -131,7 +131,7 @@ public class Esp8266ExternalDevicesCommunicatorController {
          fanResponse.setIncludeDebugInfo(true);
       }
 
-      fanResponse.setTurnOn(false);
+      fanResponse.setTurnOn(mainLogic.getBathroomFanState(esp8266Request.getHumidity(), esp8266Request.getTemperature()));
       fanResponse.setManuallyTurnedOnTimeout(manuallyTurnedOnFanTimeoutMinutes);
       return fanResponse;
    }

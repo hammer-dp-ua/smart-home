@@ -28,6 +28,7 @@ public class MainLogic {
    private Queue<DeferredResult<ProjectorResponse>> projectorsDeferredResults = new ConcurrentLinkedQueue<>();
    private ScheduledFuture<?> scheduledFutureProjectorTurningOff;
    private LocalDateTime lastSentResponsesTime;
+   private LocalDateTime thresholdHumidityStartTime;
 
    @Autowired
    private Environment environment;
@@ -89,6 +90,15 @@ public class MainLogic {
 
          switchProjectors(ProjectorState.TURN_ON);
       }
+   }
+
+   public boolean getBathroomFanState(float humidity, float temperature) {
+      if (humidity >= 90.0f) {
+         thresholdHumidityStartTime = LocalDateTime.now();
+      }
+
+      LocalDateTime currentTime = LocalDateTime.now();
+      return thresholdHumidityStartTime != null && currentTime.isBefore(thresholdHumidityStartTime.plusMinutes(10));
    }
 
    private void sendKeepHeartResponse() {
