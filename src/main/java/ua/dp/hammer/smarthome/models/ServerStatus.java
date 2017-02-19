@@ -3,6 +3,7 @@ package ua.dp.hammer.smarthome.models;
 public class ServerStatus {
    private StatusCodes statusCode;
    private boolean includeDebugInfo;
+   private boolean updateFirmware;
 
    public ServerStatus(StatusCodes statusCode) {
       this.statusCode = statusCode;
@@ -22,5 +23,13 @@ public class ServerStatus {
 
    public void setIncludeDebugInfo(boolean includeDebugInfo) {
       this.includeDebugInfo = includeDebugInfo;
+   }
+
+   public boolean isUpdateFirmware() {
+      return updateFirmware;
+   }
+
+   public void setUpdateFirmware(boolean updateFirmware) {
+      this.updateFirmware = updateFirmware;
    }
 }
