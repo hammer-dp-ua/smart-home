@@ -67,8 +67,14 @@ public class VpsUploader {
    public Boolean transferVideoFile(Path filePath) {
       File fileToUpload = filePath.toFile();
       long fileLength = fileToUpload.length();
+      int fileLengthMb = (int)(fileLength / 1024 / 1024);
 
-      LOGGER.info(filePath.getFileName() + FILE_IS_READY_TO_UPLOAD + (fileLength / 1024 / 1024) + "MB");
+      LOGGER.info(filePath.getFileName() + FILE_IS_READY_TO_UPLOAD + (fileLengthMb) + "MB");
+
+      if (fileLengthMb < 10) {
+         LOGGER.info("Video file is too short");
+         return true;
+      }
 
       long startTransferringFileTime = System.currentTimeMillis();
       boolean errorOccurred = transferFileWithMultipart(vpsServerMultipartVideoFileUrl,

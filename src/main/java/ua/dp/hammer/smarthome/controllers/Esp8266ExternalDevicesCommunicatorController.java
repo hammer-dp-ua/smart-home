@@ -15,6 +15,8 @@ import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Formatter;
+import java.util.Timer;
+import java.util.TimerTask;
 
 @RestController
 @RequestMapping(path = "/server/esp8266")
@@ -28,9 +30,11 @@ public class Esp8266ExternalDevicesCommunicatorController {
          "\r\nNoise Detection: %7$d" +
          "\r\nFraming Errors: %8$d" +
          "\r\nLast Error Task: %9$d" +
-         "\r\nUSART data: %10$s";
+         "\r\nUSART data: %10$s" +
+         "\r\nBuild timestamp: %11$s";
 
    private int manuallyTurnedOnFanTimeoutMinutes;
+   private String ipAddressToUpdateFirmware;
 
    @Autowired
    private Environment environment;
@@ -108,6 +112,12 @@ public class Esp8266ExternalDevicesCommunicatorController {
       return new ServerStatus(StatusCodes.OK);
    }
 
+   @GetMapping(path = "/updateFirmware")
+   public String updateFirmware(@RequestParam("alarmSource") String ipAddress) {
+      ipAddressToUpdateFirmware = ipAddress;
+      return ipAddress;
+   }
+
    @PostMapping(path = "/projectorDeferred", consumes="application/json")
    public DeferredResult<ProjectorResponse> sendProjectorDeferredResult(@RequestBody Esp8266Request esp8266Request,
                                                                         @RequestHeader("X-FORWARDED-FOR") String clientIp) {
@@ -118,6 +128,44 @@ public class Esp8266ExternalDevicesCommunicatorController {
       DeferredResult<ProjectorResponse> projectorDeferredResult = new DeferredResult<>();
       mainLogic.addProjectorsDeferredResult(projectorDeferredResult, clientIp, esp8266Request.isServerIsAvailable());
       return projectorDeferredResult;
+   }
+
+   @PostMapping(path = "/testDeferred", consumes="application/json")
+   public DeferredResult<ProjectorResponse> sendDeferredResult(@RequestBody Esp8266Request esp8266Request,
+                                                               @RequestHeader("X-FORWARDED-FOR") String clientIp) {
+      if (LOGGER.isDebugEnabled()) {
+         writeGeneralDebugInfo(clientIp, esp8266Request);
+      }
+
+      DeferredResult<ProjectorResponse> deferredResult = new DeferredResult<>();
+      final ProjectorResponse response = new ProjectorResponse(StatusCodes.OK);
+
+      response.setTurnOn(false);
+      if (clientIp != null && clientIp.equals(ipAddressToUpdateFirmware)) {
+         response.setUpdateFirmware(true);
+         ipAddressToUpdateFirmware = null;
+
+         if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Firmware of " + clientIp + "(" + esp8266Request.getDeviceName() + ") will be updated");
+         }
+      }
+
+      if (esp8266Request.isServerIsAvailable()) {
+         Timer timer = new Timer();
+
+         timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+               if (LOGGER.isDebugEnabled()) {
+                  LOGGER.debug("testDeferred response is set");
+               }
+               deferredResult.setResult(response);
+            }
+         }, 1 * 60 * 1000);
+      } else {
+         deferredResult.setResult(response);
+      }
+      return deferredResult;
    }
 
    @PostMapping(path = "/bathroomFan", consumes="application/json")
@@ -136,10 +184,20 @@ public class Esp8266ExternalDevicesCommunicatorController {
       return fanResponse;
    }
 
+   @GetMapping(path = "/turnOnBathroomFun")
+   public String turnOnBathroomFun() {
+      LOGGER.info("Bathroom fan will be turned on");
+
+      mainLogic.turnOnBathroomFan();
+
+      return "OK";
+   }
+
    private void writeGeneralDebugInfo(String clientIp, Esp8266Request esp8266Request) {
       String gain = esp8266Request.getGain() != null ? esp8266Request.getGain().trim() : null;
       LOGGER.debug(new Formatter().format(LOGGER_DEBUG_INFO, clientIp, esp8266Request.getDeviceName(), gain, esp8266Request.getErrors(),
             esp8266Request.getUsartOverrunErrors(), esp8266Request.getUsartIdleLineDetections(), esp8266Request.getUsartNoiseDetection(),
-            esp8266Request.getUsartFramingErrors(), esp8266Request.getLastErrorTask(), esp8266Request.getUsartData()));
+            esp8266Request.getUsartFramingErrors(), esp8266Request.getLastErrorTask(), esp8266Request.getUsartData(),
+            esp8266Request.getBuildTimestamp()));
    }
 }

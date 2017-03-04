@@ -15,6 +15,7 @@ public class Esp8266Request {
    private float temperature;
    private boolean serverIsAvailable;
    private String deviceName;
+   private String buildTimestamp;
 
    public String getGain() {
       return gain;
@@ -126,5 +127,13 @@ public class Esp8266Request {
 
    public void setDeviceName(String deviceName) {
       this.deviceName = deviceName;
+   }
+
+   public String getBuildTimestamp() {
+      return buildTimestamp;
+   }
+
+   public void setBuildTimestamp(String buildTimestamp) {
+      this.buildTimestamp = buildTimestamp;
    }
 }

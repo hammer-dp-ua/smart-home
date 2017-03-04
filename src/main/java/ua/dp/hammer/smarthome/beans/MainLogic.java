@@ -101,6 +101,10 @@ public class MainLogic {
       return thresholdHumidityStartTime != null && currentTime.isBefore(thresholdHumidityStartTime.plusMinutes(10));
    }
 
+   public void turnOnBathroomFan() {
+      thresholdHumidityStartTime = LocalDateTime.now();
+   }
+
    private void sendKeepHeartResponse() {
       switchProjectors(null);
    }
