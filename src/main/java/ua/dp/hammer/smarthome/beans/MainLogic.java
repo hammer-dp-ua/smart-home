@@ -7,8 +7,9 @@ import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.request.async.DeferredResult;
+import ua.dp.hammer.smarthome.models.ExtendedDeferredResult;
 import ua.dp.hammer.smarthome.models.ProjectorResponse;
+import ua.dp.hammer.smarthome.models.ServerStatus;
 import ua.dp.hammer.smarthome.models.StatusCodes;
 
 import javax.annotation.PostConstruct;
@@ -25,10 +26,11 @@ public class MainLogic {
    private boolean turnProjectorOn;
    private int projectorTurnOffTimeoutSec;
    private int deferredResponseTimeoutSec;
-   private Queue<DeferredResult<ProjectorResponse>> projectorsDeferredResults = new ConcurrentLinkedQueue<>();
+   private Queue<ExtendedDeferredResult<ProjectorResponse>> projectorsDeferredResults = new ConcurrentLinkedQueue<>();
    private ScheduledFuture<?> scheduledFutureProjectorTurningOff;
    private LocalDateTime lastSentResponsesTime;
    private LocalDateTime thresholdHumidityStartTime;
+   private String ipAddressToUpdateFirmware;
 
    @Autowired
    private Environment environment;
@@ -43,10 +45,12 @@ public class MainLogic {
       turnProjectorsOn();
    }
 
-   public void addProjectorsDeferredResult(DeferredResult<ProjectorResponse> projectorDeferredResult, String clientIp,
+   public void addProjectorsDeferredResult(ExtendedDeferredResult<ProjectorResponse> projectorDeferredResult,
+                                           String clientIp,
                                            boolean serverIsAvailable) {
       if (!serverIsAvailable) {
-         ProjectorResponse projectorResponse = createProjectorResponse();
+         ProjectorResponse projectorResponse = createProjectorResponse(clientIp);
+         setUpdateStatus(projectorResponse, clientIp);
          projectorDeferredResult.setResult(projectorResponse);
 
          if (LOGGER.isDebugEnabled()) {
@@ -72,7 +76,7 @@ public class MainLogic {
    public void turnProjectorsOn() {
       LocalDateTime localDateTime = LocalDateTime.now();
 
-      if (localDateTime.getHour() >= 16 || localDateTime.getHour() <= 7) {
+      if (localDateTime.getHour() >= 18 || localDateTime.getHour() <= 8) {
          if (scheduledFutureProjectorTurningOff != null && !scheduledFutureProjectorTurningOff.isDone()) {
             scheduledFutureProjectorTurningOff.cancel(false);
 
@@ -101,6 +105,10 @@ public class MainLogic {
       return thresholdHumidityStartTime != null && currentTime.isBefore(thresholdHumidityStartTime.plusMinutes(10));
    }
 
+   public void setIpAddressToUpdateFirmware(String ipAddressToUpdateFirmware) {
+      this.ipAddressToUpdateFirmware = ipAddressToUpdateFirmware;
+   }
+
    public void turnOnBathroomFan() {
       thresholdHumidityStartTime = LocalDateTime.now();
    }
@@ -124,23 +132,24 @@ public class MainLogic {
       }
 
       while (!projectorsDeferredResults.isEmpty()) {
-         DeferredResult<ProjectorResponse> projectorDeferredResult = projectorsDeferredResults.poll();
+         ExtendedDeferredResult<ProjectorResponse> projectorDeferredResult = projectorsDeferredResults.poll();
 
          if (projectorDeferredResult == null) {
             return;
          }
 
-         ProjectorResponse projectorResponse = createProjectorResponse();
+         ProjectorResponse projectorResponse = createProjectorResponse(projectorDeferredResult.getClientIp());
 
          projectorDeferredResult.setResult(projectorResponse);
       }
       lastSentResponsesTime = LocalDateTime.now();
    }
 
-   private ProjectorResponse createProjectorResponse() {
+   private ProjectorResponse createProjectorResponse(String clientIp) {
       ProjectorResponse projectorResponse = new ProjectorResponse(StatusCodes.OK);
 
       projectorResponse.setTurnOn(turnProjectorOn);
+      setUpdateStatus(projectorResponse, clientIp);
       if (LOGGER.isDebugEnabled()) {
          projectorResponse.setIncludeDebugInfo(true);
       }
@@ -149,5 +158,16 @@ public class MainLogic {
 
    private enum ProjectorState {
       TURN_ON, TURN_OFF
+   }
+
+   public void setUpdateStatus(ServerStatus response, String clientIp) {
+      if (clientIp != null && clientIp.equals(ipAddressToUpdateFirmware)) {
+         response.setUpdateFirmware(true);
+         ipAddressToUpdateFirmware = null;
+
+         if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Firmware of " + clientIp + " will be updated");
+         }
+      }
    }
 }

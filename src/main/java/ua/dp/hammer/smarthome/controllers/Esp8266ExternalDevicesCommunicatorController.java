@@ -34,7 +34,6 @@ public class Esp8266ExternalDevicesCommunicatorController {
          "\r\nBuild timestamp: %11$s";
 
    private int manuallyTurnedOnFanTimeoutMinutes;
-   private String ipAddressToUpdateFirmware;
 
    @Autowired
    private Environment environment;
@@ -54,13 +53,15 @@ public class Esp8266ExternalDevicesCommunicatorController {
    }
 
    @PostMapping(path = "/statusInfo", consumes="application/json")
-   public ServerStatus receiveStatusInfo(@RequestBody Esp8266Request esp8266Request, @RequestHeader("X-FORWARDED-FOR") String clientIp) {
+   public ServerStatus receiveStatusInfo(@RequestBody Esp8266Request esp8266Request,
+                                         @RequestHeader(value="X-FORWARDED-FOR", required=false) String clientIp) {
       ServerStatus serverStatus = new ServerStatus(StatusCodes.OK);
 
       if (LOGGER.isDebugEnabled()) {
          writeGeneralDebugInfo(clientIp, esp8266Request);
          serverStatus.setIncludeDebugInfo(true);
       }
+      mainLogic.setUpdateStatus(serverStatus, clientIp);
       return serverStatus;
    }
 
@@ -85,6 +86,13 @@ public class Esp8266ExternalDevicesCommunicatorController {
       } else {
          cameraBean.startVideoRecording();
       }
+      return new ServerStatus(StatusCodes.OK);
+   }
+
+   @GetMapping(path = "/testAlarm")
+   public ServerStatus receiveTestAlarm(@RequestHeader(value="X-FORWARDED-FOR", required=false) String clientIp) {
+      LOGGER.info("Test alarm: " + clientIp);
+
       return new ServerStatus(StatusCodes.OK);
    }
 
@@ -113,19 +121,20 @@ public class Esp8266ExternalDevicesCommunicatorController {
    }
 
    @GetMapping(path = "/updateFirmware")
-   public String updateFirmware(@RequestParam("alarmSource") String ipAddress) {
-      ipAddressToUpdateFirmware = ipAddress;
+   public String updateFirmware(@RequestParam("deviceToUpdateIp") String ipAddress) {
+      mainLogic.setIpAddressToUpdateFirmware(ipAddress);
       return ipAddress;
    }
 
    @PostMapping(path = "/projectorDeferred", consumes="application/json")
-   public DeferredResult<ProjectorResponse> sendProjectorDeferredResult(@RequestBody Esp8266Request esp8266Request,
+   public ExtendedDeferredResult<ProjectorResponse> sendProjectorDeferredResult(@RequestBody Esp8266Request esp8266Request,
                                                                         @RequestHeader("X-FORWARDED-FOR") String clientIp) {
       if (LOGGER.isDebugEnabled()) {
          writeGeneralDebugInfo(clientIp, esp8266Request);
       }
 
-      DeferredResult<ProjectorResponse> projectorDeferredResult = new DeferredResult<>();
+      ExtendedDeferredResult<ProjectorResponse> projectorDeferredResult = new ExtendedDeferredResult<>();
+      projectorDeferredResult.setClientIp(clientIp);
       mainLogic.addProjectorsDeferredResult(projectorDeferredResult, clientIp, esp8266Request.isServerIsAvailable());
       return projectorDeferredResult;
    }
@@ -141,14 +150,6 @@ public class Esp8266ExternalDevicesCommunicatorController {
       final ProjectorResponse response = new ProjectorResponse(StatusCodes.OK);
 
       response.setTurnOn(false);
-      if (clientIp != null && clientIp.equals(ipAddressToUpdateFirmware)) {
-         response.setUpdateFirmware(true);
-         ipAddressToUpdateFirmware = null;
-
-         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Firmware of " + clientIp + "(" + esp8266Request.getDeviceName() + ") will be updated");
-         }
-      }
 
       if (esp8266Request.isServerIsAvailable()) {
          Timer timer = new Timer();
