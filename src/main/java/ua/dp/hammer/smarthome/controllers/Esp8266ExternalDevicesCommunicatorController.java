@@ -66,8 +66,9 @@ public class Esp8266ExternalDevicesCommunicatorController {
    }
 
    @GetMapping(path = "/alarm")
-   public ServerStatus receiveAlarm(@RequestHeader("X-FORWARDED-FOR") String clientIp) {
-      LOGGER.info("Alarm: " + clientIp);
+   public ServerStatus receiveAlarm(@RequestHeader("X-FORWARDED-FOR") String clientIp,
+                                    @RequestParam(value = "alarmSource", required = false) String alarmSource) {
+      LOGGER.info("Alarm: " + clientIp + ", source: " + alarmSource);
 
       LocalDateTime immobilizerActivatedDateTime = immobilizerBean.getActivationDateTime();
 
@@ -90,8 +91,9 @@ public class Esp8266ExternalDevicesCommunicatorController {
    }
 
    @GetMapping(path = "/testAlarm")
-   public ServerStatus receiveTestAlarm(@RequestHeader(value="X-FORWARDED-FOR", required=false) String clientIp) {
-      LOGGER.info("Test alarm: " + clientIp);
+   public ServerStatus receiveTestAlarm(@RequestHeader(value="X-FORWARDED-FOR", required=false) String clientIp,
+                                        @RequestParam(value = "alarmSource", required = false) String alarmSource) {
+      LOGGER.info("Test alarm: " + clientIp + ", source: " + alarmSource);
 
       return new ServerStatus(StatusCodes.OK);
    }
@@ -99,7 +101,7 @@ public class Esp8266ExternalDevicesCommunicatorController {
    @GetMapping(path = "/falseAlarm")
    public ServerStatus receiveFalseAlarm(@RequestHeader("X-FORWARDED-FOR") String clientIp,
                                          @RequestParam("alarmSource") String alarmSource) {
-      LOGGER.info("False alarm from " + alarmSource + ": " + clientIp);
+      LOGGER.info("False alarm: " + clientIp + ", source: " + alarmSource);
       return new ServerStatus(StatusCodes.OK);
    }
 
@@ -137,6 +139,16 @@ public class Esp8266ExternalDevicesCommunicatorController {
       projectorDeferredResult.setClientIp(clientIp);
       mainLogic.addProjectorsDeferredResult(projectorDeferredResult, clientIp, esp8266Request.isServerIsAvailable());
       return projectorDeferredResult;
+   }
+
+   @GetMapping(path = "/switchProjectorsManually")
+   public String switchProjectorsManually(@RequestParam("switchState") String switchState) {
+      if ("turnOn".equals(switchState)) {
+         mainLogic.turnProjectorsOnManually();
+      } else if ("turnOff".equals(switchState)) {
+         mainLogic.turnProjectorsOffManually();
+      }
+      return switchState;
    }
 
    @PostMapping(path = "/testDeferred", consumes="application/json")

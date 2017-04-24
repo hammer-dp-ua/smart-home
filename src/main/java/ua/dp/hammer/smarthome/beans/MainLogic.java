@@ -24,6 +24,7 @@ public class MainLogic {
    private static final Logger LOGGER = LogManager.getLogger(MainLogic.class);
 
    private boolean turnProjectorOn;
+   private boolean turnProjectorsOnManually;
    private int projectorTurnOffTimeoutSec;
    private int deferredResponseTimeoutSec;
    private Queue<ExtendedDeferredResult<ProjectorResponse>> projectorsDeferredResults = new ConcurrentLinkedQueue<>();
@@ -76,7 +77,7 @@ public class MainLogic {
    public void turnProjectorsOn() {
       LocalDateTime localDateTime = LocalDateTime.now();
 
-      if (localDateTime.getHour() >= 18 || localDateTime.getHour() <= 8) {
+      if (turnProjectorsOnManually || localDateTime.getHour() >= 18 || localDateTime.getHour() <= 8) {
          if (scheduledFutureProjectorTurningOff != null && !scheduledFutureProjectorTurningOff.isDone()) {
             scheduledFutureProjectorTurningOff.cancel(false);
 
@@ -96,8 +97,18 @@ public class MainLogic {
       }
    }
 
+   public void turnProjectorsOnManually() {
+      turnProjectorsOnManually = true;
+      turnProjectorsOn();
+   }
+
+   public void turnProjectorsOffManually() {
+      turnProjectorsOnManually = false;
+      switchProjectors(ProjectorState.TURN_OFF);
+   }
+
    public boolean getBathroomFanState(float humidity, float temperature) {
-      if (humidity >= 90.0f) {
+      if (humidity >= 80.0f) {
          thresholdHumidityStartTime = LocalDateTime.now();
       }
 
@@ -148,7 +159,7 @@ public class MainLogic {
    private ProjectorResponse createProjectorResponse(String clientIp) {
       ProjectorResponse projectorResponse = new ProjectorResponse(StatusCodes.OK);
 
-      projectorResponse.setTurnOn(turnProjectorOn);
+      projectorResponse.setTurnOn(turnProjectorOn || turnProjectorsOnManually);
       setUpdateStatus(projectorResponse, clientIp);
       if (LOGGER.isDebugEnabled()) {
          projectorResponse.setIncludeDebugInfo(true);
