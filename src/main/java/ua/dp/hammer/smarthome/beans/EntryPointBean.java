@@ -65,17 +65,5 @@ public class EntryPointBean {
          Path oldFilePath = oldFilesIterator.next();
          discFilesHandlerBean.relocateFileToDisk(oldFilePath);
       }
-
-      LocalDateTime immobilizerActivatedDateTime = immobilizerBean.getActivationDateTime();
-      if (cameraBean.isVideoRecordingInProcess() && immobilizerActivatedDateTime != null) {
-         long immobilizerActivatedDuration = Duration.between(LocalDateTime.now(), immobilizerActivatedDateTime).abs().getSeconds();
-
-         if (immobilizerActivatedDuration <= 60) {
-            LOGGER.info("Video recording is stopping because immobilizer was activated " + immobilizerActivatedDuration +
-            " seconds ago");
-
-            cameraBean.scheduleStopVideoRecording(5, TimeUnit.SECONDS);
-         }
-      }
    }
 }

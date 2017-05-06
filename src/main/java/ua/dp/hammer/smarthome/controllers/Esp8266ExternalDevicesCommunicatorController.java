@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.util.Formatter;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping(path = "/server/esp8266")
@@ -34,6 +35,7 @@ public class Esp8266ExternalDevicesCommunicatorController {
          "\r\nBuild timestamp: %11$s";
 
    private int manuallyTurnedOnFanTimeoutMinutes;
+   private int ignoreVideoRecordingTimeoutAfterImmobilizerActivationSec;
 
    @Autowired
    private Environment environment;
@@ -49,7 +51,10 @@ public class Esp8266ExternalDevicesCommunicatorController {
 
    @PostConstruct
    public void init() {
-      manuallyTurnedOnFanTimeoutMinutes = Integer.parseInt(environment.getRequiredProperty("manuallyTurnedOnFanTimeoutMinutes"));
+      manuallyTurnedOnFanTimeoutMinutes =
+            Integer.parseInt(environment.getRequiredProperty("manuallyTurnedOnFanTimeoutMinutes"));
+      ignoreVideoRecordingTimeoutAfterImmobilizerActivationSec =
+            Integer.parseInt(environment.getRequiredProperty("ignoreVideoRecordingTimeoutAfterImmobilizerActivationSec"));
    }
 
    @PostMapping(path = "/statusInfo", consumes="application/json")
@@ -78,7 +83,7 @@ public class Esp8266ExternalDevicesCommunicatorController {
          LocalDateTime currentDateTime = LocalDateTime.now();
          long durationBetweenImmobilizerAndAlarm = Duration.between(currentDateTime, immobilizerActivatedDateTime).abs().getSeconds();
 
-         if (durationBetweenImmobilizerAndAlarm >= 120) {
+         if (durationBetweenImmobilizerAndAlarm >= ignoreVideoRecordingTimeoutAfterImmobilizerActivationSec) {
             cameraBean.startVideoRecording();
          } else {
             LOGGER.info("Video recording wasn't started because immobilizer was activated " + durationBetweenImmobilizerAndAlarm +
@@ -111,6 +116,12 @@ public class Esp8266ExternalDevicesCommunicatorController {
 
       immobilizerBean.setActivationDateTime(LocalDateTime.now());
       mainLogic.turnProjectorsOn();
+
+      if (cameraBean.isVideoRecordingInProcess()) {
+         LOGGER.info("Video recording is stopping because immobilizer has been activated");
+
+         cameraBean.scheduleStopVideoRecording(20, TimeUnit.SECONDS);
+      }
       return new ServerStatus(StatusCodes.OK);
    }
 
