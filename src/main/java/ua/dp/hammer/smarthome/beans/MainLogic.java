@@ -13,11 +13,13 @@ import ua.dp.hammer.smarthome.models.ServerStatus;
 import ua.dp.hammer.smarthome.models.StatusCodes;
 
 import javax.annotation.PostConstruct;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class MainLogic {
@@ -25,25 +27,66 @@ public class MainLogic {
 
    private boolean turnProjectorOn;
    private boolean turnProjectorsOnManually;
-   private int projectorTurnOffTimeoutSec;
-   private int deferredResponseTimeoutSec;
    private Queue<ExtendedDeferredResult<ProjectorResponse>> projectorsDeferredResults = new ConcurrentLinkedQueue<>();
    private ScheduledFuture<?> scheduledFutureProjectorTurningOff;
    private LocalDateTime lastSentResponsesTime;
    private LocalDateTime thresholdHumidityStartTime;
    private String ipAddressToUpdateFirmware;
 
+   private int projectorTurnOffTimeoutSec;
+   private int deferredResponseTimeoutSec;
+   private int ignoreVideoRecordingTimeoutAfterImmobilizerActivationSec;
+
    @Autowired
    private Environment environment;
+
+   @Autowired
+   private ImmobilizerBean immobilizerBean;
+
+   @Autowired
+   private CameraBean cameraBean;
 
    @PostConstruct
    public void init() {
       projectorTurnOffTimeoutSec = Integer.parseInt(environment.getRequiredProperty("projectorTurnOffTimeoutSec"));
       deferredResponseTimeoutSec = Integer.parseInt(environment.getRequiredProperty("deferredResponseTimeoutSec"));
+      ignoreVideoRecordingTimeoutAfterImmobilizerActivationSec =
+            Integer.parseInt(environment.getRequiredProperty("ignoreVideoRecordingTimeoutAfterImmobilizerActivationSec"));
    }
 
-   public void receiveAlarm() {
+   public void receiveAlarm(String alarmSource) {
       turnProjectorsOn();
+
+      if (alarmSource != null && alarmSource.equals("MOTION_SENSOR_2")) {
+         return;
+      }
+
+      LocalDateTime immobilizerActivatedDateTime = immobilizerBean.getActivationDateTime();
+
+      if (immobilizerActivatedDateTime != null) {
+         LocalDateTime currentDateTime = LocalDateTime.now();
+         long durationBetweenImmobilizerAndAlarm = Duration.between(currentDateTime, immobilizerActivatedDateTime).abs().getSeconds();
+
+         if (durationBetweenImmobilizerAndAlarm >= ignoreVideoRecordingTimeoutAfterImmobilizerActivationSec) {
+            cameraBean.startVideoRecording();
+         } else {
+            LOGGER.info("Video recording wasn't started because immobilizer was activated " + durationBetweenImmobilizerAndAlarm +
+                  " seconds ago");
+         }
+      } else {
+         cameraBean.startVideoRecording();
+      }
+   }
+
+   public void receiveImmobilizerActivation() {
+      turnProjectorsOn();
+      immobilizerBean.setActivationDateTime(LocalDateTime.now());
+
+      if (cameraBean.isVideoRecordingInProcess()) {
+         LOGGER.info("Video recording is stopping because immobilizer has been activated");
+
+         cameraBean.scheduleStopVideoRecording(20, TimeUnit.SECONDS);
+      }
    }
 
    public void addProjectorsDeferredResult(ExtendedDeferredResult<ProjectorResponse> projectorDeferredResult,
@@ -77,7 +120,7 @@ public class MainLogic {
    public void turnProjectorsOn() {
       LocalDateTime localDateTime = LocalDateTime.now();
 
-      if (turnProjectorsOnManually || localDateTime.getHour() >= 18 || localDateTime.getHour() <= 8) {
+      if (turnProjectorsOnManually || localDateTime.getHour() >= 20 || localDateTime.getHour() <= 6) {
          if (scheduledFutureProjectorTurningOff != null && !scheduledFutureProjectorTurningOff.isDone()) {
             scheduledFutureProjectorTurningOff.cancel(false);
 

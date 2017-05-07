@@ -6,18 +6,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.async.DeferredResult;
-import ua.dp.hammer.smarthome.beans.CameraBean;
-import ua.dp.hammer.smarthome.beans.ImmobilizerBean;
 import ua.dp.hammer.smarthome.beans.MainLogic;
 import ua.dp.hammer.smarthome.models.*;
 
 import javax.annotation.PostConstruct;
-import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.Formatter;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping(path = "/server/esp8266")
@@ -35,16 +30,9 @@ public class Esp8266ExternalDevicesCommunicatorController {
          "\r\nBuild timestamp: %11$s";
 
    private int manuallyTurnedOnFanTimeoutMinutes;
-   private int ignoreVideoRecordingTimeoutAfterImmobilizerActivationSec;
 
    @Autowired
    private Environment environment;
-
-   @Autowired
-   private CameraBean cameraBean;
-
-   @Autowired
-   private ImmobilizerBean immobilizerBean;
 
    @Autowired
    private MainLogic mainLogic;
@@ -53,8 +41,6 @@ public class Esp8266ExternalDevicesCommunicatorController {
    public void init() {
       manuallyTurnedOnFanTimeoutMinutes =
             Integer.parseInt(environment.getRequiredProperty("manuallyTurnedOnFanTimeoutMinutes"));
-      ignoreVideoRecordingTimeoutAfterImmobilizerActivationSec =
-            Integer.parseInt(environment.getRequiredProperty("ignoreVideoRecordingTimeoutAfterImmobilizerActivationSec"));
    }
 
    @PostMapping(path = "/statusInfo", consumes="application/json")
@@ -75,23 +61,7 @@ public class Esp8266ExternalDevicesCommunicatorController {
                                     @RequestParam(value = "alarmSource", required = false) String alarmSource) {
       LOGGER.info("Alarm: " + clientIp + ", source: " + alarmSource);
 
-      LocalDateTime immobilizerActivatedDateTime = immobilizerBean.getActivationDateTime();
-
-      mainLogic.receiveAlarm();
-
-      if (immobilizerActivatedDateTime != null) {
-         LocalDateTime currentDateTime = LocalDateTime.now();
-         long durationBetweenImmobilizerAndAlarm = Duration.between(currentDateTime, immobilizerActivatedDateTime).abs().getSeconds();
-
-         if (durationBetweenImmobilizerAndAlarm >= ignoreVideoRecordingTimeoutAfterImmobilizerActivationSec) {
-            cameraBean.startVideoRecording();
-         } else {
-            LOGGER.info("Video recording wasn't started because immobilizer was activated " + durationBetweenImmobilizerAndAlarm +
-            " seconds ago");
-         }
-      } else {
-         cameraBean.startVideoRecording();
-      }
+      mainLogic.receiveAlarm(alarmSource);
       return new ServerStatus(StatusCodes.OK);
    }
 
@@ -114,22 +84,7 @@ public class Esp8266ExternalDevicesCommunicatorController {
    public ServerStatus receiveImmobilizerActivation(@RequestHeader("X-FORWARDED-FOR") String clientIp) {
       LOGGER.info("Immobilizer activated: " + clientIp);
 
-      immobilizerBean.setActivationDateTime(LocalDateTime.now());
-      mainLogic.turnProjectorsOn();
-
-      if (cameraBean.isVideoRecordingInProcess()) {
-         LOGGER.info("Video recording is stopping because immobilizer has been activated");
-
-         cameraBean.scheduleStopVideoRecording(20, TimeUnit.SECONDS);
-      }
-      return new ServerStatus(StatusCodes.OK);
-   }
-
-   @GetMapping(path = "/immobilizerDeactivated")
-   public ServerStatus receiveImmobilizerDeactivation(@RequestHeader("X-FORWARDED-FOR") String clientIp) {
-      LOGGER.info("Immobilizer deactivated: " + clientIp);
-
-      immobilizerBean.setDeactivationDateTime(LocalDateTime.now());
+      mainLogic.receiveImmobilizerActivation();
       return new ServerStatus(StatusCodes.OK);
    }
 
