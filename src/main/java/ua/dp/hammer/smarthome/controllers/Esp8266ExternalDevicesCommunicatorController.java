@@ -21,13 +21,8 @@ public class Esp8266ExternalDevicesCommunicatorController {
 
    private static final String LOGGER_DEBUG_INFO = "Gain of %1$s (%2$s): %3$sdB" +
          "\r\nErrors: %4$d" +
-         "\r\nOverrun Errors: %5$d" +
-         "\r\nIdle Line Detections: %6$d" +
-         "\r\nNoise Detection: %7$d" +
-         "\r\nFraming Errors: %8$d" +
-         "\r\nLast Error Task: %9$d" +
-         "\r\nUSART data: %10$s" +
-         "\r\nBuild timestamp: %11$s";
+         "\r\nUptime: %5$ddays %6$dhours %7$dminutes %8$dseconds" +
+         "\r\nBuild timestamp: %9$s";
 
    private int manuallyTurnedOnFanTimeoutMinutes;
 
@@ -174,9 +169,32 @@ public class Esp8266ExternalDevicesCommunicatorController {
 
    private void writeGeneralDebugInfo(String clientIp, Esp8266Request esp8266Request) {
       String gain = esp8266Request.getGain() != null ? esp8266Request.getGain().trim() : null;
+      long uptimeDays = 0;
+      long uptimeHours = 0;
+      long uptimeMinutes = 0;
+      long uptimeSeconds = 0;
+      boolean justTurnedOn = false;
+
+      if (esp8266Request.getUptime() > 0) {
+         long secondsRemaining = esp8266Request.getUptime();
+
+         uptimeDays = esp8266Request.getUptime() / 60L / 60L / 24L;
+         if (uptimeDays > 0) {
+            secondsRemaining -= 60L * 60L * 24L * uptimeDays;
+         }
+         uptimeHours = secondsRemaining / 60L / 60L;
+         if (uptimeHours > 0) {
+            secondsRemaining -= 60L * 60L * uptimeHours;
+         }
+         uptimeMinutes = secondsRemaining / 60L;
+         if (uptimeMinutes > 0) {
+            secondsRemaining -= 60L * uptimeMinutes;
+         }
+         uptimeSeconds = secondsRemaining;
+
+         justTurnedOn = uptimeDays == 0 && uptimeHours == 0 && uptimeMinutes == 0;
+      }
       LOGGER.debug(new Formatter().format(LOGGER_DEBUG_INFO, clientIp, esp8266Request.getDeviceName(), gain, esp8266Request.getErrors(),
-            esp8266Request.getUsartOverrunErrors(), esp8266Request.getUsartIdleLineDetections(), esp8266Request.getUsartNoiseDetection(),
-            esp8266Request.getUsartFramingErrors(), esp8266Request.getLastErrorTask(), esp8266Request.getUsartData(),
-            esp8266Request.getBuildTimestamp()));
+            uptimeDays, uptimeHours, uptimeMinutes, uptimeSeconds, esp8266Request.getBuildTimestamp()) + (justTurnedOn ? "\r\nJust turned on" : ""));
    }
 }
