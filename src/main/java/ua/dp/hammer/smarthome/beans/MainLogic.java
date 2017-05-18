@@ -71,7 +71,7 @@ public class MainLogic {
             cameraBean.startVideoRecording();
          } else {
             LOGGER.info("Video recording wasn't started because immobilizer was activated " + durationBetweenImmobilizerAndAlarm +
-                  " seconds ago");
+                  " seconds ago\r\n");
          }
       } else {
          cameraBean.startVideoRecording();
@@ -83,7 +83,7 @@ public class MainLogic {
       immobilizerBean.setActivationDateTime(LocalDateTime.now());
 
       if (cameraBean.isVideoRecordingInProcess()) {
-         LOGGER.info("Video recording is stopping because immobilizer has been activated");
+         LOGGER.info("Video recording is stopping because immobilizer has been activated\r\n");
 
          cameraBean.scheduleStopVideoRecording(20, TimeUnit.SECONDS);
       }
@@ -98,7 +98,7 @@ public class MainLogic {
          projectorDeferredResult.setResult(projectorResponse);
 
          if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Server availability hasn't been detected yet");
+            LOGGER.debug("Server availability hasn't been detected yet\r\n");
          }
          return;
       }
@@ -106,7 +106,7 @@ public class MainLogic {
       projectorsDeferredResults.add(projectorDeferredResult);
 
       if (LOGGER.isDebugEnabled()) {
-         LOGGER.debug("Deferred result from " + clientIp + " has been added. Deferred results size: " + projectorsDeferredResults.size());
+         LOGGER.debug("Deferred result from " + clientIp + " has been added. Deferred results size: " + projectorsDeferredResults.size() + "\r\n");
       }
    }
 
@@ -125,7 +125,7 @@ public class MainLogic {
             scheduledFutureProjectorTurningOff.cancel(false);
 
             if (LOGGER.isDebugEnabled()) {
-               LOGGER.debug("Projector turning off scheduled task has been canceled.");
+               LOGGER.debug("Projector turning off scheduled task has been canceled\r\n");
             }
          }
 
@@ -177,12 +177,12 @@ public class MainLogic {
       }
 
       if (turnProjectorOn) {
-         LOGGER.info("Projectors are turning on");
+         LOGGER.info("Projectors are turning on...\r\n");
       }
 
       if (LOGGER.isDebugEnabled()) {
          LOGGER.debug("Deferred results are ready to be returned. Size: " + projectorsDeferredResults.size() +
-               ". New projectors state: " + newProjectorState + ". State to set: " + turnProjectorOn);
+               ". New projectors state: " + newProjectorState + ". State to set: " + turnProjectorOn + "\r\n");
       }
 
       while (!projectorsDeferredResults.isEmpty()) {
@@ -220,7 +220,7 @@ public class MainLogic {
          ipAddressToUpdateFirmware = null;
 
          if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Firmware of " + clientIp + " will be updated");
+            LOGGER.debug("Firmware of " + clientIp + " will be updated\r\n");
          }
       }
    }
