@@ -54,7 +54,7 @@ public class Esp8266ExternalDevicesCommunicatorController {
    @GetMapping(path = "/alarm")
    public ServerStatus receiveAlarm(@RequestHeader("X-FORWARDED-FOR") String clientIp,
                                     @RequestParam(value = "alarmSource", required = false) String alarmSource) {
-      LOGGER.info("Alarm: " + clientIp + ", source: " + alarmSource + "\r\n");
+      LOGGER.info("Alarm: " + clientIp + ", source: " + alarmSource);
 
       mainLogic.receiveAlarm(alarmSource);
       return new ServerStatus(StatusCodes.OK);
@@ -63,7 +63,7 @@ public class Esp8266ExternalDevicesCommunicatorController {
    @GetMapping(path = "/testAlarm")
    public ServerStatus receiveTestAlarm(@RequestHeader(value="X-FORWARDED-FOR", required=false) String clientIp,
                                         @RequestParam(value = "alarmSource", required = false) String alarmSource) {
-      LOGGER.info("Test alarm: " + clientIp + ", source: " + alarmSource + "\r\n");
+      LOGGER.info("Test alarm: " + clientIp + ", source: " + alarmSource);
 
       return new ServerStatus(StatusCodes.OK);
    }
@@ -71,13 +71,13 @@ public class Esp8266ExternalDevicesCommunicatorController {
    @GetMapping(path = "/falseAlarm")
    public ServerStatus receiveFalseAlarm(@RequestHeader("X-FORWARDED-FOR") String clientIp,
                                          @RequestParam("alarmSource") String alarmSource) {
-      LOGGER.info("False alarm: " + clientIp + ", source: " + alarmSource + "\r\n");
+      LOGGER.info("False alarm: " + clientIp + ", source: " + alarmSource);
       return new ServerStatus(StatusCodes.OK);
    }
 
    @GetMapping(path = "/immobilizerActivated")
    public ServerStatus receiveImmobilizerActivation(@RequestHeader("X-FORWARDED-FOR") String clientIp) {
-      LOGGER.info("Immobilizer activated: " + clientIp + "\r\n");
+      LOGGER.info("Immobilizer activated: " + clientIp);
 
       mainLogic.receiveImmobilizerActivation();
       return new ServerStatus(StatusCodes.OK);
@@ -149,7 +149,7 @@ public class Esp8266ExternalDevicesCommunicatorController {
 
       if (LOGGER.isDebugEnabled()) {
          writeGeneralDebugInfo(clientIp, esp8266Request);
-         LOGGER.debug("Bathroom info. Humidity: " + esp8266Request.getHumidity() + "; Temperature: " + esp8266Request.getTemperature() + "\r\n");
+         LOGGER.debug("Bathroom info. Humidity: " + esp8266Request.getHumidity() + "; Temperature: " + esp8266Request.getTemperature());
          fanResponse.setIncludeDebugInfo(true);
       }
 
@@ -160,10 +160,21 @@ public class Esp8266ExternalDevicesCommunicatorController {
 
    @GetMapping(path = "/turnOnBathroomFun")
    public String turnOnBathroomFun() {
-      LOGGER.info("Bathroom fan will be turned on\r\n");
+      LOGGER.info("Bathroom fan will be turned on");
 
       mainLogic.turnOnBathroomFan();
       return "OK";
+   }
+
+   /**
+    *
+    * @param timeout in minutes. If parameter is 0, alarms will be ignored until switched on manually,
+    *                if parameter is -1 the method stops alarms ignoring
+    */
+   @GetMapping(path = "/ignoreAlarms")
+   public int ignoreAlarms(@RequestParam("timeout") int timeout) {
+      mainLogic.ignoreAlarms(timeout);
+      return timeout;
    }
 
    private void writeGeneralDebugInfo(String clientIp, Esp8266Request esp8266Request) {
@@ -194,6 +205,6 @@ public class Esp8266ExternalDevicesCommunicatorController {
          justTurnedOn = uptimeDays == 0 && uptimeHours == 0 && uptimeMinutes == 0;
       }
       LOGGER.debug(new Formatter().format(LOGGER_DEBUG_INFO, clientIp, esp8266Request.getDeviceName(), gain, esp8266Request.getErrors(),
-            uptimeDays, uptimeHours, uptimeMinutes, uptimeSeconds, esp8266Request.getBuildTimestamp()) + (justTurnedOn ? "\r\nJust turned on" : "") + "\r\n");
+            uptimeDays, uptimeHours, uptimeMinutes, uptimeSeconds, esp8266Request.getBuildTimestamp()) + (justTurnedOn ? "\r\nJust turned on" : ""));
    }
 }

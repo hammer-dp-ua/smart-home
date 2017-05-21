@@ -4,6 +4,7 @@ public class ServerStatus {
    private StatusCodes statusCode;
    private boolean includeDebugInfo;
    private boolean updateFirmware;
+   private boolean ignoreAlarms;
 
    public ServerStatus(StatusCodes statusCode) {
       this.statusCode = statusCode;
@@ -31,5 +32,13 @@ public class ServerStatus {
 
    public void setUpdateFirmware(boolean updateFirmware) {
       this.updateFirmware = updateFirmware;
+   }
+
+   public boolean isIgnoreAlarms() {
+      return ignoreAlarms;
+   }
+
+   public void setIgnoreAlarms(boolean ignoreAlarms) {
+      this.ignoreAlarms = ignoreAlarms;
    }
 }

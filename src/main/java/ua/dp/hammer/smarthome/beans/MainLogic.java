@@ -17,6 +17,8 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Queue;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -32,6 +34,7 @@ public class MainLogic {
    private LocalDateTime lastSentResponsesTime;
    private LocalDateTime thresholdHumidityStartTime;
    private String ipAddressToUpdateFirmware;
+   private boolean alarmsAreBeingIgnored;
 
    private int projectorTurnOffTimeoutSec;
    private int deferredResponseTimeoutSec;
@@ -57,7 +60,8 @@ public class MainLogic {
    public void receiveAlarm(String alarmSource) {
       turnProjectorsOn();
 
-      if (alarmSource != null && alarmSource.equals("MOTION_SENSOR_2")) {
+      if (alarmsAreBeingIgnored ||
+            (alarmSource != null && alarmSource.equals("MOTION_SENSOR_2"))) {
          return;
       }
 
@@ -71,7 +75,7 @@ public class MainLogic {
             cameraBean.startVideoRecording();
          } else {
             LOGGER.info("Video recording wasn't started because immobilizer was activated " + durationBetweenImmobilizerAndAlarm +
-                  " seconds ago\r\n");
+                  " seconds ago");
          }
       } else {
          cameraBean.startVideoRecording();
@@ -83,7 +87,7 @@ public class MainLogic {
       immobilizerBean.setActivationDateTime(LocalDateTime.now());
 
       if (cameraBean.isVideoRecordingInProcess()) {
-         LOGGER.info("Video recording is stopping because immobilizer has been activated\r\n");
+         LOGGER.info("Video recording is stopping because immobilizer has been activated");
 
          cameraBean.scheduleStopVideoRecording(20, TimeUnit.SECONDS);
       }
@@ -98,7 +102,7 @@ public class MainLogic {
          projectorDeferredResult.setResult(projectorResponse);
 
          if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Server availability hasn't been detected yet\r\n");
+            LOGGER.debug("Server availability hasn't been detected yet");
          }
          return;
       }
@@ -106,7 +110,7 @@ public class MainLogic {
       projectorsDeferredResults.add(projectorDeferredResult);
 
       if (LOGGER.isDebugEnabled()) {
-         LOGGER.debug("Deferred result from " + clientIp + " has been added. Deferred results size: " + projectorsDeferredResults.size() + "\r\n");
+         LOGGER.debug("Deferred result from " + clientIp + " has been added. Deferred results size: " + projectorsDeferredResults.size());
       }
    }
 
@@ -117,7 +121,7 @@ public class MainLogic {
       }
    }
 
-   public void turnProjectorsOn() {
+   private void turnProjectorsOn() {
       LocalDateTime localDateTime = LocalDateTime.now();
 
       if (turnProjectorsOnManually || localDateTime.getHour() >= 20 || localDateTime.getHour() <= 6) {
@@ -125,7 +129,7 @@ public class MainLogic {
             scheduledFutureProjectorTurningOff.cancel(false);
 
             if (LOGGER.isDebugEnabled()) {
-               LOGGER.debug("Projector turning off scheduled task has been canceled\r\n");
+               LOGGER.debug("Projector turning off scheduled task has been canceled");
             }
          }
 
@@ -167,6 +171,30 @@ public class MainLogic {
       thresholdHumidityStartTime = LocalDateTime.now();
    }
 
+   public void ignoreAlarms(int timeout) {
+      alarmsAreBeingIgnored = true;
+
+      if (timeout > 0) {
+         Timer timer = new Timer();
+
+         timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+               alarmsAreBeingIgnored = false;
+               LOGGER.info("Alarms are not ignored anymore");
+            }
+         }, timeout * 60 * 1000);
+      } else if (timeout == -1) {
+         alarmsAreBeingIgnored = false;
+      }
+
+      if (alarmsAreBeingIgnored) {
+         LOGGER.info("Alarms are being ignored");
+      } else {
+         LOGGER.info("Alarms are not ignored anymore");
+      }
+   }
+
    private void sendKeepHeartResponse() {
       switchProjectors(null);
    }
@@ -177,12 +205,12 @@ public class MainLogic {
       }
 
       if (turnProjectorOn) {
-         LOGGER.info("Projectors are turning on...\r\n");
+         LOGGER.info("Projectors are turning on...");
       }
 
       if (LOGGER.isDebugEnabled()) {
          LOGGER.debug("Deferred results are ready to be returned. Size: " + projectorsDeferredResults.size() +
-               ". New projectors state: " + newProjectorState + ". State to set: " + turnProjectorOn + "\r\n");
+               ". New projectors state: " + newProjectorState + ". State to set: " + turnProjectorOn);
       }
 
       while (!projectorsDeferredResults.isEmpty()) {
@@ -219,9 +247,9 @@ public class MainLogic {
          response.setUpdateFirmware(true);
          ipAddressToUpdateFirmware = null;
 
-         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Firmware of " + clientIp + " will be updated\r\n");
-         }
+         LOGGER.info("Firmware of " + clientIp + " will be updated");
       }
+
+      response.setIgnoreAlarms(alarmsAreBeingIgnored);
    }
 }

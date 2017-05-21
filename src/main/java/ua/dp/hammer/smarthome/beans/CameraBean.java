@@ -165,7 +165,7 @@ public class CameraBean {
       }
 
       if (LOGGER.isDebugEnabled()) {
-         LOGGER.debug("Video recording is " + (videoRecordingAction == VideoRecordingAction.START ? "starting" : "stopping") + "\r\n");
+         LOGGER.debug("Video recording is " + (videoRecordingAction == VideoRecordingAction.START ? "starting" : "stopping"));
       }
 
       HttpURLConnection httpURLConnection = createPostRequest(String.format(MANUAL_RECORDING_URL, cameraIp),
@@ -178,11 +178,11 @@ public class CameraBean {
 
       if (responseCode == HttpURLConnection.HTTP_OK) {
          if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Video recording " + (videoRecordingAction == VideoRecordingAction.START ? "started" : "stopped") + "\r\n");
+            LOGGER.debug("Video recording " + (videoRecordingAction == VideoRecordingAction.START ? "started" : "stopped"));
          }
          return true;
       } else {
-         LOGGER.error("Video recording wasn't " + (videoRecordingAction == VideoRecordingAction.START ? "started" : "stopped") + ". Response code: " + responseCode + "\r\n");
+         LOGGER.error("Video recording wasn't " + (videoRecordingAction == VideoRecordingAction.START ? "started" : "stopped") + ". Response code: " + responseCode);
          return false;
       }
    }
@@ -190,7 +190,7 @@ public class CameraBean {
    @Scheduled(fixedDelay=25000)
    public void loginAndKeepHeart() {
       if (CREDENTIAL_ID.get() == null) {
-         LOGGER.debug("Logging in starting...\r\n");
+         LOGGER.debug("Logging in starting...");
          CREDENTIAL_ID.set(login());
       } else {
          keepHeart("ID=" + CREDENTIAL_ID.get());
@@ -206,7 +206,7 @@ public class CameraBean {
       int[] responseContent = null;
 
       if (responseCode != HttpURLConnection.HTTP_OK) {
-         LOGGER.error("Invalid response code on keep heart: " + responseCode + "\r\n");
+         LOGGER.error("Invalid response code on keep heart: " + responseCode);
       } else {
          responseContent = readRawResponseBody(httpURLConnection);
       }
@@ -215,7 +215,7 @@ public class CameraBean {
 
       if (!Arrays.equals(KEEP_HEART_SUCCESSFULLY_RESPONSE, responseContent)) {
          CREDENTIAL_ID.set(null);
-         LOGGER.error("Invalid response body on keep heart: " + Arrays.toString(responseContent) + "\r\n");
+         LOGGER.error("Invalid response body on keep heart: " + Arrays.toString(responseContent));
          loginAndKeepHeart();
       }
    }
