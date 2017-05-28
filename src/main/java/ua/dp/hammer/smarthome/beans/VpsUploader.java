@@ -36,7 +36,7 @@ public class VpsUploader {
    private static final Logger LOGGER = LogManager.getLogger(VpsUploader.class);
 
    private static final int BUFFER_SIZE = 10 * 1024 * 1024;
-   private static final String FILE_IS_READY_TO_UPLOAD = " video file is ready to upload. Size: ";
+   private static final String FILE_IS_READY_TO_UPLOAD = " video file is ready to be uploaded. Size: ";
    private static final String UPLOADING_INFO_MSG = "Uploading has been completed. %s file(s) has been uploaded at %.1f seconds. Average speed: %.1fKB/s";
 
    private String serverSocket;
@@ -72,7 +72,7 @@ public class VpsUploader {
       LOGGER.info(filePath.getFileName() + FILE_IS_READY_TO_UPLOAD + (fileLengthMb) + "MB");
 
       if (fileLengthMb < 10) {
-         LOGGER.info("Video file is too short");
+         LOGGER.info(filePath.getFileName() + " video file is too short");
          return true;
       }
 

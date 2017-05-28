@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 @Component
 public class MainLogic {
-   private static final Logger LOGGER = LogManager.getLogger(MainLogic.class);
+   private final static Logger LOGGER = LogManager.getLogger(MainLogic.class);
 
    private boolean turnProjectorOn;
    private boolean turnProjectorsOnManually;
@@ -34,6 +34,7 @@ public class MainLogic {
    private LocalDateTime lastSentResponsesTime;
    private LocalDateTime thresholdHumidityStartTime;
    private String ipAddressToUpdateFirmware;
+   private Timer cancelIgnoringAlarmsTimer;
    private boolean alarmsAreBeingIgnored;
 
    private int projectorTurnOffTimeoutSec;
@@ -174,10 +175,14 @@ public class MainLogic {
    public void ignoreAlarms(int timeout) {
       alarmsAreBeingIgnored = true;
 
-      if (timeout > 0) {
-         Timer timer = new Timer();
+      if (cancelIgnoringAlarmsTimer != null) {
+         cancelIgnoringAlarmsTimer.cancel();
+      }
 
-         timer.schedule(new TimerTask() {
+      if (timeout > 0) {
+         cancelIgnoringAlarmsTimer = new Timer();
+
+         cancelIgnoringAlarmsTimer.schedule(new TimerTask() {
             @Override
             public void run() {
                alarmsAreBeingIgnored = false;
@@ -189,7 +194,8 @@ public class MainLogic {
       }
 
       if (alarmsAreBeingIgnored) {
-         LOGGER.info("Alarms are being ignored");
+         LOGGER.info("Alarms will be ignored " + timeout + " minutes and finishes ignoring " +
+               LocalDateTime.now().plusMinutes(timeout).toString());
       } else {
          LOGGER.info("Alarms are not ignored anymore");
       }

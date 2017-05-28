@@ -180,6 +180,13 @@ public class DiscFilesHandlerBean {
    @Async
    public void createImageFiles(Set<Path> videoFiles, ImageFilesUploader imageFilesUploader) {
       for (Path videoFilePath : videoFiles) {
+         File videoFile = videoFilePath.toFile();
+         int videoFileLengthMb = (int) (videoFile.length() / 1024 / 1024);
+
+         if (videoFileLengthMb < 10) {
+            continue;
+         }
+
          String newDirectoryName = videoFilePath.getFileName().toString().replace(videoFileExtension, "");
          Path newDirectoryPath = FileSystems.getDefault().getPath(ramVideosDir, newDirectoryName);
 
