@@ -172,8 +172,9 @@ public class MainLogic {
       thresholdHumidityStartTime = LocalDateTime.now();
    }
 
-   public void ignoreAlarms(int timeout) {
+   public String ignoreAlarms(int timeout) {
       alarmsAreBeingIgnored = true;
+      String returnValue = "Ignoring indefinitely";
 
       if (cancelIgnoringAlarmsTimer != null) {
          cancelIgnoringAlarmsTimer.cancel();
@@ -181,6 +182,7 @@ public class MainLogic {
 
       if (timeout > 0) {
          cancelIgnoringAlarmsTimer = new Timer();
+         returnValue = "Finishes ignoring at " + LocalDateTime.now().plusMinutes(timeout).toString();
 
          cancelIgnoringAlarmsTimer.schedule(new TimerTask() {
             @Override
@@ -194,11 +196,13 @@ public class MainLogic {
       }
 
       if (alarmsAreBeingIgnored) {
-         LOGGER.info("Alarms will be ignored " + timeout + " minutes and finishes ignoring " +
-               LocalDateTime.now().plusMinutes(timeout).toString());
+         LOGGER.info("Alarms will be ignored " + (timeout == 0 ? "indefinitely" : (timeout + " minutes and finishes ignoring at " + returnValue)));
       } else {
-         LOGGER.info("Alarms are not ignored anymore");
+         returnValue = "Alarms are not ignored anymore";
+
+         LOGGER.info(returnValue);
       }
+      return returnValue;
    }
 
    private void sendKeepHeartResponse() {

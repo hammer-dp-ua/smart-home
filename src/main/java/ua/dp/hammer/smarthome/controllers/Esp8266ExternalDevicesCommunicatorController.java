@@ -172,9 +172,8 @@ public class Esp8266ExternalDevicesCommunicatorController {
     *                if parameter is -1 the method stops alarms ignoring
     */
    @GetMapping(path = "/ignoreAlarms")
-   public int ignoreAlarms(@RequestParam("timeout") int timeout) {
-      mainLogic.ignoreAlarms(timeout);
-      return timeout;
+   public String ignoreAlarms(@RequestParam("timeout") int timeout) {
+      return mainLogic.ignoreAlarms(timeout);
    }
 
    private void writeGeneralDebugInfo(String clientIp, Esp8266Request esp8266Request) {
