@@ -125,7 +125,7 @@ public class MainLogic {
    private void turnProjectorsOn() {
       LocalDateTime localDateTime = LocalDateTime.now();
 
-      if (turnProjectorsOnManually || localDateTime.getHour() >= 20 || localDateTime.getHour() <= 6) {
+      if (turnProjectorsOnManually || localDateTime.getHour() >= 21 || localDateTime.getHour() <= 5) {
          if (scheduledFutureProjectorTurningOff != null && !scheduledFutureProjectorTurningOff.isDone()) {
             scheduledFutureProjectorTurningOff.cancel(false);
 
