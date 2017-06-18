@@ -9,6 +9,8 @@ public class Esp8266Request {
    private String deviceName;
    private long uptime;
    private String buildTimestamp;
+   private int freeHeapSpace;
+   private String resetReason;
 
    public String getGain() {
       return gain;
@@ -72,5 +74,21 @@ public class Esp8266Request {
 
    public void setBuildTimestamp(String buildTimestamp) {
       this.buildTimestamp = buildTimestamp;
+   }
+
+   public int getFreeHeapSpace() {
+      return freeHeapSpace;
+   }
+
+   public void setFreeHeapSpace(int freeHeapSpace) {
+      this.freeHeapSpace = freeHeapSpace;
+   }
+
+   public String getResetReason() {
+      return resetReason;
+   }
+
+   public void setResetReason(String resetReason) {
+      this.resetReason = resetReason;
    }
 }

@@ -13,6 +13,8 @@ import javax.annotation.PostConstruct;
 import java.util.Formatter;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping(path = "/server/esp8266")
@@ -22,7 +24,11 @@ public class Esp8266ExternalDevicesCommunicatorController {
    private static final String LOGGER_DEBUG_INFO = "Gain of %1$s (%2$s): %3$sdB" +
          "\r\nErrors: %4$d" +
          "\r\nUptime: %5$ddays %6$dhours %7$dminutes %8$dseconds" +
-         "\r\nBuild timestamp: %9$s";
+         "\r\nBuild timestamp: %9$s" +
+         "\r\nFree heap: %10$s" +
+         "\r\nReset reason: %11$s";
+
+   private final static Pattern SINGLE_DIGIT_PATTERN = Pattern.compile("(.*?)(\\d{1})(.*)");
 
    private int manuallyTurnedOnFanTimeoutMinutes;
 
@@ -203,7 +209,30 @@ public class Esp8266ExternalDevicesCommunicatorController {
 
          justTurnedOn = uptimeDays == 0 && uptimeHours == 0 && uptimeMinutes == 0;
       }
+
+      String wholeResetReasonMessage = describeResetReason(esp8266Request.getResetReason());
+
+
       LOGGER.debug(new Formatter().format(LOGGER_DEBUG_INFO, clientIp, esp8266Request.getDeviceName(), gain, esp8266Request.getErrors(),
-            uptimeDays, uptimeHours, uptimeMinutes, uptimeSeconds, esp8266Request.getBuildTimestamp()) + (justTurnedOn ? "\r\nJust turned on" : ""));
+            uptimeDays, uptimeHours, uptimeMinutes, uptimeSeconds, esp8266Request.getBuildTimestamp(), esp8266Request.getFreeHeapSpace(),
+            wholeResetReasonMessage) + (justTurnedOn ? "\r\nJust turned on" : ""));
+   }
+
+   String describeResetReason(String wholeResetReasonMessage) {
+      if (wholeResetReasonMessage == null || wholeResetReasonMessage.length() < 1) {
+         return wholeResetReasonMessage;
+      }
+
+      Matcher matcher = SINGLE_DIGIT_PATTERN.matcher(wholeResetReasonMessage);
+
+      if (matcher.find()) {
+         String resetReasonNoString = matcher.group(2);
+         int resetReasonNo = Integer.parseInt(resetReasonNoString);
+         String resetReasonDescription = Esp8266ResetReasons.getReason(resetReasonNo);
+
+         return wholeResetReasonMessage.replaceFirst(resetReasonNoString, resetReasonDescription);
+      } else {
+         return wholeResetReasonMessage;
+      }
    }
 }

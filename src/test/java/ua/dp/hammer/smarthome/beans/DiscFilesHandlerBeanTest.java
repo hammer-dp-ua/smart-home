@@ -1,4 +1,4 @@
-package ua.dp.hammer.beans.smarthome;
+package ua.dp.hammer.smarthome.beans;
 
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -11,7 +11,6 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.support.AnnotationConfigContextLoader;
 import ua.dp.hammer.smarthome.config.AppConfig;
-import ua.dp.hammer.smarthome.beans.DiscFilesHandlerBean;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,7 +26,10 @@ import static junit.framework.Assert.assertEquals;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = AppConfig.class, loader = AnnotationConfigContextLoader.class)
-@TestPropertySource(properties = { "ramVideosDir: D:/UserTemp/JavaUnitTests", "discVideosDir: C:/Videos", "criticalFreeSpaceMb: 200" })
+@TestPropertySource(properties = { "ramVideosDir: Z:/UserTemp/JavaUnitTests", "discVideosDir: C:/Videos", "criticalFreeSpaceMb: 200",
+"cameraIp: 192.168.0.200", "cameraLogin: login", "cameraPassword: pass", "cameraRecordingTimeSec: 10", "videoFileExtension: .tmp", "serverSocket: socket",
+"serverSocketPort: 8080", "vpsServerMultipartVideoFileUrl: url", "vpsServerMultipartImageFilesUrl: url", "projectorTurnOffTimeoutSec: 0",
+"deferredResponseTimeoutSec: 0", "ignoreVideoRecordingTimeoutAfterImmobilizerActivationSec: 0"})
 public class DiscFilesHandlerBeanTest {
 
    private static String ramVideosDir;
