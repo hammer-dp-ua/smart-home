@@ -11,6 +11,7 @@ public class Esp8266Request {
    private String buildTimestamp;
    private int freeHeapSpace;
    private String resetReason;
+   private int pendingConnectionErrors;
 
    public String getGain() {
       return gain;
@@ -90,5 +91,13 @@ public class Esp8266Request {
 
    public void setResetReason(String resetReason) {
       this.resetReason = resetReason;
+   }
+
+   public int getPendingConnectionErrors() {
+      return pendingConnectionErrors;
+   }
+
+   public void setPendingConnectionErrors(int pendingConnectionErrors) {
+      this.pendingConnectionErrors = pendingConnectionErrors;
    }
 }

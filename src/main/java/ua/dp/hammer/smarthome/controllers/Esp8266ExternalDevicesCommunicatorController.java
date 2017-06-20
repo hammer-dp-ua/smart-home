@@ -10,7 +10,6 @@ import ua.dp.hammer.smarthome.beans.MainLogic;
 import ua.dp.hammer.smarthome.models.*;
 
 import javax.annotation.PostConstruct;
-import java.util.Formatter;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.regex.Matcher;
@@ -20,13 +19,6 @@ import java.util.regex.Pattern;
 @RequestMapping(path = "/server/esp8266")
 public class Esp8266ExternalDevicesCommunicatorController {
    private static final Logger LOGGER = LogManager.getLogger(Esp8266ExternalDevicesCommunicatorController.class);
-
-   private static final String LOGGER_DEBUG_INFO = "Gain of %1$s (%2$s): %3$sdB" +
-         "\r\nErrors: %4$d" +
-         "\r\nUptime: %5$ddays %6$dhours %7$dminutes %8$dseconds" +
-         "\r\nBuild timestamp: %9$s" +
-         "\r\nFree heap: %10$s" +
-         "\r\nReset reason: %11$s";
 
    private final static Pattern SINGLE_DIGIT_PATTERN = Pattern.compile("(.*?)(\\d{1})(.*)");
 
@@ -183,12 +175,14 @@ public class Esp8266ExternalDevicesCommunicatorController {
    }
 
    private void writeGeneralDebugInfo(String clientIp, Esp8266Request esp8266Request) {
+      StringBuilder infoMessage = new StringBuilder();
+      String wholeResetReasonMessage = describeResetReason(esp8266Request.getResetReason());
       String gain = esp8266Request.getGain() != null ? esp8266Request.getGain().trim() : null;
+
       long uptimeDays = 0;
       long uptimeHours = 0;
       long uptimeMinutes = 0;
       long uptimeSeconds = 0;
-      boolean justTurnedOn = false;
 
       if (esp8266Request.getUptime() > 0) {
          long secondsRemaining = esp8266Request.getUptime();
@@ -206,21 +200,45 @@ public class Esp8266ExternalDevicesCommunicatorController {
             secondsRemaining -= 60L * uptimeMinutes;
          }
          uptimeSeconds = secondsRemaining;
-
-         justTurnedOn = uptimeDays == 0 && uptimeHours == 0 && uptimeMinutes == 0;
       }
 
-      String wholeResetReasonMessage = describeResetReason(esp8266Request.getResetReason());
+      infoMessage.append("Gain of ").append(clientIp).append(" (").append(esp8266Request.getDeviceName())
+            .append("): ").append(gain).append("dB");
 
+      if (esp8266Request.getErrors() > 0) {
+         infoMessage.append("\r\nErrors: ");
+         infoMessage.append(esp8266Request.getErrors());
+      }
+      if (esp8266Request.getPendingConnectionErrors() > 0) {
+         infoMessage.append("\r\nPending connection errors: ");
+         infoMessage.append(esp8266Request.getPendingConnectionErrors());
+      }
+      if (esp8266Request.getUptime() > 0) {
+         infoMessage.append("\r\nUptime: ");
+         infoMessage.append(uptimeDays).append("days ");
+         infoMessage.append(uptimeHours).append("hours ");
+         infoMessage.append(uptimeMinutes).append("minutes ");
+         infoMessage.append(uptimeSeconds).append("seconds");
+      }
+      if (esp8266Request.getBuildTimestamp() != null) {
+         infoMessage.append("\r\nBuild timestamp: ");
+         infoMessage.append(esp8266Request.getBuildTimestamp());
+      }
+      if (esp8266Request.getFreeHeapSpace() > 0) {
+         infoMessage.append("\r\nFree heap: ");
+         infoMessage.append(esp8266Request.getFreeHeapSpace());
+      }
+      if (wholeResetReasonMessage != null) {
+         infoMessage.append("\r\nReset reason: ");
+         infoMessage.append(wholeResetReasonMessage);
+      }
 
-      LOGGER.debug(new Formatter().format(LOGGER_DEBUG_INFO, clientIp, esp8266Request.getDeviceName(), gain, esp8266Request.getErrors(),
-            uptimeDays, uptimeHours, uptimeMinutes, uptimeSeconds, esp8266Request.getBuildTimestamp(), esp8266Request.getFreeHeapSpace(),
-            wholeResetReasonMessage) + (justTurnedOn ? "\r\nJust turned on" : ""));
+      LOGGER.debug(infoMessage);
    }
 
    String describeResetReason(String wholeResetReasonMessage) {
       if (wholeResetReasonMessage == null || wholeResetReasonMessage.length() < 1) {
-         return wholeResetReasonMessage;
+         return null;
       }
 
       Matcher matcher = SINGLE_DIGIT_PATTERN.matcher(wholeResetReasonMessage);
