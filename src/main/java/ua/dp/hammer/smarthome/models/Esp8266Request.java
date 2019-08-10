@@ -3,15 +3,17 @@ package ua.dp.hammer.smarthome.models;
 public class Esp8266Request {
    private String gain;
    private int errors;
-   private float humidity;
-   private float temperature;
+   private Float humidity;
+   private Float temperature;
    private boolean serverIsAvailable;
    private String deviceName;
    private long uptime;
    private String buildTimestamp;
    private int freeHeapSpace;
    private String resetReason;
+   private String systemRestartReason;
    private int pendingConnectionErrors;
+   private Integer light;
 
    public String getGain() {
       return gain;
@@ -29,19 +31,19 @@ public class Esp8266Request {
       this.errors = errors;
    }
 
-   public float getHumidity() {
+   public Float getHumidity() {
       return humidity;
    }
 
-   public void setHumidity(float humidity) {
+   public void setHumidity(Float humidity) {
       this.humidity = humidity;
    }
 
-   public float getTemperature() {
+   public Float getTemperature() {
       return temperature;
    }
 
-   public void setTemperature(float temperature) {
+   public void setTemperature(Float temperature) {
       this.temperature = temperature;
    }
 
@@ -93,11 +95,27 @@ public class Esp8266Request {
       this.resetReason = resetReason;
    }
 
+   public String getSystemRestartReason() {
+      return systemRestartReason;
+   }
+
+   public void setSystemRestartReason(String systemRestartReason) {
+      this.systemRestartReason = systemRestartReason;
+   }
+
    public int getPendingConnectionErrors() {
       return pendingConnectionErrors;
    }
 
    public void setPendingConnectionErrors(int pendingConnectionErrors) {
       this.pendingConnectionErrors = pendingConnectionErrors;
+   }
+
+   public Integer getLight() {
+      return light;
+   }
+
+   public void setLight(Integer light) {
+      this.light = light;
    }
 }

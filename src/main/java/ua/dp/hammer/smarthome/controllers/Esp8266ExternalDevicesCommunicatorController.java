@@ -24,10 +24,7 @@ public class Esp8266ExternalDevicesCommunicatorController {
 
    private int manuallyTurnedOnFanTimeoutMinutes;
 
-   @Autowired
    private Environment environment;
-
-   @Autowired
    private MainLogic mainLogic;
 
    @PostConstruct
@@ -46,6 +43,10 @@ public class Esp8266ExternalDevicesCommunicatorController {
          serverStatus.setIncludeDebugInfo(true);
       }
       mainLogic.setUpdateStatus(serverStatus, clientIp);
+
+      if (esp8266Request.getLight() != null) {
+         mainLogic.setStreetLightValue(esp8266Request.getLight());
+      }
       return serverStatus;
    }
 
@@ -89,7 +90,7 @@ public class Esp8266ExternalDevicesCommunicatorController {
 
    @PostMapping(path = "/projectorDeferred", consumes="application/json")
    public ExtendedDeferredResult<ProjectorResponse> sendProjectorDeferredResult(@RequestBody Esp8266Request esp8266Request,
-                                                                        @RequestHeader("X-FORWARDED-FOR") String clientIp) {
+                                                                                @RequestHeader("X-FORWARDED-FOR") String clientIp) {
       if (LOGGER.isDebugEnabled()) {
          writeGeneralDebugInfo(clientIp, esp8266Request);
       }
@@ -220,9 +221,28 @@ public class Esp8266ExternalDevicesCommunicatorController {
          infoMessage.append(uptimeMinutes).append("minutes ");
          infoMessage.append(uptimeSeconds).append("seconds");
       }
-      if (esp8266Request.getBuildTimestamp() != null) {
+      if (esp8266Request.getBuildTimestamp() != null && esp8266Request.getBuildTimestamp().length() > 1) {
          infoMessage.append("\r\nBuild timestamp: ");
          infoMessage.append(esp8266Request.getBuildTimestamp());
+      }
+      if (esp8266Request.getTemperature() != null || esp8266Request.getHumidity() != null || esp8266Request.getLight() != null)
+      {
+         infoMessage.append("\r\n");
+         if (esp8266Request.getTemperature() != null)
+         {
+            infoMessage.append("Temperature: ");
+            infoMessage.append(esp8266Request.getTemperature());
+         }
+         if (esp8266Request.getHumidity() != null)
+         {
+            infoMessage.append(", Humidity: ");
+            infoMessage.append(esp8266Request.getHumidity());
+         }
+         if (esp8266Request.getLight() != null)
+         {
+            infoMessage.append(", Light sensor value: ");
+            infoMessage.append(esp8266Request.getLight());
+         }
       }
       if (esp8266Request.getFreeHeapSpace() > 0) {
          infoMessage.append("\r\nFree heap: ");
@@ -231,6 +251,10 @@ public class Esp8266ExternalDevicesCommunicatorController {
       if (wholeResetReasonMessage != null) {
          infoMessage.append("\r\nReset reason: ");
          infoMessage.append(wholeResetReasonMessage);
+      }
+      if (esp8266Request.getSystemRestartReason() != null && esp8266Request.getSystemRestartReason().length() > 1) {
+         infoMessage.append("\r\nSystem restart reason: ");
+         infoMessage.append(esp8266Request.getSystemRestartReason());
       }
 
       LOGGER.debug(infoMessage);
@@ -252,5 +276,15 @@ public class Esp8266ExternalDevicesCommunicatorController {
       } else {
          return wholeResetReasonMessage;
       }
+   }
+
+   @Autowired
+   public void setEnvironment(Environment environment) {
+      this.environment = environment;
+   }
+
+   @Autowired
+   public void setMainLogic(MainLogic mainLogic) {
+      this.mainLogic = mainLogic;
    }
 }

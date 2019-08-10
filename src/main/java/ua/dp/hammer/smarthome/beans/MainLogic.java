@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 public class MainLogic {
    private final static Logger LOGGER = LogManager.getLogger(MainLogic.class);
 
+   private int streetLightValue;
    private boolean turnProjectorOn;
    private boolean turnProjectorsOnManually;
    private Queue<ExtendedDeferredResult<ProjectorResponse>> projectorsDeferredResults = new ConcurrentLinkedQueue<>();
@@ -39,21 +40,18 @@ public class MainLogic {
 
    private int projectorTurnOffTimeoutSec;
    private int deferredResponseTimeoutSec;
+   private float thresholdBathroomHumidity;
    private int ignoreVideoRecordingTimeoutAfterImmobilizerActivationSec;
 
-   @Autowired
    private Environment environment;
-
-   @Autowired
    private ImmobilizerBean immobilizerBean;
-
-   @Autowired
    private CameraBean cameraBean;
 
    @PostConstruct
    public void init() {
       projectorTurnOffTimeoutSec = Integer.parseInt(environment.getRequiredProperty("projectorTurnOffTimeoutSec"));
       deferredResponseTimeoutSec = Integer.parseInt(environment.getRequiredProperty("deferredResponseTimeoutSec"));
+      thresholdBathroomHumidity = Float.parseFloat(environment.getRequiredProperty("thresholdBathroomHumidity"));
       ignoreVideoRecordingTimeoutAfterImmobilizerActivationSec =
             Integer.parseInt(environment.getRequiredProperty("ignoreVideoRecordingTimeoutAfterImmobilizerActivationSec"));
    }
@@ -123,9 +121,7 @@ public class MainLogic {
    }
 
    private void turnProjectorsOn() {
-      LocalDateTime localDateTime = LocalDateTime.now();
-
-      if (turnProjectorsOnManually || localDateTime.getHour() >= 21 || localDateTime.getHour() <= 5) {
+      if (turnProjectorsOnManually || streetLightValue < 35) {
          if (scheduledFutureProjectorTurningOff != null && !scheduledFutureProjectorTurningOff.isDone()) {
             scheduledFutureProjectorTurningOff.cancel(false);
 
@@ -134,12 +130,8 @@ public class MainLogic {
             }
          }
 
-         scheduledFutureProjectorTurningOff = new ConcurrentTaskScheduler().schedule(new Runnable() {
-            @Override
-            public void run() {
-               switchProjectors(ProjectorState.TURN_OFF);
-            }
-         }, new Date(System.currentTimeMillis() + projectorTurnOffTimeoutSec * 1000));
+         scheduledFutureProjectorTurningOff = new ConcurrentTaskScheduler().schedule(() ->
+               switchProjectors(ProjectorState.TURN_OFF), new Date(System.currentTimeMillis() + projectorTurnOffTimeoutSec * 1000));
 
          switchProjectors(ProjectorState.TURN_ON);
       }
@@ -156,7 +148,7 @@ public class MainLogic {
    }
 
    public boolean getBathroomFanState(float humidity, float temperature) {
-      if (humidity >= 80.0f) {
+      if (humidity >= thresholdBathroomHumidity) {
          thresholdHumidityStartTime = LocalDateTime.now();
       }
 
@@ -203,6 +195,10 @@ public class MainLogic {
          LOGGER.info(returnValue);
       }
       return returnValue;
+   }
+
+   public void setStreetLightValue(int streetLightValue) {
+      this.streetLightValue = streetLightValue;
    }
 
    private void sendKeepHeartResponse() {
@@ -261,5 +257,20 @@ public class MainLogic {
       }
 
       response.setIgnoreAlarms(alarmsAreBeingIgnored);
+   }
+
+   @Autowired
+   public void setEnvironment(Environment environment) {
+      this.environment = environment;
+   }
+
+   @Autowired
+   public void setImmobilizerBean(ImmobilizerBean immobilizerBean) {
+      this.immobilizerBean = immobilizerBean;
+   }
+
+   @Autowired
+   public void setCameraBean(CameraBean cameraBean) {
+      this.cameraBean = cameraBean;
    }
 }
