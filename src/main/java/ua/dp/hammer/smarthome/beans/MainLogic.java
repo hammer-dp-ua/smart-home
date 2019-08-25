@@ -4,13 +4,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler;
 import org.springframework.stereotype.Component;
-import ua.dp.hammer.smarthome.models.ExtendedDeferredResult;
-import ua.dp.hammer.smarthome.models.ProjectorResponse;
-import ua.dp.hammer.smarthome.models.ServerStatus;
-import ua.dp.hammer.smarthome.models.StatusCodes;
+import org.springframework.web.client.RestTemplate;
+import ua.dp.hammer.smarthome.clients.TcpServerClients;
+import ua.dp.hammer.smarthome.models.*;
 
 import javax.annotation.PostConstruct;
 import java.time.Duration;
@@ -96,8 +97,8 @@ public class MainLogic {
                                            String clientIp,
                                            boolean serverIsAvailable) {
       if (!serverIsAvailable) {
+         // Return immediately on first request
          ProjectorResponse projectorResponse = createProjectorResponse(clientIp);
-         setUpdateStatus(projectorResponse, clientIp);
          projectorDeferredResult.setResult(projectorResponse);
 
          if (LOGGER.isDebugEnabled()) {
@@ -121,7 +122,7 @@ public class MainLogic {
    }
 
    private void turnProjectorsOn() {
-      if (turnProjectorsOnManually || streetLightValue < 35) {
+      if (turnProjectorsOnManually || streetLightValue < 50) {
          if (scheduledFutureProjectorTurningOff != null && !scheduledFutureProjectorTurningOff.isDone()) {
             scheduledFutureProjectorTurningOff.cancel(false);
 
@@ -230,6 +231,23 @@ public class MainLogic {
 
          projectorDeferredResult.setResult(projectorResponse);
       }
+
+      RestTemplate requestTemplate = new RestTemplate();
+      StringBuilder request = new StringBuilder("http://");
+
+      request.append(TcpServerClients.ENTRANCE_PROJECTORS.getIpAddress());
+      request.append("?action=");
+
+      if (turnProjectorOn) {
+         request.append("turnOn");
+      } else {
+         request.append("turnOff");
+      }
+      ResponseEntity<String> response = requestTemplate.getForEntity(request.toString(), String.class);
+      if (HttpStatus.OK != response.getStatusCode()) {
+         LOGGER.error(TcpServerClients.ENTRANCE_PROJECTORS.getIpAddress() + " client didn't return OK response");
+      }
+
       lastSentResponsesTime = LocalDateTime.now();
    }
 
