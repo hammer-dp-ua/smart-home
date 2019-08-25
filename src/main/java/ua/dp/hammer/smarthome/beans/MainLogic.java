@@ -98,7 +98,8 @@ public class MainLogic {
                                            boolean serverIsAvailable) {
       if (!serverIsAvailable) {
          // Return immediately on first request
-         ProjectorResponse projectorResponse = createProjectorResponse(clientIp);
+         boolean turnOn = turnProjectorOn || turnProjectorsOnManually;
+         ProjectorResponse projectorResponse = createProjectorResponse(clientIp, turnOn);
          projectorDeferredResult.setResult(projectorResponse);
 
          if (LOGGER.isDebugEnabled()) {
@@ -131,8 +132,10 @@ public class MainLogic {
             }
          }
 
-         scheduledFutureProjectorTurningOff = new ConcurrentTaskScheduler().schedule(() ->
-               switchProjectors(ProjectorState.TURN_OFF), new Date(System.currentTimeMillis() + projectorTurnOffTimeoutSec * 1000));
+         if (!turnProjectorsOnManually) {
+            scheduledFutureProjectorTurningOff = new ConcurrentTaskScheduler().schedule(() ->
+                  switchProjectors(ProjectorState.TURN_OFF), new Date(System.currentTimeMillis() + projectorTurnOffTimeoutSec * 1000));
+         }
 
          switchProjectors(ProjectorState.TURN_ON);
       }
@@ -211,23 +214,26 @@ public class MainLogic {
          turnProjectorOn = newProjectorState == ProjectorState.TURN_ON;
       }
 
-      if (turnProjectorOn) {
+      boolean turnOn = turnProjectorOn || turnProjectorsOnManually;
+
+      if (turnOn) {
          LOGGER.info("Projectors are turning on...");
+      } else {
+         LOGGER.info("Projectors are turning off...");
       }
 
       if (LOGGER.isDebugEnabled()) {
-         LOGGER.debug("Deferred results are ready to be returned. Size: " + projectorsDeferredResults.size() +
-               ". New projectors state: " + newProjectorState + ". State to set: " + turnProjectorOn);
+         LOGGER.debug("Deferred results are ready to be returned. Size: " + projectorsDeferredResults.size());
       }
 
       while (!projectorsDeferredResults.isEmpty()) {
          ExtendedDeferredResult<ProjectorResponse> projectorDeferredResult = projectorsDeferredResults.poll();
 
          if (projectorDeferredResult == null) {
-            return;
+            continue;
          }
 
-         ProjectorResponse projectorResponse = createProjectorResponse(projectorDeferredResult.getClientIp());
+         ProjectorResponse projectorResponse = createProjectorResponse(projectorDeferredResult.getClientIp(), turnOn);
 
          projectorDeferredResult.setResult(projectorResponse);
       }
@@ -238,7 +244,7 @@ public class MainLogic {
       request.append(TcpServerClients.ENTRANCE_PROJECTORS.getIpAddress());
       request.append("?action=");
 
-      if (turnProjectorOn) {
+      if (turnOn) {
          request.append("turnOn");
       } else {
          request.append("turnOff");
@@ -251,10 +257,10 @@ public class MainLogic {
       lastSentResponsesTime = LocalDateTime.now();
    }
 
-   private ProjectorResponse createProjectorResponse(String clientIp) {
+   private ProjectorResponse createProjectorResponse(String clientIp, boolean turnOn) {
       ProjectorResponse projectorResponse = new ProjectorResponse(StatusCodes.OK);
 
-      projectorResponse.setTurnOn(turnProjectorOn || turnProjectorsOnManually);
+      projectorResponse.setTurnOn(turnOn);
       setUpdateStatus(projectorResponse, clientIp);
       if (LOGGER.isDebugEnabled()) {
          projectorResponse.setIncludeDebugInfo(true);
