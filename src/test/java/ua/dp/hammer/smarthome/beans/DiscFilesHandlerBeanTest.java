@@ -10,7 +10,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.support.AnnotationConfigContextLoader;
-import ua.dp.hammer.smarthome.config.AppConfig;
+import ua.dp.hammer.smarthome.Application;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,7 +25,7 @@ import java.util.SortedSet;
 import static junit.framework.Assert.assertEquals;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = AppConfig.class, loader = AnnotationConfigContextLoader.class)
+@ContextConfiguration(classes = Application.class, loader = AnnotationConfigContextLoader.class)
 @TestPropertySource(properties = { "ramVideosDir: Z:/USER/UserTemp/JavaUnitTests", "discVideosDir: C:/Videos", "criticalFreeSpaceMb: 200",
 "cameraIp: 192.168.0.200", "cameraLogin: login", "cameraPassword: pass", "cameraRecordingTimeSec: 10", "videoFileExtension: .tmp", "serverSocket: socket",
 "serverSocketPort: 8080", "vpsServerMultipartVideoFileUrl: url", "vpsServerMultipartImageFilesUrl: url", "projectorTurnOffTimeoutSec: 0",

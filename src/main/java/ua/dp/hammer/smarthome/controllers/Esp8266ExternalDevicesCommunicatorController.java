@@ -10,6 +10,7 @@ import ua.dp.hammer.smarthome.beans.MainLogic;
 import ua.dp.hammer.smarthome.models.*;
 
 import javax.annotation.PostConstruct;
+import javax.servlet.http.HttpServletRequest;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.regex.Matcher;
@@ -35,8 +36,9 @@ public class Esp8266ExternalDevicesCommunicatorController {
 
    @PostMapping(path = "/statusInfo", consumes="application/json")
    public ServerStatus receiveStatusInfo(@RequestBody Esp8266Request esp8266Request,
-                                         @RequestHeader(value="X-FORWARDED-FOR", required=false) String clientIp) {
+                                         HttpServletRequest request) {
       ServerStatus serverStatus = new ServerStatus(StatusCodes.OK);
+      String clientIp = request.getRemoteAddr();
 
       if (LOGGER.isDebugEnabled()) {
          writeGeneralDebugInfo(clientIp, esp8266Request);
@@ -51,8 +53,9 @@ public class Esp8266ExternalDevicesCommunicatorController {
    }
 
    @GetMapping(path = "/alarm")
-   public ServerStatus receiveAlarm(@RequestHeader("X-FORWARDED-FOR") String clientIp,
+   public ServerStatus receiveAlarm(HttpServletRequest request,
                                     @RequestParam(value = "alarmSource", required = false) String alarmSource) {
+      String clientIp = request.getRemoteAddr();
       LOGGER.info("Alarm: " + clientIp + ", source: " + alarmSource);
 
       mainLogic.receiveAlarm(alarmSource);
@@ -60,22 +63,25 @@ public class Esp8266ExternalDevicesCommunicatorController {
    }
 
    @GetMapping(path = "/testAlarm")
-   public ServerStatus receiveTestAlarm(@RequestHeader(value="X-FORWARDED-FOR", required=false) String clientIp,
+   public ServerStatus receiveTestAlarm(HttpServletRequest request,
                                         @RequestParam(value = "alarmSource", required = false) String alarmSource) {
+      String clientIp = request.getRemoteAddr();
       LOGGER.info("Test alarm: " + clientIp + ", source: " + alarmSource);
 
       return new ServerStatus(StatusCodes.OK);
    }
 
    @GetMapping(path = "/falseAlarm")
-   public ServerStatus receiveFalseAlarm(@RequestHeader("X-FORWARDED-FOR") String clientIp,
+   public ServerStatus receiveFalseAlarm(HttpServletRequest request,
                                          @RequestParam("alarmSource") String alarmSource) {
+      String clientIp = request.getRemoteAddr();
       LOGGER.info("False alarm: " + clientIp + ", source: " + alarmSource);
       return new ServerStatus(StatusCodes.OK);
    }
 
    @GetMapping(path = "/immobilizerActivated")
-   public ServerStatus receiveImmobilizerActivation(@RequestHeader("X-FORWARDED-FOR") String clientIp) {
+   public ServerStatus receiveImmobilizerActivation(HttpServletRequest request) {
+      String clientIp = request.getRemoteAddr();
       LOGGER.info("Immobilizer activated: " + clientIp);
 
       mainLogic.receiveImmobilizerActivation();
@@ -90,7 +96,9 @@ public class Esp8266ExternalDevicesCommunicatorController {
 
    @PostMapping(path = "/projectorDeferred", consumes="application/json")
    public ExtendedDeferredResult<ProjectorResponse> sendProjectorDeferredResult(@RequestBody Esp8266Request esp8266Request,
-                                                                                @RequestHeader("X-FORWARDED-FOR") String clientIp) {
+                                                                                HttpServletRequest request) {
+      String clientIp = request.getRemoteAddr();
+
       if (LOGGER.isDebugEnabled()) {
          writeGeneralDebugInfo(clientIp, esp8266Request);
       }
@@ -113,7 +121,9 @@ public class Esp8266ExternalDevicesCommunicatorController {
 
    @PostMapping(path = "/testDeferred", consumes="application/json")
    public DeferredResult<ProjectorResponse> sendDeferredResult(@RequestBody Esp8266Request esp8266Request,
-                                                               @RequestHeader("X-FORWARDED-FOR") String clientIp) {
+                                                               HttpServletRequest request) {
+      String clientIp = request.getRemoteAddr();
+
       if (LOGGER.isDebugEnabled()) {
          writeGeneralDebugInfo(clientIp, esp8266Request);
       }
@@ -143,7 +153,8 @@ public class Esp8266ExternalDevicesCommunicatorController {
 
    @PostMapping(path = "/bathroomFan", consumes="application/json")
    public FanResponse receiveBathroomParameters(@RequestBody Esp8266Request esp8266Request,
-                                                @RequestHeader("X-FORWARDED-FOR") String clientIp) {
+                                                HttpServletRequest request) {
+      String clientIp = request.getRemoteAddr();
       FanResponse fanResponse = new FanResponse(StatusCodes.OK);
 
       if (LOGGER.isDebugEnabled()) {

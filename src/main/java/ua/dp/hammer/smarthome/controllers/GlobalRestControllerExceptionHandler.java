@@ -8,7 +8,6 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import ua.dp.hammer.smarthome.config.ApplicationInitializer;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -16,10 +15,12 @@ import javax.servlet.http.HttpServletRequest;
 public class GlobalRestControllerExceptionHandler {
    private static final Logger LOGGER = LogManager.getLogger(GlobalRestControllerExceptionHandler.class);
 
+   public static final String ERROR_OCCURRED_ATTRIBUTE = "ERROR_OCCURRED";
+
    @ExceptionHandler
    @ResponseStatus(HttpStatus.BAD_REQUEST)
    String handleHttpMessageNotReadableException(HttpMessageNotReadableException ex, HttpServletRequest request) {
-      request.setAttribute(ApplicationInitializer.ERROR_OCCURRED_ATTRIBUTE, true);
+      request.setAttribute(ERROR_OCCURRED_ATTRIBUTE, true);
       LOGGER.error("Bad request", ex);
       return null;
    }
@@ -27,7 +28,7 @@ public class GlobalRestControllerExceptionHandler {
    @ExceptionHandler
    @ResponseStatus(HttpStatus.BAD_REQUEST)
    String handleJsonMappingException(JsonMappingException ex, HttpServletRequest request) {
-      request.setAttribute(ApplicationInitializer.ERROR_OCCURRED_ATTRIBUTE, true);
+      request.setAttribute(ERROR_OCCURRED_ATTRIBUTE, true);
       LOGGER.error("Bad request", ex);
       return null;
    }

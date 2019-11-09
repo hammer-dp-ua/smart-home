@@ -16,9 +16,6 @@ public class EntryPointBean {
    private static final Logger LOGGER = LogManager.getLogger(EntryPointBean.class);
 
    @Autowired
-   private VpsUploader vpsUploader;
-
-   @Autowired
    private DiscFilesHandlerBean discFilesHandlerBean;
 
    @Autowired
