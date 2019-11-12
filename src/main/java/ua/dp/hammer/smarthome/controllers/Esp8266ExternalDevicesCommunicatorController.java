@@ -5,14 +5,11 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.context.request.async.DeferredResult;
 import ua.dp.hammer.smarthome.beans.MainLogic;
 import ua.dp.hammer.smarthome.models.*;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -94,21 +91,6 @@ public class Esp8266ExternalDevicesCommunicatorController {
       return ipAddress;
    }
 
-   @PostMapping(path = "/projectorDeferred", consumes="application/json")
-   public ExtendedDeferredResult<ProjectorResponse> sendProjectorDeferredResult(@RequestBody Esp8266Request esp8266Request,
-                                                                                HttpServletRequest request) {
-      String clientIp = request.getRemoteAddr();
-
-      if (LOGGER.isDebugEnabled()) {
-         writeGeneralDebugInfo(clientIp, esp8266Request);
-      }
-
-      ExtendedDeferredResult<ProjectorResponse> projectorDeferredResult = new ExtendedDeferredResult<>();
-      projectorDeferredResult.setClientIp(clientIp);
-      mainLogic.addProjectorsDeferredResult(projectorDeferredResult, clientIp, esp8266Request.isServerIsAvailable());
-      return projectorDeferredResult;
-   }
-
    @GetMapping(path = "/switchProjectorsManually")
    public String switchProjectorsManually(@RequestParam("switchState") String switchState) {
       if ("turnOn".equals(switchState)) {
@@ -117,38 +99,6 @@ public class Esp8266ExternalDevicesCommunicatorController {
          mainLogic.turnProjectorsOffManually();
       }
       return switchState;
-   }
-
-   @PostMapping(path = "/testDeferred", consumes="application/json")
-   public DeferredResult<ProjectorResponse> sendDeferredResult(@RequestBody Esp8266Request esp8266Request,
-                                                               HttpServletRequest request) {
-      String clientIp = request.getRemoteAddr();
-
-      if (LOGGER.isDebugEnabled()) {
-         writeGeneralDebugInfo(clientIp, esp8266Request);
-      }
-
-      DeferredResult<ProjectorResponse> deferredResult = new DeferredResult<>();
-      final ProjectorResponse response = new ProjectorResponse(StatusCodes.OK);
-
-      response.setTurnOn(false);
-
-      if (esp8266Request.isServerIsAvailable()) {
-         Timer timer = new Timer();
-
-         timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-               if (LOGGER.isDebugEnabled()) {
-                  LOGGER.debug("testDeferred response is set");
-               }
-               deferredResult.setResult(response);
-            }
-         }, 1 * 60 * 1000);
-      } else {
-         deferredResult.setResult(response);
-      }
-      return deferredResult;
    }
 
    @PostMapping(path = "/bathroomFan", consumes="application/json")
@@ -163,7 +113,7 @@ public class Esp8266ExternalDevicesCommunicatorController {
          fanResponse.setIncludeDebugInfo(true);
       }
 
-      fanResponse.setTurnOn(mainLogic.getBathroomFanState(esp8266Request.getHumidity(), esp8266Request.getTemperature()));
+      fanResponse.setTurnOn(mainLogic.getBathroomFanState(esp8266Request.getHumidity()));
       fanResponse.setManuallyTurnedOnTimeout(manuallyTurnedOnFanTimeoutMinutes);
       return fanResponse;
    }

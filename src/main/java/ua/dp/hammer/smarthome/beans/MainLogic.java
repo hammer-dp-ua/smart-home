@@ -4,23 +4,24 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
-import ua.dp.hammer.smarthome.clients.TcpServerClients;
-import ua.dp.hammer.smarthome.models.*;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import ua.dp.hammer.smarthome.clients.StreetProjectors;
+import ua.dp.hammer.smarthome.models.ServerStatus;
 
 import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Date;
-import java.util.Queue;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -29,20 +30,19 @@ public class MainLogic {
    private final static Logger LOGGER = LogManager.getLogger(MainLogic.class);
 
    private int streetLightValue;
-   private boolean turnProjectorOn;
+   private boolean turnStreetProjectorsOn;
    private boolean turnProjectorsOnManually;
-   private Queue<ExtendedDeferredResult<ProjectorResponse>> projectorsDeferredResults = new ConcurrentLinkedQueue<>();
    private ScheduledFuture<?> scheduledFutureProjectorTurningOff;
-   private LocalDateTime lastSentResponsesTime;
    private LocalDateTime thresholdHumidityStartTime;
    private String ipAddressToUpdateFirmware;
    private Timer cancelIgnoringAlarmsTimer;
    private boolean alarmsAreBeingIgnored;
 
    private int projectorTurnOffTimeoutSec;
-   private int deferredResponseTimeoutSec;
    private float thresholdBathroomHumidity;
    private int ignoreVideoRecordingTimeoutAfterImmobilizerActivationSec;
+
+   private Map<StreetProjectors, ProjectorState> failedStreetProjectors = new ConcurrentHashMap<>();
 
    private Environment environment;
    private ImmobilizerBean immobilizerBean;
@@ -51,17 +51,17 @@ public class MainLogic {
    @PostConstruct
    public void init() {
       projectorTurnOffTimeoutSec = Integer.parseInt(environment.getRequiredProperty("projectorTurnOffTimeoutSec"));
-      deferredResponseTimeoutSec = Integer.parseInt(environment.getRequiredProperty("deferredResponseTimeoutSec"));
       thresholdBathroomHumidity = Float.parseFloat(environment.getRequiredProperty("thresholdBathroomHumidity"));
       ignoreVideoRecordingTimeoutAfterImmobilizerActivationSec =
             Integer.parseInt(environment.getRequiredProperty("ignoreVideoRecordingTimeoutAfterImmobilizerActivationSec"));
+
+      turnProjectorsOffManually();
    }
 
    public void receiveAlarm(String alarmSource) {
       turnProjectorsOn();
 
-      if (alarmsAreBeingIgnored ||
-            (alarmSource != null && alarmSource.equals("MOTION_SENSOR_2"))) {
+      if (alarmsAreBeingIgnored || (alarmSource != null && alarmSource.equals("MOTION_SENSOR_2"))) {
          return;
       }
 
@@ -90,35 +90,6 @@ public class MainLogic {
          LOGGER.info("Video recording is stopping because immobilizer has been activated");
 
          cameraBean.scheduleStopVideoRecording(20, TimeUnit.SECONDS);
-      }
-   }
-
-   public void addProjectorsDeferredResult(ExtendedDeferredResult<ProjectorResponse> projectorDeferredResult,
-                                           String clientIp,
-                                           boolean serverIsAvailable) {
-      if (!serverIsAvailable) {
-         // Return immediately on first request
-         boolean turnOn = turnProjectorOn || turnProjectorsOnManually;
-         ProjectorResponse projectorResponse = createProjectorResponse(clientIp, turnOn);
-         projectorDeferredResult.setResult(projectorResponse);
-
-         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Server availability hasn't been detected yet");
-         }
-         return;
-      }
-
-      projectorsDeferredResults.add(projectorDeferredResult);
-
-      if (LOGGER.isDebugEnabled()) {
-         LOGGER.debug("Deferred result from " + clientIp + " has been added. Deferred results size: " + projectorsDeferredResults.size());
-      }
-   }
-
-   @Scheduled(fixedRate = 5000)
-   public void setProjectorsDeferredResult() {
-      if (lastSentResponsesTime == null || LocalDateTime.now().minusSeconds(deferredResponseTimeoutSec).isAfter(lastSentResponsesTime)) {
-         sendKeepHeartResponse();
       }
    }
 
@@ -151,7 +122,7 @@ public class MainLogic {
       switchProjectors(ProjectorState.TURN_OFF);
    }
 
-   public boolean getBathroomFanState(float humidity, float temperature) {
+   public boolean getBathroomFanState(float humidity) {
       if (humidity >= thresholdBathroomHumidity) {
          thresholdHumidityStartTime = LocalDateTime.now();
       }
@@ -205,16 +176,12 @@ public class MainLogic {
       this.streetLightValue = streetLightValue;
    }
 
-   private void sendKeepHeartResponse() {
-      switchProjectors(null);
-   }
-
    private void switchProjectors(ProjectorState newProjectorState) {
       if (newProjectorState != null) {
-         turnProjectorOn = newProjectorState == ProjectorState.TURN_ON;
+         turnStreetProjectorsOn = newProjectorState == ProjectorState.TURN_ON;
       }
 
-      boolean turnOn = turnProjectorOn || turnProjectorsOnManually;
+      boolean turnOn = turnStreetProjectorsOn || turnProjectorsOnManually;
 
       if (turnOn) {
          LOGGER.info("Projectors are turning on...");
@@ -222,50 +189,45 @@ public class MainLogic {
          LOGGER.info("Projectors are turning off...");
       }
 
-      if (LOGGER.isDebugEnabled()) {
-         LOGGER.debug("Deferred results are ready to be returned. Size: " + projectorsDeferredResults.size());
-      }
-
-      while (!projectorsDeferredResults.isEmpty()) {
-         ExtendedDeferredResult<ProjectorResponse> projectorDeferredResult = projectorsDeferredResults.poll();
-
-         if (projectorDeferredResult == null) {
-            continue;
-         }
-
-         ProjectorResponse projectorResponse = createProjectorResponse(projectorDeferredResult.getClientIp(), turnOn);
-
-         projectorDeferredResult.setResult(projectorResponse);
-      }
-
-      RestTemplate requestTemplate = new RestTemplate();
-      StringBuilder request = new StringBuilder("http://");
-
-      request.append(TcpServerClients.ENTRANCE_PROJECTORS.getIpAddress());
-      request.append("?action=");
-
-      if (turnOn) {
-         request.append("turnOn");
-      } else {
-         request.append("turnOff");
-      }
-      ResponseEntity<String> response = requestTemplate.getForEntity(request.toString(), String.class);
-      if (HttpStatus.OK != response.getStatusCode()) {
-         LOGGER.error(TcpServerClients.ENTRANCE_PROJECTORS.getIpAddress() + " client didn't return OK response");
-      }
-
-      lastSentResponsesTime = LocalDateTime.now();
+      sendProjectorsRequests(turnOn ? ProjectorState.TURN_ON : ProjectorState.TURN_OFF);
    }
 
-   private ProjectorResponse createProjectorResponse(String clientIp, boolean turnOn) {
-      ProjectorResponse projectorResponse = new ProjectorResponse(StatusCodes.OK);
+   private void sendProjectorsRequests(ProjectorState newProjectorsState) {
+      for (StreetProjectors projector : StreetProjectors.values()) {
+         failedStreetProjectors.remove(projector);
 
-      projectorResponse.setTurnOn(turnOn);
-      setUpdateStatus(projectorResponse, clientIp);
-      if (LOGGER.isDebugEnabled()) {
-         projectorResponse.setIncludeDebugInfo(true);
+         sendProjectorRequest(projector, newProjectorsState);
       }
-      return projectorResponse;
+   }
+
+   private void sendProjectorRequest(StreetProjectors projector, ProjectorState newProjectorState) {
+      WebClient client = WebClient.builder()
+            .baseUrl("http://" + projector.getIpAddress())
+            .build();
+
+      client.method(HttpMethod.GET);
+
+      String actionParamValue = newProjectorState == ProjectorState.TURN_ON ? "turnOn" : "turnOff";
+      Mono<Void> deferredResponse = client
+            .get()
+            .uri(uriBuilder -> uriBuilder
+                  .queryParam("action", actionParamValue)
+                  .build())
+            .retrieve()
+            .bodyToMono(Void.class);
+
+      Flux.merge(deferredResponse)
+            .subscribe(null, e -> failedStreetProjectors.put(projector, newProjectorState));
+   }
+
+   @Scheduled(fixedDelay=60000)
+   public void resendToFailedStreetProjectors() {
+      for (Map.Entry<StreetProjectors, ProjectorState> entry : failedStreetProjectors.entrySet()) {
+         sendProjectorRequest(entry.getKey(), entry.getValue());
+         LOGGER.info("Request with " + entry.getValue() + " state has been resent to " + entry.getKey().getIpAddress());
+      }
+
+      failedStreetProjectors.clear();
    }
 
    private enum ProjectorState {

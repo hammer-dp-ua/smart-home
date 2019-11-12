@@ -1,11 +1,12 @@
 package ua.dp.hammer.smarthome.clients;
 
-public enum TcpServerClients {
-   ENTRANCE_PROJECTORS("192.168.0.23");
+public enum StreetProjectors {
+   ENTRANCE_PROJECTORS("192.168.0.23"),
+   STOREHOUSE_PROJECTOR("192.168.0.22");
 
    private String ipAddress;
 
-   TcpServerClients(String ipAddress) {
+   StreetProjectors(String ipAddress) {
       this.ipAddress = ipAddress;
    }
 
