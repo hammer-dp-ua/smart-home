@@ -5,6 +5,7 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.web.bind.annotation.*;
+import reactor.util.StringUtils;
 import ua.dp.hammer.smarthome.beans.MainLogic;
 import ua.dp.hammer.smarthome.models.*;
 
@@ -33,9 +34,10 @@ public class Esp8266ExternalDevicesCommunicatorController {
 
    @PostMapping(path = "/statusInfo", consumes="application/json")
    public ServerStatus receiveStatusInfo(@RequestBody Esp8266Request esp8266Request,
-                                         HttpServletRequest request) {
+                                         HttpServletRequest request,
+                                         @RequestHeader(value="X-FORWARDED-FOR", required=false) String apacheClientIp) {
       ServerStatus serverStatus = new ServerStatus(StatusCodes.OK);
-      String clientIp = request.getRemoteAddr();
+      String clientIp = StringUtils.isEmpty(apacheClientIp) ? request.getRemoteAddr() : apacheClientIp;
 
       if (LOGGER.isDebugEnabled()) {
          writeGeneralDebugInfo(clientIp, esp8266Request);
@@ -51,8 +53,9 @@ public class Esp8266ExternalDevicesCommunicatorController {
 
    @GetMapping(path = "/alarm")
    public ServerStatus receiveAlarm(HttpServletRequest request,
+                                    @RequestHeader("X-FORWARDED-FOR") String apacheClientIp,
                                     @RequestParam(value = "alarmSource", required = false) String alarmSource) {
-      String clientIp = request.getRemoteAddr();
+      String clientIp = StringUtils.isEmpty(apacheClientIp) ? request.getRemoteAddr() : apacheClientIp;
       LOGGER.info("Alarm: " + clientIp + ", source: " + alarmSource);
 
       mainLogic.receiveAlarm(alarmSource);
@@ -61,8 +64,9 @@ public class Esp8266ExternalDevicesCommunicatorController {
 
    @GetMapping(path = "/testAlarm")
    public ServerStatus receiveTestAlarm(HttpServletRequest request,
+                                        @RequestHeader(value="X-FORWARDED-FOR", required=false) String apacheClientIp,
                                         @RequestParam(value = "alarmSource", required = false) String alarmSource) {
-      String clientIp = request.getRemoteAddr();
+      String clientIp = StringUtils.isEmpty(apacheClientIp) ? request.getRemoteAddr() : apacheClientIp;
       LOGGER.info("Test alarm: " + clientIp + ", source: " + alarmSource);
 
       return new ServerStatus(StatusCodes.OK);
@@ -70,15 +74,17 @@ public class Esp8266ExternalDevicesCommunicatorController {
 
    @GetMapping(path = "/falseAlarm")
    public ServerStatus receiveFalseAlarm(HttpServletRequest request,
+                                         @RequestHeader("X-FORWARDED-FOR") String apacheClientIp,
                                          @RequestParam("alarmSource") String alarmSource) {
-      String clientIp = request.getRemoteAddr();
+      String clientIp = StringUtils.isEmpty(apacheClientIp) ? request.getRemoteAddr() : apacheClientIp;
       LOGGER.info("False alarm: " + clientIp + ", source: " + alarmSource);
       return new ServerStatus(StatusCodes.OK);
    }
 
    @GetMapping(path = "/immobilizerActivated")
-   public ServerStatus receiveImmobilizerActivation(HttpServletRequest request) {
-      String clientIp = request.getRemoteAddr();
+   public ServerStatus receiveImmobilizerActivation(HttpServletRequest request,
+                                                    @RequestHeader("X-FORWARDED-FOR") String apacheClientIp) {
+      String clientIp = StringUtils.isEmpty(apacheClientIp) ? request.getRemoteAddr() : apacheClientIp;
       LOGGER.info("Immobilizer activated: " + clientIp);
 
       mainLogic.receiveImmobilizerActivation();
@@ -103,8 +109,9 @@ public class Esp8266ExternalDevicesCommunicatorController {
 
    @PostMapping(path = "/bathroomFan", consumes="application/json")
    public FanResponse receiveBathroomParameters(@RequestBody Esp8266Request esp8266Request,
-                                                HttpServletRequest request) {
-      String clientIp = request.getRemoteAddr();
+                                                HttpServletRequest request,
+                                                @RequestHeader("X-FORWARDED-FOR") String apacheClientIp) {
+      String clientIp = StringUtils.isEmpty(apacheClientIp) ? request.getRemoteAddr() : apacheClientIp;
       FanResponse fanResponse = new FanResponse(StatusCodes.OK);
 
       if (LOGGER.isDebugEnabled()) {

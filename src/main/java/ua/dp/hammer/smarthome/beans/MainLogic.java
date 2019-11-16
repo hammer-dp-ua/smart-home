@@ -69,13 +69,14 @@ public class MainLogic {
 
       if (immobilizerActivatedDateTime != null) {
          LocalDateTime currentDateTime = LocalDateTime.now();
-         long durationBetweenImmobilizerAndAlarm = Duration.between(currentDateTime, immobilizerActivatedDateTime).abs().getSeconds();
+         long durationBetweenImmobilizerAndAlarm =
+               Duration.between(currentDateTime, immobilizerActivatedDateTime).abs().getSeconds();
 
          if (durationBetweenImmobilizerAndAlarm >= ignoreVideoRecordingTimeoutAfterImmobilizerActivationSec) {
             cameraBean.startVideoRecording();
          } else {
-            LOGGER.info("Video recording wasn't started because immobilizer was activated " + durationBetweenImmobilizerAndAlarm +
-                  " seconds ago");
+            LOGGER.info("Video recording wasn't started because immobilizer was activated " +
+                  durationBetweenImmobilizerAndAlarm + " seconds ago");
          }
       } else {
          cameraBean.startVideoRecording();
