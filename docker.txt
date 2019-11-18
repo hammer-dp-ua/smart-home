@@ -1,0 +1,17 @@
+Build
+docker build -t my-java-app .
+docker build -t super-home .
+
+Run
+docker run -it --rm --name my-running-app my-java-app
+docker run --rm --detach --name super-home-container super-home
+docker run --rm -it --mount type=bind,source=z:\Videos,destination=/ram_videos --name super-home-container super-home
+
+docker exec -it super-home-container bash
+
+-it: starts the container in the interactive mode
+
+docker container run --publish 8000:8080 --detach --name bb bulletinboard:1.0
+--name: lets us specify a name with which we can refer to our container in subsequent commands, in this case bb
+--detach: asks Docker to run this container in the background.
+--publish: asks Docker to forward traffic incoming on the host’s port 8000, to the container’s port 8080
