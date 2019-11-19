@@ -1,11 +1,10 @@
 Build
-docker build -t my-java-app .
 docker build -t super-home .
 
 Run
 docker run -it --rm --name my-running-app my-java-app
 docker run --rm --detach --name super-home-container super-home
-docker run --rm -it --mount type=bind,source=z:\Videos,destination=/ram_videos --name super-home-container super-home
+docker run --rm -it --publish 80:8080 --mount type=bind,source=z:\Videos\record\0018A2_192.168.0.200_1,destination=/ram_videos --mount type=bind,source=d:\Videos,destination=/hard_drive_videos --mount type=volume,source=super_home_data_volume,destination=/data --name super-home-container super-home
 
 docker exec -it super-home-container bash
 

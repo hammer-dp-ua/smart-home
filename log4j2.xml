@@ -1,29 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="INFO" monitorInterval="60">
 	<Properties>
-		<Property name="filename">D:\\USER\\AppData\\Local\\SecuritySystem\\application.log</Property>
+		<Property name="dirpath">/data</Property>
+		<Property name="filename">application.log</Property>
+		<Property name="patternLayout">%d{DEFAULT} [%t] %logger{36} %line%n%-5level - %msg%n%n</Property>
 	</Properties>
-	
+
 	<Appenders>
-		<File name="File" fileName="${filename}">
-			<PatternLayout pattern="%d{DEFAULT} [%t] %-5level %logger{36} - %msg%n"/>
-		</File>
-		
+		<RollingFile name="RollingFile" fileName="${dirpath}/${filename}" filePattern="${dirpath}/LogArchives/$${date:yyyy-MM}/%d{dd}-${filename}.zip">
+			<PatternLayout pattern="${patternLayout}"/>
+			<Policies>
+				<CronTriggeringPolicy schedule="0 0 0 * * ?"/> <!-- Every day at midnight -->
+			</Policies>
+		</RollingFile>
+
 		<Console name="Console">
-			<PatternLayout pattern="%d{DEFAULT} [%t] %-5level %logger{36} %line - %msg%n"/>
+			<PatternLayout pattern="${patternLayout}"/>
 		</Console>
 	</Appenders>
-	
+
 	<Loggers>
-		<Logger name="ua.dp.hammer" level="DEBUG" additivity="false">
-			<AppenderRef ref="File"/>
+		<Logger name="ua.dp.hammer" level="INFO" additivity="false">
+			<AppenderRef ref="RollingFile"/>
 		</Logger>
 		<Logger name="org.springframework" level="INFO" additivity="false">
-			<AppenderRef ref="File"/>
+			<AppenderRef ref="RollingFile"/>
 		</Logger>
-		
+		<Logger name="org.springframework.web.servlet.mvc.support.DefaultHandlerExceptionResolver" level="ERROR" additivity="false">
+			<AppenderRef ref="RollingFile"/>
+		</Logger>
+
 		<Root level="INFO">
-			<AppenderRef ref="File"/>
+			<AppenderRef ref="RollingFile"/>
 		</Root>
 	</Loggers>
 </Configuration>

@@ -27,20 +27,14 @@ public class DiscFilesHandlerBean {
    private static final String NEW_FILES_MSG = "New files: ";
    private static final String FILES_DELIMITER = "; ";
 
-   public final static Comparator<Path> PATH_FILES_COMPARATOR_ASC = new Comparator<Path>() {
-      @Override
-      public int compare(Path filePath1, Path filePath2) {
-         long diff = filePath1.toFile().lastModified() - filePath2.toFile().lastModified();
-         return (diff == 0) ? 0 : (diff > 0 ? 1 : -1);
-      }
+   public final static Comparator<Path> PATH_FILES_COMPARATOR_ASC = (filePath1, filePath2) -> {
+      long diff = filePath1.toFile().lastModified() - filePath2.toFile().lastModified();
+      return (diff == 0) ? 0 : (diff > 0 ? 1 : -1);
    };
 
-   public final static Comparator<File> FILES_COMPARATOR_ASC = new Comparator<File>() {
-      @Override
-      public int compare(File file1, File file2) {
-         long diff = file1.lastModified() - file2.lastModified();
-         return (diff == 0) ? 0 : (diff > 0 ? 1 : -1);
-      }
+   public final static Comparator<File> FILES_COMPARATOR_ASC = (file1, file2) -> {
+      long diff = file1.lastModified() - file2.lastModified();
+      return (diff == 0) ? 0 : (diff > 0 ? 1 : -1);
    };
 
    private final static SortedSet<Path> OLD_FILES = new TreeSet<>(PATH_FILES_COMPARATOR_ASC);
@@ -65,9 +59,8 @@ public class DiscFilesHandlerBean {
    }
 
    public boolean isRamDiscFull() {
-      String ramDiscDriveLetter = ramVideosDir.substring(0, 2);
-      File ramDiscDrive = new File(ramDiscDriveLetter);
-      int freeSpaceMb = (int) (ramDiscDrive.getFreeSpace() / 1024 / 1024);
+      File ramDirFile = new File(ramVideosDir);
+      int freeSpaceMb = (int) (ramDirFile.getFreeSpace() / 1024 / 1024);
       boolean ramDiscIsFull = freeSpaceMb < criticalFreeSpaceMb;
 
       if (ramDiscIsFull) {
@@ -83,7 +76,7 @@ public class DiscFilesHandlerBean {
       try {
          Files.walkFileTree(videosDirectoryPath, new SimpleFileVisitor<Path>() {
             @Override
-            public FileVisitResult visitFile(Path filePath, BasicFileAttributes attrs) throws IOException {
+            public FileVisitResult visitFile(Path filePath, BasicFileAttributes attrs) {
                if (Files.isReadable(filePath) && filePath.toString().endsWith(videoFileExtension)) {
                   newFiles.add(filePath);
                }
@@ -243,7 +236,7 @@ public class DiscFilesHandlerBean {
       try {
          Files.walkFileTree(directoryPath, new SimpleFileVisitor<Path>() {
             @Override
-            public FileVisitResult visitFile(Path filePath, BasicFileAttributes attrs) throws IOException {
+            public FileVisitResult visitFile(Path filePath, BasicFileAttributes attrs) {
                newFiles.add(filePath);
                return FileVisitResult.CONTINUE;
             }
