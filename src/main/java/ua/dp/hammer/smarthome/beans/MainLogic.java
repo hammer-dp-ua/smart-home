@@ -29,17 +29,15 @@ import java.util.concurrent.TimeUnit;
 public class MainLogic {
    private final static Logger LOGGER = LogManager.getLogger(MainLogic.class);
 
-   private int streetLightValue;
    private boolean turnStreetProjectorsOn;
    private boolean turnProjectorsOnManually;
    private ScheduledFuture<?> scheduledFutureProjectorTurningOff;
-   private LocalDateTime thresholdHumidityStartTime;
-   private String ipAddressToUpdateFirmware;
+
+   private String deviceNameToUpdateFirmware;
    private Timer cancelIgnoringAlarmsTimer;
    private boolean alarmsAreBeingIgnored;
-
    private int projectorTurnOffTimeoutSec;
-   private float thresholdBathroomHumidity;
+
    private int ignoreVideoRecordingTimeoutAfterImmobilizerActivationSec;
 
    private Map<StreetProjectors, ProjectorState> failedStreetProjectors = new ConcurrentHashMap<>();
@@ -47,11 +45,11 @@ public class MainLogic {
    private Environment environment;
    private ImmobilizerBean immobilizerBean;
    private CameraBean cameraBean;
+   private EnvSensorsBean envSensorsBean;
 
    @PostConstruct
    public void init() {
       projectorTurnOffTimeoutSec = Integer.parseInt(environment.getRequiredProperty("projectorTurnOffTimeoutSec"));
-      thresholdBathroomHumidity = Float.parseFloat(environment.getRequiredProperty("thresholdBathroomHumidity"));
       ignoreVideoRecordingTimeoutAfterImmobilizerActivationSec =
             Integer.parseInt(environment.getRequiredProperty("ignoreVideoRecordingTimeoutAfterImmobilizerActivationSec"));
 
@@ -95,7 +93,7 @@ public class MainLogic {
    }
 
    private void turnProjectorsOn() {
-      if (turnProjectorsOnManually || streetLightValue < 50) {
+      if (turnProjectorsOnManually || envSensorsBean.getStreetLightValue() < 50) {
          if (scheduledFutureProjectorTurningOff != null && !scheduledFutureProjectorTurningOff.isDone()) {
             scheduledFutureProjectorTurningOff.cancel(false);
 
@@ -123,21 +121,8 @@ public class MainLogic {
       switchProjectors(ProjectorState.TURN_OFF);
    }
 
-   public boolean getBathroomFanState(float humidity) {
-      if (humidity >= thresholdBathroomHumidity) {
-         thresholdHumidityStartTime = LocalDateTime.now();
-      }
-
-      LocalDateTime currentTime = LocalDateTime.now();
-      return thresholdHumidityStartTime != null && currentTime.isBefore(thresholdHumidityStartTime.plusMinutes(10));
-   }
-
-   public void setIpAddressToUpdateFirmware(String ipAddressToUpdateFirmware) {
-      this.ipAddressToUpdateFirmware = ipAddressToUpdateFirmware;
-   }
-
-   public void turnOnBathroomFan() {
-      thresholdHumidityStartTime = LocalDateTime.now();
+   public void setDeviceNameToUpdateFirmware(String deviceNameToUpdateFirmware) {
+      this.deviceNameToUpdateFirmware = deviceNameToUpdateFirmware;
    }
 
    public String ignoreAlarms(int timeout) {
@@ -171,10 +156,6 @@ public class MainLogic {
          LOGGER.info(returnValue);
       }
       return returnValue;
-   }
-
-   public void setStreetLightValue(int streetLightValue) {
-      this.streetLightValue = streetLightValue;
    }
 
    private void switchProjectors(ProjectorState newProjectorState) {
@@ -235,12 +216,12 @@ public class MainLogic {
       TURN_ON, TURN_OFF
    }
 
-   public void setUpdateStatus(ServerStatus response, String clientIp) {
-      if (clientIp != null && clientIp.equals(ipAddressToUpdateFirmware)) {
+   public void setUpdateFirmwareStatus(ServerStatus response, String deviceName) {
+      if (deviceName != null && deviceName.equals(deviceNameToUpdateFirmware)) {
          response.setUpdateFirmware(true);
-         ipAddressToUpdateFirmware = null;
+         deviceNameToUpdateFirmware = null;
 
-         LOGGER.info("Firmware of " + clientIp + " will be updated");
+         LOGGER.info("Firmware of '" + deviceName + "' will be updated");
       }
 
       response.setIgnoreAlarms(alarmsAreBeingIgnored);
@@ -259,5 +240,10 @@ public class MainLogic {
    @Autowired
    public void setCameraBean(CameraBean cameraBean) {
       this.cameraBean = cameraBean;
+   }
+
+   @Autowired
+   public void setEnvSensorsBean(EnvSensorsBean envSensorsBean) {
+      this.envSensorsBean = envSensorsBean;
    }
 }

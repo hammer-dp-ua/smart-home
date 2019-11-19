@@ -1,4 +1,12 @@
+# docker build -t super-home .
+# docker stop super-home-container
+# docker rm super-home-container
+# docker run --restart always --detach --publish 80:8080 --mount type=bind,source=z:\Videos\record\0018A2_192.168.0.200_1,destination=/ram_videos --mount type=bind,source=d:\Videos,destination=/hard_drive_videos --mount type=volume,source=super_home_data_volume,destination=/data --name super-home-container super-home
+
 FROM openjdk:8
+
+RUN unlink /etc/localtime
+RUN ln -s /usr/share/zoneinfo/Europe/Kiev /etc/localtime
 
 COPY target/security-system.jar /usr/security-system.jar
 COPY log4j2.xml /usr/log4j2.xml

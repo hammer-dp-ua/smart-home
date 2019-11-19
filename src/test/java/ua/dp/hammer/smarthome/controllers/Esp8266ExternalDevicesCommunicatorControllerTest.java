@@ -8,7 +8,7 @@ public class Esp8266ExternalDevicesCommunicatorControllerTest {
 
    @Test
    public void testDescribeResetReason() {
-      Esp8266ExternalDevicesCommunicatorController controller = new Esp8266ExternalDevicesCommunicatorController();
+      Esp8266ExternalDevicesCommunicatorRestController controller = new Esp8266ExternalDevicesCommunicatorRestController();
 
       String result = controller.describeResetReason(" 1 bla");
 
