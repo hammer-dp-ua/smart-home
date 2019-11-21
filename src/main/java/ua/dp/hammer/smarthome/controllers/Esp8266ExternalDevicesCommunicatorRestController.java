@@ -30,24 +30,24 @@ public class Esp8266ExternalDevicesCommunicatorRestController {
          serverStatus.setIncludeDebugInfo(true);
       }
 
+      if (isEnvSensor(esp8266Request)) {
+         envSensorsBean.addEnvSensorState(esp8266Request);
+      }
       mainLogic.setUpdateFirmwareStatus(serverStatus, esp8266Request.getDeviceName());
-      envSensorsBean.addEnvSensorState(esp8266Request);
       return serverStatus;
    }
 
    @GetMapping(path = "/alarm")
-   public ServerStatus receiveAlarm(@RequestBody Esp8266Request esp8266Request,
-                                    @RequestParam(value = "alarmSource", required = false) String alarmSource) {
-      LOGGER.info("Alarm: '" + esp8266Request.getDeviceName() + "', source: " + alarmSource);
+   public ServerStatus receiveAlarm(@RequestParam(value = "alarmSource", required = false) String alarmSource) {
+      LOGGER.info("Alarm. Source: " + alarmSource);
 
       mainLogic.receiveAlarm(alarmSource);
       return new ServerStatus(StatusCodes.OK);
    }
 
    @GetMapping(path = "/falseAlarm")
-   public ServerStatus receiveFalseAlarm(@RequestBody Esp8266Request esp8266Request,
-                                         @RequestParam("alarmSource") String alarmSource) {
-      LOGGER.info("False alarm: '" + esp8266Request.getDeviceName() + "', source: " + alarmSource);
+   public ServerStatus receiveFalseAlarm(@RequestParam("alarmSource") String alarmSource) {
+      LOGGER.info("False alarm. Source: " + alarmSource);
       return new ServerStatus(StatusCodes.OK);
    }
 
@@ -67,6 +67,8 @@ public class Esp8266ExternalDevicesCommunicatorRestController {
          writeGeneralDebugInfo(esp8266Request);
          fanResponse.setIncludeDebugInfo(true);
       }
+
+      envSensorsBean.addEnvSensorState(esp8266Request);
 
       fanResponse.setTurnOn(envSensorsBean.getBathroomFanState(esp8266Request.getHumidity()));
       fanResponse.setManuallyTurnedOnTimeout(envSensorsBean.getManuallyTurnedOnFanTimeoutMinutes());
