@@ -52,8 +52,8 @@ public class Esp8266ExternalDevicesCommunicatorRestController {
    }
 
    @GetMapping(path = "/immobilizerActivated")
-   public ServerStatus receiveImmobilizerActivation(@RequestBody Esp8266Request esp8266Request) {
-      LOGGER.info("Immobilizer activated: '" + esp8266Request.getDeviceName() + "'");
+   public ServerStatus receiveImmobilizerActivation() {
+      LOGGER.info("Immobilizer activated");
 
       mainLogic.receiveImmobilizerActivation();
       return new ServerStatus(StatusCodes.OK);

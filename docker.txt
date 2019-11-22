@@ -4,15 +4,18 @@ docker build -t super-home .
 Run
 docker run -it --rm --name my-running-app my-java-app
 docker run --rm --detach --name super-home-container super-home
-docker run --rm -it --publish 80:8080 --mount type=bind,source=z:\Videos\record\0018A2_192.168.0.200_1,destination=/ram_videos --mount type=bind,source=d:\Videos,destination=/hard_drive_videos --mount type=volume,source=super_home_data_volume,destination=/data --name super-home-container super-home
+docker run --network=super_home_nw --rm -it --publish 80:8080 --mount type=bind,source=z:\Videos\record\0018A2_192.168.0.200_1,destination=/ram_videos --mount type=bind,source=d:\Videos,destination=/hard_drive_videos --mount type=volume,source=super_home_data_volume,destination=/data --name super-home-container super-home
 
-docker run --rm -it --name postgres-container --publish 5432:5432 -v "z:\USER\PostgreSQL\my-postgres.conf":/etc/postgresql/postgresql.conf postgres-image -c config_file=/etc/postgresql/postgresql.conf
+docker run --network=super_home_nw --rm -it --name postgres-container --publish 5432:5432 -v "z:\USER\PostgreSQL\my-postgres.conf":/etc/postgresql/postgresql.conf --mount type=volume,source=postgres_data_volume,destination=/var/lib/postgresql/data postgres-image -c config_file=/etc/postgresql/postgresql.conf
 
 docker exec -it super-home-container bash
-
 -it: starts the container in the interactive mode
 
 docker container run --publish 8000:8080 --detach --name bb bulletinboard:1.0
 --name: lets us specify a name with which we can refer to our container in subsequent commands, in this case bb
 --detach: asks Docker to run this container in the background.
 --publish: asks Docker to forward traffic incoming on the host’s port 8000, to the container’s port 8080
+
+docker network create --driver bridge super_home_nw
+
+docker run -it --rm --publish 8100:80 --network=super_home_nw --mount type=volume,source=pgadmin_data_volume,destination=/var/lib/pgadmin --name pgadmin-container pgadmin-image

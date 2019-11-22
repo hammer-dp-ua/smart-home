@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 import ua.dp.hammer.smarthome.beans.EnvSensorsBean;
 import ua.dp.hammer.smarthome.beans.MainLogic;
 import ua.dp.hammer.smarthome.models.EnvSensor;
+import ua.dp.hammer.smarthome.repositories.EnvSensorsRepository;
 
 import java.util.Collection;
 
@@ -19,10 +20,16 @@ public class EnvSensorsConsumersController {
 
    private MainLogic mainLogic;
    private EnvSensorsBean envSensorsBean;
+   private EnvSensorsRepository envSensorsRepository;
 
    @GetMapping(path = "/info/allSensors")
    public Collection<EnvSensor> getAllSensorsInfo() {
       return envSensorsBean.getEnvSensors();
+   }
+
+   @GetMapping(path = "/dbVersion")
+   public String getDbVersion() {
+      return envSensorsRepository.loadDbVersion();
    }
 
    @Autowired
@@ -33,5 +40,10 @@ public class EnvSensorsConsumersController {
    @Autowired
    public void setEnvSensorsBean(EnvSensorsBean envSensorsBean) {
       this.envSensorsBean = envSensorsBean;
+   }
+
+   @Autowired
+   public void setEnvSensorsRepository(EnvSensorsRepository envSensorsRepository) {
+      this.envSensorsRepository = envSensorsRepository;
    }
 }
