@@ -22,18 +22,18 @@ public class Esp8266ExternalDevicesCommunicatorRestController {
    private EnvSensorsBean envSensorsBean;
 
    @PostMapping(path = "/statusInfo", consumes="application/json")
-   public ServerStatus receiveStatusInfo(@RequestBody Esp8266Request esp8266Request) {
+   public ServerStatus receiveStatusInfo(@RequestBody DeviceInfo deviceInfo) {
       ServerStatus serverStatus = new ServerStatus(StatusCodes.OK);
 
       if (LOGGER.isDebugEnabled()) {
-         writeGeneralDebugInfo(esp8266Request);
+         writeGeneralDebugInfo(deviceInfo);
          serverStatus.setIncludeDebugInfo(true);
       }
 
-      if (isEnvSensor(esp8266Request)) {
-         envSensorsBean.addEnvSensorState(esp8266Request);
+      if (isEnvSensor(deviceInfo)) {
+         envSensorsBean.addEnvSensorState(deviceInfo);
       }
-      mainLogic.setUpdateFirmwareStatus(serverStatus, esp8266Request.getDeviceName());
+      mainLogic.setUpdateFirmwareStatus(serverStatus, deviceInfo.getDeviceName());
       return serverStatus;
    }
 
@@ -60,35 +60,35 @@ public class Esp8266ExternalDevicesCommunicatorRestController {
    }
 
    @PostMapping(path = "/bathroomFan", consumes="application/json")
-   public FanResponse receiveBathroomParameters(@RequestBody Esp8266Request esp8266Request) {
+   public FanResponse receiveBathroomParameters(@RequestBody DeviceInfo deviceInfo) {
       FanResponse fanResponse = new FanResponse(StatusCodes.OK);
 
       if (LOGGER.isDebugEnabled()) {
-         writeGeneralDebugInfo(esp8266Request);
+         writeGeneralDebugInfo(deviceInfo);
          fanResponse.setIncludeDebugInfo(true);
       }
 
-      envSensorsBean.addEnvSensorState(esp8266Request);
+      envSensorsBean.addEnvSensorState(deviceInfo);
 
-      fanResponse.setTurnOn(envSensorsBean.getBathroomFanState(esp8266Request.getHumidity()));
+      fanResponse.setTurnOn(envSensorsBean.getBathroomFanState(deviceInfo.getHumidity()));
       fanResponse.setManuallyTurnedOnTimeout(envSensorsBean.getManuallyTurnedOnFanTimeoutMinutes());
       return fanResponse;
    }
 
-   private void writeGeneralDebugInfo(Esp8266Request esp8266Request) {
+   private void writeGeneralDebugInfo(DeviceInfo deviceInfo) {
       StringBuilder infoMessage = new StringBuilder();
-      String wholeResetReasonMessage = describeResetReason(esp8266Request.getResetReason());
-      String gain = esp8266Request.getGain() != null ? esp8266Request.getGain().trim() : null;
+      String wholeResetReasonMessage = describeResetReason(deviceInfo.getResetReason());
+      String gain = deviceInfo.getGain() != null ? deviceInfo.getGain().trim() : null;
 
       long uptimeDays = 0;
       long uptimeHours = 0;
       long uptimeMinutes = 0;
       long uptimeSeconds = 0;
 
-      if (esp8266Request.getUptime() > 0) {
-         long secondsRemaining = esp8266Request.getUptime();
+      if (deviceInfo.getUptime() > 0) {
+         long secondsRemaining = deviceInfo.getUptime();
 
-         uptimeDays = esp8266Request.getUptime() / 60L / 60L / 24L;
+         uptimeDays = deviceInfo.getUptime() / 60L / 60L / 24L;
          if (uptimeDays > 0) {
             secondsRemaining -= 60L * 60L * 24L * uptimeDays;
          }
@@ -103,60 +103,60 @@ public class Esp8266ExternalDevicesCommunicatorRestController {
          uptimeSeconds = secondsRemaining;
       }
 
-      infoMessage.append("Gain of '").append(esp8266Request.getDeviceName()).append("': ")
+      infoMessage.append("Gain of '").append(deviceInfo.getDeviceName()).append("': ")
             .append(gain).append("dB");
 
-      if (esp8266Request.getErrors() > 0) {
+      if (deviceInfo.getErrors() > 0) {
          infoMessage.append("\nErrors: ");
-         infoMessage.append(esp8266Request.getErrors());
+         infoMessage.append(deviceInfo.getErrors());
       }
-      if (esp8266Request.getPendingConnectionErrors() > 0) {
+      if (deviceInfo.getPendingConnectionErrors() > 0) {
          infoMessage.append("\nPending connection errors: ");
-         infoMessage.append(esp8266Request.getPendingConnectionErrors());
+         infoMessage.append(deviceInfo.getPendingConnectionErrors());
       }
-      if (esp8266Request.getUptime() > 0) {
+      if (deviceInfo.getUptime() > 0) {
          infoMessage.append("\nUptime: ");
          infoMessage.append(uptimeDays).append("days ");
          infoMessage.append(uptimeHours).append("hours ");
          infoMessage.append(uptimeMinutes).append("minutes ");
          infoMessage.append(uptimeSeconds).append("seconds");
       }
-      if (esp8266Request.getBuildTimestamp() != null && esp8266Request.getBuildTimestamp().length() > 1) {
+      if (deviceInfo.getBuildTimestamp() != null && deviceInfo.getBuildTimestamp().length() > 1) {
          infoMessage.append("\nBuild timestamp: ");
-         infoMessage.append(esp8266Request.getBuildTimestamp());
+         infoMessage.append(deviceInfo.getBuildTimestamp());
       }
 
-      if (isEnvSensor(esp8266Request))
+      if (isEnvSensor(deviceInfo))
       {
          infoMessage.append("\n");
-         if (esp8266Request.getTemperature() != null)
+         if (deviceInfo.getTemperature() != null)
          {
             infoMessage.append("Temperature: ");
-            infoMessage.append(esp8266Request.getTemperature());
+            infoMessage.append(deviceInfo.getTemperature());
          }
-         if (esp8266Request.getHumidity() != null)
+         if (deviceInfo.getHumidity() != null)
          {
             infoMessage.append(", Humidity: ");
-            infoMessage.append(esp8266Request.getHumidity());
+            infoMessage.append(deviceInfo.getHumidity());
          }
-         if (esp8266Request.getLight() != null)
+         if (deviceInfo.getLight() != null)
          {
             infoMessage.append(", Light sensor value: ");
-            infoMessage.append(esp8266Request.getLight());
+            infoMessage.append(deviceInfo.getLight());
          }
       }
 
-      if (esp8266Request.getFreeHeapSpace() > 0) {
+      if (deviceInfo.getFreeHeapSpace() > 0) {
          infoMessage.append("\nFree heap: ");
-         infoMessage.append(esp8266Request.getFreeHeapSpace());
+         infoMessage.append(deviceInfo.getFreeHeapSpace());
       }
       if (wholeResetReasonMessage != null) {
          infoMessage.append("\nReset reason: ");
          infoMessage.append(wholeResetReasonMessage);
       }
-      if (esp8266Request.getSystemRestartReason() != null && esp8266Request.getSystemRestartReason().length() > 1) {
+      if (deviceInfo.getSystemRestartReason() != null && deviceInfo.getSystemRestartReason().length() > 1) {
          infoMessage.append("\nSystem restart reason: ");
-         infoMessage.append(esp8266Request.getSystemRestartReason());
+         infoMessage.append(deviceInfo.getSystemRestartReason());
       }
 
       LOGGER.debug(infoMessage);
@@ -180,9 +180,9 @@ public class Esp8266ExternalDevicesCommunicatorRestController {
       }
    }
 
-   private boolean isEnvSensor(Esp8266Request esp8266Request) {
-      return esp8266Request.getTemperature() != null || esp8266Request.getHumidity() != null ||
-            esp8266Request.getLight() != null;
+   private boolean isEnvSensor(DeviceInfo deviceInfo) {
+      return deviceInfo.getTemperature() != null || deviceInfo.getHumidity() != null ||
+            deviceInfo.getLight() != null;
    }
 
    @Autowired

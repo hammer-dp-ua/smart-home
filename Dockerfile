@@ -15,9 +15,9 @@ COPY config/application.properties /usr/application.properties
 
 EXPOSE 8080
 
-#RUN apt-get update && apt-get install -y --no-install-recommends \
-#   vim \
-#   && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends \
+   vim \
+   && rm -rf /var/lib/apt/lists/*
 
 ENV ENTRYPOINT_SCRIPT=/usr/entrypoint.sh
 COPY entrypoint.sh $ENTRYPOINT_SCRIPT

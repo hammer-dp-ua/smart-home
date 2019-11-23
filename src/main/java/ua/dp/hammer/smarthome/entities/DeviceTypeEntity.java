@@ -1,7 +1,5 @@
 package ua.dp.hammer.smarthome.entities;
 
-import org.hibernate.annotations.GenericGenerator;
-
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 
@@ -10,7 +8,7 @@ import javax.validation.constraints.NotNull;
 public class DeviceTypeEntity {
    @Id
    @Column(name = "aa_id")
-   @GenericGenerator(name = "DeviceTypeEntityIdGenerator", strategy = "increment")
+   @GeneratedValue(strategy = GenerationType.AUTO)
    private Integer id;
 
    @NotNull

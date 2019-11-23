@@ -33,17 +33,6 @@ public class DbConfig {
       return new PoolingDataSource<>(connectionPool);
    }
 
-   // The native equivalent of the standard JPA EntityManagerFactory is the org.hibernate.SessionFactory
-   /*@Bean
-   public LocalSessionFactoryBean sessionFactory() {
-      LocalSessionFactoryBean sessionFactory = new LocalSessionFactoryBean();
-
-      sessionFactory.setDataSource(dataSource());
-      sessionFactory.setPackagesToScan(DeviceType.class.getPackage().getName());
-      sessionFactory.setHibernateProperties(hibernateProperties());
-      return sessionFactory;
-   }*/
-
    @Bean
    public LocalContainerEntityManagerFactoryBean entityManagerFactory() {
       LocalContainerEntityManagerFactoryBean entityManagerFactoryBean = new LocalContainerEntityManagerFactoryBean();
@@ -62,13 +51,6 @@ public class DbConfig {
       transactionManager.setEntityManagerFactory(emf);
       return transactionManager;
    }
-
-   /*@Bean
-   public PlatformTransactionManager hibernateTransactionManager() {
-      HibernateTransactionManager transactionManager = new HibernateTransactionManager();
-      transactionManager.setSessionFactory(sessionFactory().getObject());
-      return transactionManager;
-   }*/
 
    private Properties hibernateProperties() {
       Properties hibernateProperties = new Properties();

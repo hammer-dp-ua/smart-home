@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ua.dp.hammer.smarthome.beans.EnvSensorsBean;
 import ua.dp.hammer.smarthome.beans.MainLogic;
-import ua.dp.hammer.smarthome.models.EnvSensor;
+import ua.dp.hammer.smarthome.models.DeviceInfo;
 import ua.dp.hammer.smarthome.repositories.EnvSensorsRepository;
 
 import java.util.Collection;
@@ -23,7 +23,7 @@ public class EnvSensorsConsumersController {
    private EnvSensorsRepository envSensorsRepository;
 
    @GetMapping(path = "/info/allSensors")
-   public Collection<EnvSensor> getAllSensorsInfo() {
+   public Collection<DeviceInfo> getAllSensorsInfo() {
       return envSensorsBean.getEnvSensors();
    }
 

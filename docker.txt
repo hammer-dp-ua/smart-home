@@ -16,6 +16,9 @@ docker container run --publish 8000:8080 --detach --name bb bulletinboard:1.0
 --detach: asks Docker to run this container in the background.
 --publish: asks Docker to forward traffic incoming on the host’s port 8000, to the container’s port 8080
 
+docker run -it --rm --publish 8100:80 --network=super_home_nw --mount type=volume,source=pgadmin_data_volume,destination=/var/lib/pgadmin --name pgadmin-container pgadmin-image
+
 docker network create --driver bridge super_home_nw
 
-docker run -it --rm --publish 8100:80 --network=super_home_nw --mount type=volume,source=pgadmin_data_volume,destination=/var/lib/pgadmin --name pgadmin-container pgadmin-image
+Current resources statistics
+docker stats --no-trunc

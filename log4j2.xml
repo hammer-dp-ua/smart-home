@@ -1,37 +1,56 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="INFO" monitorInterval="60">
-	<Properties>
-		<Property name="dirpath">/data</Property>
-		<Property name="filename">application.log</Property>
-		<Property name="patternLayout">%d{DEFAULT} [%t] %logger{36} %line%n%-5level - %msg%n%n</Property>
-	</Properties>
+   <Properties>
+      <Property name="dirpath">/data</Property>
+      <Property name="patternLayout">%d{DEFAULT} [%t] %logger{36} %line%n%-5level - %msg%n%n</Property>
+   </Properties>
 
-	<Appenders>
-		<RollingFile name="RollingFile" fileName="${dirpath}/${filename}" filePattern="${dirpath}/LogArchives/$${date:yyyy-MM}/%d{dd}-${filename}.zip">
-			<PatternLayout pattern="${patternLayout}"/>
-			<Policies>
-				<CronTriggeringPolicy schedule="0 0 0 * * ?"/> <!-- Every day at midnight -->
-			</Policies>
-		</RollingFile>
+   <Appenders>
+      <RollingFile name="RollingFile" fileName="${dirpath}/application.log" filePattern="${dirpath}/LogArchives/$${date:yyyy-MM}/%d{dd}-application.log.zip">
+         <PatternLayout pattern="${patternLayout}"/>
+         <Policies>
+            <CronTriggeringPolicy schedule="0 0 0 * * ?"/> <!-- Every day at midnight -->
+         </Policies>
+      </RollingFile>
+      <RollingFile name="SqlFile" fileName="${dirpath}/sql.log" filePattern="${dirpath}/LogArchives/$${date:yyyy-MM}/%d{dd}-sql.log.zip">
+         <PatternLayout pattern="${patternLayout}"/>
+         <Policies>
+            <CronTriggeringPolicy schedule="0 0 0 * * ?"/> <!-- Every day at midnight -->
+         </Policies>
+      </RollingFile>
 
-		<Console name="Console">
-			<PatternLayout pattern="${patternLayout}"/>
-		</Console>
-	</Appenders>
+      <Console name="Console">
+         <PatternLayout pattern="${patternLayout}"/>
+      </Console>
+   </Appenders>
 
-	<Loggers>
-		<Logger name="ua.dp.hammer" level="INFO" additivity="false">
-			<AppenderRef ref="RollingFile"/>
-		</Logger>
-		<Logger name="org.springframework" level="INFO" additivity="false">
-			<AppenderRef ref="RollingFile"/>
-		</Logger>
-		<Logger name="org.springframework.web.servlet.mvc.support.DefaultHandlerExceptionResolver" level="ERROR" additivity="false">
-			<AppenderRef ref="RollingFile"/>
-		</Logger>
+   <Loggers>
+      <Logger name="ua.dp.hammer" level="INFO" additivity="false">
+         <AppenderRef ref="RollingFile"/>
+      </Logger>
+      <Logger name="org.springframework" level="INFO" additivity="false">
+         <AppenderRef ref="RollingFile"/>
+      </Logger>
+      
+      <!-- Log everything in hibernate -->
+      <Logger name="org.hibernate" level="INFO" additivity="false">
+         <AppenderRef ref="SqlFile" />
+      </Logger>
+      <!-- Log SQL statements -->
+      <Logger name="org.hibernate.SQL" level="WARN" additivity="false">
+         <AppenderRef ref="SqlFile"/>
+      </Logger>
+      <!-- Log JDBC bind parameters -->
+      <Logger name="org.hibernate.type.descriptor.sql" level="INFO" additivity="false">
+         <AppenderRef ref="SqlFile"/>
+      </Logger>
+      <!-- PostgreSQL log -->
+      <Logger name="org.postgresql" level="INFO" additivity="false">
+         <AppenderRef ref="SqlFile"/>
+      </Logger>
 
-		<Root level="INFO">
-			<AppenderRef ref="RollingFile"/>
-		</Root>
-	</Loggers>
+      <Root level="INFO">
+         <AppenderRef ref="RollingFile"/>
+      </Root>
+   </Loggers>
 </Configuration>

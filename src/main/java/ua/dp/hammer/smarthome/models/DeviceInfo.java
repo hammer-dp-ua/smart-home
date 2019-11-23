@@ -1,19 +1,19 @@
 package ua.dp.hammer.smarthome.models;
 
-public class Esp8266Request {
+public class DeviceInfo {
    private String gain;
    private int errors;
    private Float humidity;
    private Float temperature;
    private boolean serverIsAvailable;
    private String deviceName;
-   private long uptime;
+   private int uptime;
    private String buildTimestamp;
    private int freeHeapSpace;
    private String resetReason;
    private String systemRestartReason;
    private int pendingConnectionErrors;
-   private Integer light;
+   private Short light;
 
    public String getGain() {
       return gain;
@@ -63,11 +63,11 @@ public class Esp8266Request {
       this.deviceName = deviceName;
    }
 
-   public long getUptime() {
+   public int getUptime() {
       return uptime;
    }
 
-   public void setUptime(long uptime) {
+   public void setUptime(int uptime) {
       this.uptime = uptime;
    }
 
@@ -111,11 +111,11 @@ public class Esp8266Request {
       this.pendingConnectionErrors = pendingConnectionErrors;
    }
 
-   public Integer getLight() {
+   public Short getLight() {
       return light;
    }
 
-   public void setLight(Integer light) {
+   public void setLight(Short light) {
       this.light = light;
    }
 }

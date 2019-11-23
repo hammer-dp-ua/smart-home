@@ -5,9 +5,11 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
-import ua.dp.hammer.smarthome.models.EnvSensor;
-import ua.dp.hammer.smarthome.models.Esp8266Request;
+import ua.dp.hammer.smarthome.entities.EnvSensorEntity;
+import ua.dp.hammer.smarthome.entities.TechnicalDeviceInfoEntity;
+import ua.dp.hammer.smarthome.models.DeviceInfo;
 import ua.dp.hammer.smarthome.models.ExtendedDeferredResult;
+import ua.dp.hammer.smarthome.repositories.EnvSensorsRepository;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
@@ -26,10 +28,11 @@ public class EnvSensorsBean {
    private int manuallyTurnedOnFanTimeoutMinutes;
    private int streetLightValue;
 
-   private Map<String, EnvSensor> envSensorsStates = new ConcurrentHashMap<>();
-   private Queue<ExtendedDeferredResult<EnvSensor>> envSensorsDeferredResults = new ConcurrentLinkedQueue<>();
+   private Map<String, DeviceInfo> envSensorsStates = new ConcurrentHashMap<>();
+   private Queue<ExtendedDeferredResult<DeviceInfo>> envSensorsDeferredResults = new ConcurrentLinkedQueue<>();
 
    private Environment environment;
+   private EnvSensorsRepository envSensorsRepository;
 
    @PostConstruct
    public void init() {
@@ -38,27 +41,33 @@ public class EnvSensorsBean {
             Integer.parseInt(environment.getRequiredProperty("manuallyTurnedOnFanTimeoutMinutes"));
    }
 
-   public void addEnvSensorState(Esp8266Request esp8266Request) {
-      if (esp8266Request.getLight() != null) {
-         streetLightValue = esp8266Request.getLight();
+   public void addEnvSensorState(DeviceInfo deviceInfo) {
+      if (deviceInfo.getLight() != null) {
+         streetLightValue = deviceInfo.getLight();
       }
 
-      EnvSensor envSensor = new EnvSensor();
+      envSensorsStates.put(deviceInfo.getDeviceName(), deviceInfo);
 
-      envSensor.setName(esp8266Request.getDeviceName());
-      envSensor.setTemperature(esp8266Request.getTemperature());
-      envSensor.setHumidity(esp8266Request.getHumidity());
-      envSensor.setLight(esp8266Request.getLight());
-      envSensor.setGain(esp8266Request.getGain() != null ?
-            Integer.parseInt(esp8266Request.getGain().trim()) : null);
-      envSensor.setUptimeSeconds(esp8266Request.getUptime());
-      envSensor.setErrors(esp8266Request.getErrors());
-      envSensor.setFirmwareBuildTimestamp(esp8266Request.getBuildTimestamp());
-      envSensor.setInfoTimestampMs(System.currentTimeMillis());
-      envSensorsStates.put(esp8266Request.getDeviceName(), envSensor);
+      EnvSensorEntity envSensorEntity = new EnvSensorEntity();
+      envSensorEntity.setTemperature(deviceInfo.getTemperature());
+      envSensorEntity.setHumidity(deviceInfo.getHumidity());
+      envSensorEntity.setLight(deviceInfo.getLight());
+      TechnicalDeviceInfoEntity deviceInfoEntity = new TechnicalDeviceInfoEntity();
+      deviceInfoEntity.addEnvSensor(envSensorEntity);
+      deviceInfoEntity.setName(deviceInfo.getDeviceName());
+      deviceInfoEntity.setGain(deviceInfo.getGain() != null ?
+            Integer.parseInt(deviceInfo.getGain().trim()) : null);
+      deviceInfoEntity.setUptimeSec(deviceInfo.getUptime());
+      deviceInfoEntity.setErrors(deviceInfo.getErrors());
+      deviceInfoEntity.setFreeHeap(deviceInfo.getFreeHeapSpace());
+      deviceInfoEntity.setFirmwareTimestamp(deviceInfo.getBuildTimestamp());
+      deviceInfoEntity.setResetReason(deviceInfo.getResetReason());
+      deviceInfoEntity.setSystemRestartReason(deviceInfo.getSystemRestartReason());
+      deviceInfoEntity.setInfoDt(LocalDateTime.now());
+      envSensorsRepository.saveEnvSensorInfo(deviceInfoEntity);
    }
 
-   public Collection<EnvSensor> getEnvSensors() {
+   public Collection<DeviceInfo> getEnvSensors() {
       return envSensorsStates.values();
    }
 
@@ -86,5 +95,10 @@ public class EnvSensorsBean {
    @Autowired
    public void setEnvironment(Environment environment) {
       this.environment = environment;
+   }
+
+   @Autowired
+   public void setEnvSensorsRepository(EnvSensorsRepository envSensorsRepository) {
+      this.envSensorsRepository = envSensorsRepository;
    }
 }

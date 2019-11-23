@@ -1,10 +1,19 @@
 package ua.dp.hammer.smarthome.entities;
 
-import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
-import javax.persistence.*;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToOne;
+import javax.persistence.SequenceGenerator;
+import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
@@ -12,22 +21,27 @@ import java.time.LocalDateTime;
 @Table(name = "wi_fi_technical_device_info")
 public class TechnicalDeviceInfoEntity {
    @Id
-   @Column(name = "aa_id")
-   @GenericGenerator(name = "TechnicalDeviceInfoEntityIdGenerator", strategy = "increment")
-   /* increment — At Hibernate startup, reads the maximum (numeric) primary key
-      column value of each entity’s table and increments the value by one each time a
-      new row is inserted. Especially efficient if a non-clustered Hibernate application
-      has exclusive access to the database; but don’t use it in any other scenario. */
+   @Column(name = "aa_id", unique = true, nullable = false)
+   //@GeneratedValue(strategy = GenerationType.IDENTITY)
+   /*@GenericGenerator(name = "TechnicalDeviceInfoEntitySequence",
+         strategy = "enhanced-sequence",
+         parameters = {@Parameter(name = "sequence_name", value = "wi_fi_technical_device_info_aa_id_seq")})*/
+   @SequenceGenerator(name="wi_fi_technical_device_info_aa_id_seq",
+                      sequenceName="wi_fi_technical_device_info_aa_id_seq",
+                      allocationSize = 1)
+   @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="wi_fi_technical_device_info_aa_id_seq")
    private Integer id;
 
    @NotNull
    @ManyToOne
+   @JoinColumn(name = "device_type", nullable = false)
    private DeviceTypeEntity type;
 
-   @OneToOne(mappedBy = "technicalInfo", cascade = CascadeType.PERSIST)
+   @OneToOne(mappedBy = "technicalInfo", cascade = CascadeType.ALL, optional = true)
    @OnDelete(action = OnDeleteAction.CASCADE) // Used for DDL generations and mostly just declarative
    private EnvSensorEntity envSensor;
 
+   @NotNull
    @Column(name = "device_name")
    private String name;
 
@@ -43,9 +57,16 @@ public class TechnicalDeviceInfoEntity {
    @Column(name = "free_heap")
    private Integer freeHeap;
 
+   @Column(name = "gain")
+   private Integer gain;
+
    @Column(name = "reset_reason")
    private String resetReason;
 
+   @Column(name = "system_restart_reason")
+   private String systemRestartReason;
+
+   @NotNull
    @Column(name = "info_dt")
    private LocalDateTime infoDt;
 
@@ -110,12 +131,28 @@ public class TechnicalDeviceInfoEntity {
       this.freeHeap = freeHeap;
    }
 
+   public Integer getGain() {
+      return gain;
+   }
+
+   public void setGain(Integer gain) {
+      this.gain = gain;
+   }
+
    public String getResetReason() {
       return resetReason;
    }
 
    public void setResetReason(String resetReason) {
       this.resetReason = resetReason;
+   }
+
+   public String getSystemRestartReason() {
+      return systemRestartReason;
+   }
+
+   public void setSystemRestartReason(String systemRestartReason) {
+      this.systemRestartReason = systemRestartReason;
    }
 
    public LocalDateTime getInfoDt() {
