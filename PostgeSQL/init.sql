@@ -30,6 +30,13 @@ CREATE TABLE env_sensors_data (
    light SMALLINT -- -32768 to +32767
 );
 
+CREATE TABLE alarm_sensors_data (
+   aa_id SERIAL PRIMARY KEY,
+   device_type_name INTEGER NOT NULL REFERENCES device_type_names,
+   source VARCHAR(50) NOT NULL,
+   alarm_dt TIMESTAMP NOT NULL
+);
+
 INSERT INTO device_types (aa_id, type_id) VALUES (nextval('device_types_aa_id_seq'), 'ENV_SENSOR');
 INSERT INTO device_types (aa_id, type_id) VALUES (nextval('device_types_aa_id_seq'), 'SHUTTER');
 INSERT INTO device_types (aa_id, type_id) VALUES (nextval('device_types_aa_id_seq'), 'PROJECTOR');
@@ -41,3 +48,16 @@ INSERT INTO device_type_names (aa_id, device_type, device_name)
 VALUES (nextval('device_type_names_aa_id_seq'), (SELECT aa_id FROM device_types WHERE type_id = 'ENV_SENSOR'), 'Bathroom fan');
 INSERT INTO device_type_names (aa_id, device_type, device_name)
 VALUES (nextval('device_type_names_aa_id_seq'), (SELECT aa_id FROM device_types WHERE type_id = 'ENV_SENSOR'), 'Street temp and humidity monitor');
+INSERT INTO device_type_names (aa_id, device_type, device_name)
+
+VALUES (nextval('device_type_names_aa_id_seq'), (SELECT aa_id FROM device_types WHERE type_id = 'PROJECTOR'), 'Entrance projectors');
+INSERT INTO device_type_names (aa_id, device_type, device_name)
+VALUES (nextval('device_type_names_aa_id_seq'), (SELECT aa_id FROM device_types WHERE type_id = 'PROJECTOR'), 'Storehouse projectore');
+
+INSERT INTO device_type_names (aa_id, device_type, device_name)
+VALUES (nextval('device_type_names_aa_id_seq'), (SELECT aa_id FROM device_types WHERE type_id = 'SHUTTER'), 'Room shutter');
+
+INSERT INTO device_type_names (aa_id, device_type, device_name)
+VALUES (nextval('device_type_names_aa_id_seq'), (SELECT aa_id FROM device_types WHERE type_id = 'MOTION_DETECTOR'), 'Entrance Motion Detector');
+INSERT INTO device_type_names (aa_id, device_type, device_name)
+VALUES (nextval('device_type_names_aa_id_seq'), (SELECT aa_id FROM device_types WHERE type_id = 'MOTION_DETECTOR'), 'Motion Sensor with Immobilizer');

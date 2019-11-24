@@ -6,7 +6,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import ua.dp.hammer.smarthome.beans.EnvSensorsBean;
 import ua.dp.hammer.smarthome.beans.MainLogic;
+import ua.dp.hammer.smarthome.entities.TechnicalDeviceInfoEntity;
 import ua.dp.hammer.smarthome.models.*;
+import ua.dp.hammer.smarthome.repositories.CommonDevicesRepository;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -20,6 +22,7 @@ public class Esp8266ExternalDevicesCommunicatorRestController {
 
    private MainLogic mainLogic;
    private EnvSensorsBean envSensorsBean;
+   private CommonDevicesRepository commonDevicesRepository;
 
    @PostMapping(path = "/statusInfo", consumes="application/json")
    public ServerStatus receiveStatusInfo(@RequestBody DeviceInfo deviceInfo) {
@@ -32,7 +35,12 @@ public class Esp8266ExternalDevicesCommunicatorRestController {
 
       if (isEnvSensor(deviceInfo)) {
          envSensorsBean.addEnvSensorState(deviceInfo);
+      } else {
+         TechnicalDeviceInfoEntity deviceInfoEntity =
+               CommonDevicesRepository.createTechnicalDeviceInfoEntity(deviceInfo);
+         commonDevicesRepository.saveTechnicalDeviceInfo(deviceInfoEntity, deviceInfo.getDeviceName());
       }
+
       mainLogic.setUpdateFirmwareStatus(serverStatus, deviceInfo.getDeviceName());
       return serverStatus;
    }
@@ -195,5 +203,10 @@ public class Esp8266ExternalDevicesCommunicatorRestController {
    @Autowired
    public void setEnvSensorsBean(EnvSensorsBean envSensorsBean) {
       this.envSensorsBean = envSensorsBean;
+   }
+
+   @Autowired
+   public void setCommonDevicesRepository(CommonDevicesRepository commonDevicesRepository) {
+      this.commonDevicesRepository = commonDevicesRepository;
    }
 }

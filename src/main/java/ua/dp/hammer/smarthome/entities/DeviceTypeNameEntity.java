@@ -40,15 +40,7 @@ public class DeviceTypeNameEntity {
       return name;
    }
 
-   public void setName(String name) {
-      this.name = name;
-   }
-
    public DeviceTypeEntity getType() {
       return type;
-   }
-
-   public void setType(DeviceTypeEntity type) {
-      this.type = type;
    }
 }

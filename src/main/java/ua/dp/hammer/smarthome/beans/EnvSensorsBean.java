@@ -9,6 +9,7 @@ import ua.dp.hammer.smarthome.entities.EnvSensorEntity;
 import ua.dp.hammer.smarthome.entities.TechnicalDeviceInfoEntity;
 import ua.dp.hammer.smarthome.models.DeviceInfo;
 import ua.dp.hammer.smarthome.models.ExtendedDeferredResult;
+import ua.dp.hammer.smarthome.repositories.CommonDevicesRepository;
 import ua.dp.hammer.smarthome.repositories.EnvSensorsRepository;
 
 import javax.annotation.PostConstruct;
@@ -33,6 +34,7 @@ public class EnvSensorsBean {
 
    private Environment environment;
    private EnvSensorsRepository envSensorsRepository;
+   private CommonDevicesRepository commonDevicesRepository;
 
    @PostConstruct
    public void init() {
@@ -52,18 +54,10 @@ public class EnvSensorsBean {
       envSensorEntity.setTemperature(deviceInfo.getTemperature());
       envSensorEntity.setHumidity(deviceInfo.getHumidity());
       envSensorEntity.setLight(deviceInfo.getLight());
-      TechnicalDeviceInfoEntity deviceInfoEntity = new TechnicalDeviceInfoEntity();
+      TechnicalDeviceInfoEntity deviceInfoEntity =
+            CommonDevicesRepository.createTechnicalDeviceInfoEntity(deviceInfo);
       deviceInfoEntity.addEnvSensor(envSensorEntity);
-      deviceInfoEntity.setGain(deviceInfo.getGain() != null ?
-            Integer.parseInt(deviceInfo.getGain().trim()) : null);
-      deviceInfoEntity.setUptimeSec(deviceInfo.getUptime());
-      deviceInfoEntity.setErrors(deviceInfo.getErrors());
-      deviceInfoEntity.setFreeHeap(deviceInfo.getFreeHeapSpace());
-      deviceInfoEntity.setFirmwareTimestamp(deviceInfo.getBuildTimestamp());
-      deviceInfoEntity.setResetReason(deviceInfo.getResetReason());
-      deviceInfoEntity.setSystemRestartReason(deviceInfo.getSystemRestartReason());
-      deviceInfoEntity.setInfoDt(LocalDateTime.now());
-      envSensorsRepository.saveEnvSensorInfo(deviceInfoEntity, deviceInfo.getDeviceName());
+      commonDevicesRepository.saveTechnicalDeviceInfo(deviceInfoEntity, deviceInfo.getDeviceName());
    }
 
    public Collection<DeviceInfo> getEnvSensors() {
@@ -96,8 +90,13 @@ public class EnvSensorsBean {
       this.environment = environment;
    }
 
-   @Autowired
+   //@Autowired
    public void setEnvSensorsRepository(EnvSensorsRepository envSensorsRepository) {
       this.envSensorsRepository = envSensorsRepository;
+   }
+
+   @Autowired
+   public void setCommonDevicesRepository(CommonDevicesRepository commonDevicesRepository) {
+      this.commonDevicesRepository = commonDevicesRepository;
    }
 }

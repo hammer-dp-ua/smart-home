@@ -23,8 +23,4 @@ public class DeviceTypeEntity {
    public DeviceType getType() {
       return type;
    }
-
-   public void setType(DeviceType type) {
-      this.type = type;
-   }
 }
