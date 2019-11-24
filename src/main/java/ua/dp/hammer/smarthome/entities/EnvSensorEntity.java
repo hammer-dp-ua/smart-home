@@ -23,6 +23,7 @@ public class EnvSensorEntity {
    @SequenceGenerator(name="env_sensors_data_aa_id_seq",
                       sequenceName="env_sensors_data_aa_id_seq",
                       allocationSize = 1)
+   // The sequence will be called separately before every INSERT, producing sequential numeric values.
    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="env_sensors_data_aa_id_seq")
    private Integer id;
 

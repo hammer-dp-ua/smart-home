@@ -5,6 +5,7 @@ public class DeviceInfo {
    private int errors;
    private Float humidity;
    private Float temperature;
+   private Integer temperatureRaw;
    private boolean serverIsAvailable;
    private String deviceName;
    private int uptime;
@@ -45,6 +46,14 @@ public class DeviceInfo {
 
    public void setTemperature(Float temperature) {
       this.temperature = temperature;
+   }
+
+   public Integer getTemperatureRaw() {
+      return temperatureRaw;
+   }
+
+   public void setTemperatureRaw(Integer temperatureRaw) {
+      this.temperatureRaw = temperatureRaw;
    }
 
    public boolean isServerIsAvailable() {

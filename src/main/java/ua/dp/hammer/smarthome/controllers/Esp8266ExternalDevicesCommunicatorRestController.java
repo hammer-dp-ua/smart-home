@@ -126,13 +126,15 @@ public class Esp8266ExternalDevicesCommunicatorRestController {
          infoMessage.append(deviceInfo.getBuildTimestamp());
       }
 
-      if (isEnvSensor(deviceInfo))
-      {
+      if (isEnvSensor(deviceInfo)) {
          infoMessage.append("\n");
-         if (deviceInfo.getTemperature() != null)
-         {
+         if (deviceInfo.getTemperature() != null) {
             infoMessage.append("Temperature: ");
             infoMessage.append(deviceInfo.getTemperature());
+         }
+         if (deviceInfo.getTemperatureRaw() != null) {
+            infoMessage.append(", Temperature raw: ");
+            infoMessage.append(deviceInfo.getTemperatureRaw());
          }
          if (deviceInfo.getHumidity() != null)
          {

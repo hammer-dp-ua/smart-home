@@ -6,6 +6,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import ua.dp.hammer.smarthome.entities.DeviceType;
 import ua.dp.hammer.smarthome.entities.DeviceTypeEntity;
+import ua.dp.hammer.smarthome.entities.DeviceTypeNameEntity;
 import ua.dp.hammer.smarthome.entities.TechnicalDeviceInfoEntity;
 
 import javax.annotation.PostConstruct;
@@ -24,6 +25,7 @@ public class EnvSensorsRepository {
 
    // Something like second level cache
    private Map<DeviceType, DeviceTypeEntity> allDeviceTypeEntities = new HashMap<>();
+   private Map<String, DeviceTypeNameEntity> allDeviceTypeNameEntities = new HashMap<>();
 
    @PersistenceContext
    private EntityManager entityManager;
@@ -31,10 +33,18 @@ public class EnvSensorsRepository {
    @PostConstruct
    public void init() {
       loadAndSaveAllDeviceTypeEntities();
+      loadAndSaveAllDeviceTypeNameEntities();
    }
 
-   public void saveEnvSensorInfo(TechnicalDeviceInfoEntity infoEntity) {
-      infoEntity.setType(allDeviceTypeEntities.get(DeviceType.ENV_SENSOR));
+   public void saveEnvSensorInfo(TechnicalDeviceInfoEntity infoEntity, String deviceName) {
+      DeviceTypeNameEntity deviceTypeName = allDeviceTypeNameEntities.get(deviceName);
+
+      if (deviceTypeName == null) {
+         LOGGER.warn("Unknown device name: '" + deviceName + "'. Add it into a list of known devices.");
+         return;
+      }
+
+      infoEntity.setTypeName(deviceTypeName);
       entityManager.persist(infoEntity);
    }
 
@@ -47,7 +57,7 @@ public class EnvSensorsRepository {
       return (String) query.getSingleResult();
    }
 
-   public void loadAndSaveAllDeviceTypeEntities() {
+   private void loadAndSaveAllDeviceTypeEntities() {
       TypedQuery<DeviceTypeEntity> query =
             entityManager.createQuery("from " + DeviceTypeEntity.class.getSimpleName() + " e", DeviceTypeEntity.class);
       List<DeviceTypeEntity> result = query.getResultList();
@@ -55,6 +65,17 @@ public class EnvSensorsRepository {
 
       for (DeviceTypeEntity entity : result) {
          allDeviceTypeEntities.put(entity.getType(), entity);
+      }
+   }
+
+   private void loadAndSaveAllDeviceTypeNameEntities() {
+      TypedQuery<DeviceTypeNameEntity> query =
+            entityManager.createQuery("from " + DeviceTypeNameEntity.class.getSimpleName() + " e", DeviceTypeNameEntity.class);
+      List<DeviceTypeNameEntity> result = query.getResultList();
+      LOGGER.info("Loaded " + result.size() + " instances of " + DeviceTypeNameEntity.class.getSimpleName());
+
+      for (DeviceTypeNameEntity entity : result) {
+         allDeviceTypeNameEntities.put(entity.getName(), entity);
       }
    }
 }

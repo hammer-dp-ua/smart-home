@@ -26,14 +26,15 @@
 
    <Loggers>
       <Logger name="ua.dp.hammer" level="INFO" additivity="false">
-         <AppenderRef ref="RollingFile"/>
+         <AppenderRef ref="RollingFile" level="INFO"/>
+         <AppenderRef ref="Console"/>
       </Logger>
       <Logger name="org.springframework" level="INFO" additivity="false">
          <AppenderRef ref="RollingFile"/>
       </Logger>
       
       <!-- Log everything in hibernate -->
-      <Logger name="org.hibernate" level="INFO" additivity="false">
+      <Logger name="org.hibernate" level="WARN" additivity="false">
          <AppenderRef ref="SqlFile" />
       </Logger>
       <!-- Log SQL statements -->
@@ -49,7 +50,7 @@
          <AppenderRef ref="SqlFile"/>
       </Logger>
 
-      <Root level="INFO">
+      <Root level="WARN">
          <AppenderRef ref="RollingFile"/>
       </Root>
    </Loggers>

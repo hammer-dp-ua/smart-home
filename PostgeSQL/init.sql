@@ -3,10 +3,15 @@ CREATE TABLE device_types (
    type_id VARCHAR(50) UNIQUE
 );
 
-CREATE TABLE wi_fi_technical_device_info (
+CREATE TABLE device_type_names (
    aa_id SERIAL PRIMARY KEY,
    device_type INTEGER NOT NULL REFERENCES device_types,
-   device_name VARCHAR(100) NOT NULL,
+   device_name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE wi_fi_technical_device_info (
+   aa_id SERIAL PRIMARY KEY,
+   device_type_name INTEGER NOT NULL REFERENCES device_type_names,
    errors SMALLINT,
    uptime_sec INTEGER,
    firmware_timestamp VARCHAR(50),
@@ -25,8 +30,14 @@ CREATE TABLE env_sensors_data (
    light SMALLINT -- -32768 to +32767
 );
 
-INSERT INTO device_types (aa_id, type_id) VALUES (1, 'ENV_SENSOR');
-INSERT INTO device_types (aa_id, type_id) VALUES (2, 'SHUTTER');
-INSERT INTO device_types (aa_id, type_id) VALUES (3, 'PROJECTOR');
-INSERT INTO device_types (aa_id, type_id) VALUES (4, 'MOTION_DETECTOR');
+INSERT INTO device_types (aa_id, type_id) VALUES (nextval('device_types_aa_id_seq'), 'ENV_SENSOR');
+INSERT INTO device_types (aa_id, type_id) VALUES (nextval('device_types_aa_id_seq'), 'SHUTTER');
+INSERT INTO device_types (aa_id, type_id) VALUES (nextval('device_types_aa_id_seq'), 'PROJECTOR');
+INSERT INTO device_types (aa_id, type_id) VALUES (nextval('device_types_aa_id_seq'), 'MOTION_DETECTOR');
 
+INSERT INTO device_type_names (aa_id, device_type, device_name)
+VALUES (nextval('device_type_names_aa_id_seq'), (SELECT aa_id FROM device_types WHERE type_id = 'ENV_SENSOR'), 'Basement temp and humidity monitor');
+INSERT INTO device_type_names (aa_id, device_type, device_name)
+VALUES (nextval('device_type_names_aa_id_seq'), (SELECT aa_id FROM device_types WHERE type_id = 'ENV_SENSOR'), 'Bathroom fan');
+INSERT INTO device_type_names (aa_id, device_type, device_name)
+VALUES (nextval('device_type_names_aa_id_seq'), (SELECT aa_id FROM device_types WHERE type_id = 'ENV_SENSOR'), 'Street temp and humidity monitor');

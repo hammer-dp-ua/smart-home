@@ -29,21 +29,18 @@ public class TechnicalDeviceInfoEntity {
    @SequenceGenerator(name="wi_fi_technical_device_info_aa_id_seq",
                       sequenceName="wi_fi_technical_device_info_aa_id_seq",
                       allocationSize = 1)
+   // The sequence will be called separately before every INSERT, producing sequential numeric values.
    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="wi_fi_technical_device_info_aa_id_seq")
    private Integer id;
 
    @NotNull
    @ManyToOne
-   @JoinColumn(name = "device_type", nullable = false)
-   private DeviceTypeEntity type;
+   @JoinColumn(name = "device_type_name", nullable = false)
+   private DeviceTypeNameEntity typeName;
 
    @OneToOne(mappedBy = "technicalInfo", cascade = CascadeType.ALL, optional = true)
    @OnDelete(action = OnDeleteAction.CASCADE) // Used for DDL generations and mostly just declarative
    private EnvSensorEntity envSensor;
-
-   @NotNull
-   @Column(name = "device_name")
-   private String name;
 
    @Column(name = "errors")
    private Integer errors;
@@ -74,12 +71,12 @@ public class TechnicalDeviceInfoEntity {
       return id;
    }
 
-   public DeviceTypeEntity getType() {
-      return type;
+   public DeviceTypeNameEntity getTypeName() {
+      return typeName;
    }
 
-   public void setType(DeviceTypeEntity type) {
-      this.type = type;
+   public void setTypeName(DeviceTypeNameEntity typeName) {
+      this.typeName = typeName;
    }
 
    public EnvSensorEntity getEnvSensor() {
@@ -89,14 +86,6 @@ public class TechnicalDeviceInfoEntity {
    public void addEnvSensor(EnvSensorEntity envSensor) {
       envSensor.setTechnicalInfo(this);
       this.envSensor = envSensor;
-   }
-
-   public String getName() {
-      return name;
-   }
-
-   public void setName(String name) {
-      this.name = name;
    }
 
    public Integer getErrors() {

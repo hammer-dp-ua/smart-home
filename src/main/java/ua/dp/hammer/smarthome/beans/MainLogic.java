@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.StringUtils;
 import ua.dp.hammer.smarthome.clients.StreetProjectors;
 import ua.dp.hammer.smarthome.models.ServerStatus;
 
@@ -121,8 +122,10 @@ public class MainLogic {
       switchProjectors(ProjectorState.TURN_OFF);
    }
 
-   public void setDeviceNameToUpdateFirmware(String deviceNameToUpdateFirmware) {
+   public String setDeviceNameToUpdateFirmware(String deviceNameToUpdateFirmware) {
       this.deviceNameToUpdateFirmware = deviceNameToUpdateFirmware;
+      return deviceNameToUpdateFirmware + "\r\nLength: " +
+            (StringUtils.isEmpty(deviceNameToUpdateFirmware) ? 0 : deviceNameToUpdateFirmware.length());
    }
 
    public String ignoreAlarms(int timeout) {
@@ -217,7 +220,7 @@ public class MainLogic {
    }
 
    public void setUpdateFirmwareStatus(ServerStatus response, String deviceName) {
-      if (deviceName != null && deviceName.equals(deviceNameToUpdateFirmware)) {
+      if (!StringUtils.isEmpty(deviceName) && deviceName.equals(deviceNameToUpdateFirmware)) {
          response.setUpdateFirmware(true);
          deviceNameToUpdateFirmware = null;
 

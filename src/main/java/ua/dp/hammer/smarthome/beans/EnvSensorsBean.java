@@ -54,7 +54,6 @@ public class EnvSensorsBean {
       envSensorEntity.setLight(deviceInfo.getLight());
       TechnicalDeviceInfoEntity deviceInfoEntity = new TechnicalDeviceInfoEntity();
       deviceInfoEntity.addEnvSensor(envSensorEntity);
-      deviceInfoEntity.setName(deviceInfo.getDeviceName());
       deviceInfoEntity.setGain(deviceInfo.getGain() != null ?
             Integer.parseInt(deviceInfo.getGain().trim()) : null);
       deviceInfoEntity.setUptimeSec(deviceInfo.getUptime());
@@ -64,7 +63,7 @@ public class EnvSensorsBean {
       deviceInfoEntity.setResetReason(deviceInfo.getResetReason());
       deviceInfoEntity.setSystemRestartReason(deviceInfo.getSystemRestartReason());
       deviceInfoEntity.setInfoDt(LocalDateTime.now());
-      envSensorsRepository.saveEnvSensorInfo(deviceInfoEntity);
+      envSensorsRepository.saveEnvSensorInfo(deviceInfoEntity, deviceInfo.getDeviceName());
    }
 
    public Collection<DeviceInfo> getEnvSensors() {

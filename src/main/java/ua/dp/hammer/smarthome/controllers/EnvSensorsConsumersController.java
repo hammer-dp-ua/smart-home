@@ -4,6 +4,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ua.dp.hammer.smarthome.beans.EnvSensorsBean;
@@ -30,6 +32,11 @@ public class EnvSensorsConsumersController {
    @GetMapping(path = "/dbVersion")
    public String getDbVersion() {
       return envSensorsRepository.loadDbVersion();
+   }
+
+   @PostMapping(path = "/updateFirmware", consumes="text/plain")
+   public String updateFirmware(@RequestBody String deviceName) {
+      return mainLogic.setDeviceNameToUpdateFirmware(deviceName);
    }
 
    @Autowired

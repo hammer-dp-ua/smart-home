@@ -8,8 +8,10 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.util.ContentCachingRequestWrapper;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.UnsupportedEncodingException;
 
 @RestControllerAdvice
 public class GlobalRestControllerExceptionHandler {
@@ -20,8 +22,15 @@ public class GlobalRestControllerExceptionHandler {
    @ExceptionHandler
    @ResponseStatus(HttpStatus.BAD_REQUEST)
    String handleHttpMessageNotReadableException(HttpMessageNotReadableException ex, HttpServletRequest request) {
-      request.setAttribute(ERROR_OCCURRED_ATTRIBUTE, true);
       LOGGER.error("Bad request", ex);
+      ContentCachingRequestWrapper wrapper = (ContentCachingRequestWrapper) request;
+      try {
+         LOGGER.error("Request body: \r\n" + new String(wrapper.getContentAsByteArray(), wrapper.getCharacterEncoding()));
+      } catch (UnsupportedEncodingException e) {
+         LOGGER.error("Couldn't decode the error request");
+      }
+      request.setAttribute(ERROR_OCCURRED_ATTRIBUTE, true);
+
       return null;
    }
 
