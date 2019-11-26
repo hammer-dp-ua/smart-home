@@ -62,9 +62,12 @@ public class CommonDevicesRepository {
       deviceInfoEntity.setUptimeSec(deviceInfo.getUptime());
       deviceInfoEntity.setErrors(deviceInfo.getErrors());
       deviceInfoEntity.setFreeHeap(deviceInfo.getFreeHeapSpace());
-      deviceInfoEntity.setFirmwareTimestamp(deviceInfo.getBuildTimestamp());
-      deviceInfoEntity.setResetReason(deviceInfo.getResetReason());
-      deviceInfoEntity.setSystemRestartReason(deviceInfo.getSystemRestartReason());
+      deviceInfoEntity.setFirmwareTimestamp(StringUtils.isEmpty(deviceInfo.getBuildTimestamp()) ? null :
+            deviceInfo.getBuildTimestamp());
+      deviceInfoEntity.setResetReason(StringUtils.isEmpty(deviceInfo.getResetReason()) ? null :
+            deviceInfo.getResetReason());
+      deviceInfoEntity.setSystemRestartReason(StringUtils.isEmpty(deviceInfo.getSystemRestartReason()) ? null :
+            deviceInfo.getSystemRestartReason());
       deviceInfoEntity.setInfoDt(LocalDateTime.now());
       return deviceInfoEntity;
    }

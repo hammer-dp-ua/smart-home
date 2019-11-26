@@ -2,7 +2,6 @@ package ua.dp.hammer.smarthome.repositories;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +27,7 @@ public class EnvSensorsRepository {
       this.entityManager = entityManager;
    }
 
-   @Autowired
+   //@Autowired
    public void setCommonDevicesRepository(CommonDevicesRepository commonDevicesRepository) {
       this.commonDevicesRepository = commonDevicesRepository;
    }

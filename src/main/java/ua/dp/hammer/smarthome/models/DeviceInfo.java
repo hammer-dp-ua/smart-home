@@ -2,15 +2,15 @@ package ua.dp.hammer.smarthome.models;
 
 public class DeviceInfo {
    private String gain;
-   private int errors;
+   private Integer errors;
    private Float humidity;
    private Float temperature;
    private Integer temperatureRaw;
    private boolean serverIsAvailable;
    private String deviceName;
-   private int uptime;
+   private Integer uptime;
    private String buildTimestamp;
-   private int freeHeapSpace;
+   private Integer freeHeapSpace;
    private String resetReason;
    private String systemRestartReason;
    private int pendingConnectionErrors;
@@ -24,11 +24,11 @@ public class DeviceInfo {
       this.gain = gain;
    }
 
-   public int getErrors() {
+   public Integer getErrors() {
       return errors;
    }
 
-   public void setErrors(int errors) {
+   public void setErrors(Integer errors) {
       this.errors = errors;
    }
 
@@ -72,11 +72,11 @@ public class DeviceInfo {
       this.deviceName = deviceName;
    }
 
-   public int getUptime() {
+   public Integer getUptime() {
       return uptime;
    }
 
-   public void setUptime(int uptime) {
+   public void setUptime(Integer uptime) {
       this.uptime = uptime;
    }
 
@@ -88,11 +88,11 @@ public class DeviceInfo {
       this.buildTimestamp = buildTimestamp;
    }
 
-   public int getFreeHeapSpace() {
+   public Integer getFreeHeapSpace() {
       return freeHeapSpace;
    }
 
-   public void setFreeHeapSpace(int freeHeapSpace) {
+   public void setFreeHeapSpace(Integer freeHeapSpace) {
       this.freeHeapSpace = freeHeapSpace;
    }
 

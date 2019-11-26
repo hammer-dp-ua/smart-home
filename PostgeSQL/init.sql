@@ -37,10 +37,10 @@ CREATE TABLE alarm_sensors_data (
    alarm_dt TIMESTAMP NOT NULL
 );
 
-INSERT INTO device_types (aa_id, type_id) VALUES (nextval('device_types_aa_id_seq'), 'ENV_SENSOR');
-INSERT INTO device_types (aa_id, type_id) VALUES (nextval('device_types_aa_id_seq'), 'SHUTTER');
-INSERT INTO device_types (aa_id, type_id) VALUES (nextval('device_types_aa_id_seq'), 'PROJECTOR');
-INSERT INTO device_types (aa_id, type_id) VALUES (nextval('device_types_aa_id_seq'), 'MOTION_DETECTOR');
+INSERT INTO device_types (type_id) VALUES ('ENV_SENSOR');
+INSERT INTO device_types (type_id) VALUES ('SHUTTER');
+INSERT INTO device_types (type_id) VALUES ('PROJECTOR');
+INSERT INTO device_types (type_id) VALUES ('MOTION_DETECTOR');
 
 INSERT INTO device_type_names (aa_id, device_type, device_name)
 VALUES (nextval('device_type_names_aa_id_seq'), (SELECT aa_id FROM device_types WHERE type_id = 'ENV_SENSOR'), 'Basement temp and humidity monitor');

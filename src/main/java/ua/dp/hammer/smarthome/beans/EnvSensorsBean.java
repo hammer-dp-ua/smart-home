@@ -5,16 +5,18 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.async.DeferredResult;
 import ua.dp.hammer.smarthome.entities.EnvSensorEntity;
 import ua.dp.hammer.smarthome.entities.TechnicalDeviceInfoEntity;
 import ua.dp.hammer.smarthome.models.DeviceInfo;
-import ua.dp.hammer.smarthome.models.ExtendedDeferredResult;
 import ua.dp.hammer.smarthome.repositories.CommonDevicesRepository;
 import ua.dp.hammer.smarthome.repositories.EnvSensorsRepository;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,7 +32,7 @@ public class EnvSensorsBean {
    private int streetLightValue;
 
    private Map<String, DeviceInfo> envSensorsStates = new ConcurrentHashMap<>();
-   private Queue<ExtendedDeferredResult<DeviceInfo>> envSensorsDeferredResults = new ConcurrentLinkedQueue<>();
+   private Queue<DeferredResult<List<DeviceInfo>>> envSensorsDeferredResults = new ConcurrentLinkedQueue<>();
 
    private Environment environment;
    private EnvSensorsRepository envSensorsRepository;
@@ -50,6 +52,13 @@ public class EnvSensorsBean {
 
       envSensorsStates.put(deviceInfo.getDeviceName(), deviceInfo);
 
+      List<DeviceInfo> infoList = new ArrayList<>(envSensorsStates.size());
+      infoList.addAll(envSensorsStates.values());
+      while (!envSensorsDeferredResults.isEmpty()) {
+         DeferredResult<List<DeviceInfo>> request = envSensorsDeferredResults.poll();
+         request.setResult(infoList);
+      }
+
       EnvSensorEntity envSensorEntity = new EnvSensorEntity();
       envSensorEntity.setTemperature(deviceInfo.getTemperature());
       envSensorEntity.setHumidity(deviceInfo.getHumidity());
@@ -62,6 +71,10 @@ public class EnvSensorsBean {
 
    public Collection<DeviceInfo> getEnvSensors() {
       return envSensorsStates.values();
+   }
+
+   public void addEnvSensorsDeferredResults(DeferredResult<List<DeviceInfo>> deferredResult) {
+      envSensorsDeferredResults.add(deferredResult);
    }
 
    public boolean getBathroomFanState(float humidity) {

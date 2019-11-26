@@ -8,12 +8,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.async.DeferredResult;
 import ua.dp.hammer.smarthome.beans.EnvSensorsBean;
 import ua.dp.hammer.smarthome.beans.MainLogic;
 import ua.dp.hammer.smarthome.models.DeviceInfo;
 import ua.dp.hammer.smarthome.repositories.EnvSensorsRepository;
 
 import java.util.Collection;
+import java.util.List;
 
 @RestController
 @RequestMapping(path = "/server/envSensors")
@@ -27,6 +29,14 @@ public class EnvSensorsConsumersController {
    @GetMapping(path = "/info/allSensors")
    public Collection<DeviceInfo> getAllSensorsInfo() {
       return envSensorsBean.getEnvSensors();
+   }
+
+   @GetMapping(path = "/info/deferredSensorsInfo")
+   public DeferredResult<List<DeviceInfo>> getDeferredSensorsInfo() {
+      DeferredResult<List<DeviceInfo>> deferredResult = new DeferredResult<>();
+
+      envSensorsBean.addEnvSensorsDeferredResults(deferredResult);
+      return deferredResult;
    }
 
    @GetMapping(path = "/dbVersion")

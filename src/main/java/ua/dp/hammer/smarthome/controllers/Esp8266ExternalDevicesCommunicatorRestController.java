@@ -93,7 +93,7 @@ public class Esp8266ExternalDevicesCommunicatorRestController {
       long uptimeMinutes = 0;
       long uptimeSeconds = 0;
 
-      if (deviceInfo.getUptime() > 0) {
+      if (deviceInfo.getUptime() != null) {
          long secondsRemaining = deviceInfo.getUptime();
 
          uptimeDays = deviceInfo.getUptime() / 60L / 60L / 24L;
@@ -114,7 +114,7 @@ public class Esp8266ExternalDevicesCommunicatorRestController {
       infoMessage.append("Gain of '").append(deviceInfo.getDeviceName()).append("': ")
             .append(gain).append("dB");
 
-      if (deviceInfo.getErrors() > 0) {
+      if (deviceInfo.getErrors() != null) {
          infoMessage.append("\nErrors: ");
          infoMessage.append(deviceInfo.getErrors());
       }
@@ -122,7 +122,7 @@ public class Esp8266ExternalDevicesCommunicatorRestController {
          infoMessage.append("\nPending connection errors: ");
          infoMessage.append(deviceInfo.getPendingConnectionErrors());
       }
-      if (deviceInfo.getUptime() > 0) {
+      if (deviceInfo.getUptime() != null) {
          infoMessage.append("\nUptime: ");
          infoMessage.append(uptimeDays).append("days ");
          infoMessage.append(uptimeHours).append("hours ");
@@ -156,7 +156,7 @@ public class Esp8266ExternalDevicesCommunicatorRestController {
          }
       }
 
-      if (deviceInfo.getFreeHeapSpace() > 0) {
+      if (deviceInfo.getFreeHeapSpace() != null) {
          infoMessage.append("\nFree heap: ");
          infoMessage.append(deviceInfo.getFreeHeapSpace());
       }
