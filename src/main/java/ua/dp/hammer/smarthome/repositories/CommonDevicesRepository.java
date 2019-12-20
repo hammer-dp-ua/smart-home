@@ -57,8 +57,9 @@ public class CommonDevicesRepository {
    public static TechnicalDeviceInfoEntity createTechnicalDeviceInfoEntity(DeviceInfo deviceInfo) {
       TechnicalDeviceInfoEntity deviceInfoEntity = new TechnicalDeviceInfoEntity();
 
-      deviceInfoEntity.setGain(StringUtils.isEmpty(deviceInfo.getGain()) ? null :
-            Integer.parseInt(deviceInfo.getGain().trim()));
+      Integer gain = StringUtils.isEmpty(deviceInfo.getGain()) || !deviceInfo.getGain().matches("-?\\d+") ? null :
+            Integer.parseInt(deviceInfo.getGain().trim());
+      deviceInfoEntity.setGain(gain);
       deviceInfoEntity.setUptimeSec(deviceInfo.getUptime());
       deviceInfoEntity.setErrors(deviceInfo.getErrors());
       deviceInfoEntity.setFreeHeap(deviceInfo.getFreeHeapSpace());

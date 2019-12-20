@@ -10,7 +10,7 @@ FROM openjdk:8
 RUN unlink /etc/localtime
 RUN ln -s /usr/share/zoneinfo/Europe/Kiev /etc/localtime
 
-COPY target/security-system.jar /usr/security-system.jar
+COPY target/super-home.jar /usr/super-home.jar
 COPY log4j2.xml /usr/log4j2.xml
 COPY config/application.properties /usr/application.properties
 

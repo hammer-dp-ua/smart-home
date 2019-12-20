@@ -78,7 +78,7 @@ public class Esp8266ExternalDevicesCommunicatorRestController {
 
       envSensorsBean.addEnvSensorState(deviceInfo);
 
-      fanResponse.setTurnOn(envSensorsBean.getBathroomFanState(deviceInfo.getHumidity()));
+      fanResponse.setTurnOn(envSensorsBean.turnOnBathroomFan(deviceInfo.getHumidity()));
       fanResponse.setManuallyTurnedOnTimeout(envSensorsBean.getManuallyTurnedOnFanTimeoutMinutes());
       return fanResponse;
    }

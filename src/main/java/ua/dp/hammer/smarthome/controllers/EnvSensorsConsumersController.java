@@ -33,7 +33,7 @@ public class EnvSensorsConsumersController {
 
    @GetMapping(path = "/info/deferredSensorsInfo")
    public DeferredResult<List<DeviceInfo>> getDeferredSensorsInfo() {
-      DeferredResult<List<DeviceInfo>> deferredResult = new DeferredResult<>();
+      DeferredResult<List<DeviceInfo>> deferredResult = new DeferredResult<>(120_000L);
 
       envSensorsBean.addEnvSensorsDeferredResults(deferredResult);
       return deferredResult;

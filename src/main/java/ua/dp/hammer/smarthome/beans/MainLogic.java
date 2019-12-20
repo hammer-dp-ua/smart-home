@@ -14,11 +14,13 @@ import reactor.core.publisher.Mono;
 import reactor.util.StringUtils;
 import ua.dp.hammer.smarthome.clients.StreetProjectors;
 import ua.dp.hammer.smarthome.models.ServerStatus;
+import ua.dp.hammer.smarthome.models.states.AlarmsState;
 
 import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -43,10 +45,13 @@ public class MainLogic {
 
    private Map<StreetProjectors, ProjectorState> failedStreetProjectors = new ConcurrentHashMap<>();
 
+   private ProjectorResponsesCollector projectorResponsesCollector;
+
    private Environment environment;
    private ImmobilizerBean immobilizerBean;
    private CameraBean cameraBean;
    private EnvSensorsBean envSensorsBean;
+   private StatesBean statesBean;
 
    @PostConstruct
    public void init() {
@@ -94,7 +99,7 @@ public class MainLogic {
    }
 
    private void turnProjectorsOn() {
-      if (turnProjectorsOnManually || envSensorsBean.getStreetLightValue() < 50) {
+      if (turnProjectorsOnManually || envSensorsBean.getStreetLightValue() < 5) {
          if (scheduledFutureProjectorTurningOff != null && !scheduledFutureProjectorTurningOff.isDone()) {
             scheduledFutureProjectorTurningOff.cancel(false);
 
@@ -128,37 +133,54 @@ public class MainLogic {
             (StringUtils.isEmpty(deviceNameToUpdateFirmware) ? 0 : deviceNameToUpdateFirmware.length());
    }
 
-   public String ignoreAlarms(int timeout) {
+   public AlarmsState ignoreAlarms(int minutesTimeout) {
       alarmsAreBeingIgnored = true;
-      String returnValue = "Ignoring indefinitely";
+      String returnValue = null;
 
       if (cancelIgnoringAlarmsTimer != null) {
          cancelIgnoringAlarmsTimer.cancel();
       }
 
-      if (timeout > 0) {
+      if (minutesTimeout > 0) {
          cancelIgnoringAlarmsTimer = new Timer();
-         returnValue = "Finishes ignoring at " + LocalDateTime.now().plusMinutes(timeout).toString();
+         returnValue = LocalDateTime.now().plusMinutes(minutesTimeout).toString();
 
-         cancelIgnoringAlarmsTimer.schedule(new TimerTask() {
+         cancelIgnoringAlarmsTimer.scheduleAtFixedRate(new TimerTask() {
+            private int executionsAmount = 0;
+
             @Override
             public void run() {
-               alarmsAreBeingIgnored = false;
-               LOGGER.info("Alarms are not ignored anymore");
+               executionsAmount++;
+
+               if (executionsAmount >= minutesTimeout) {
+                  alarmsAreBeingIgnored = false;
+                  statesBean.changeAlarmsIgnoringState(false, 0);
+
+                  LOGGER.info("Alarms are not ignored anymore");
+
+                  cancel();
+               } else {
+                  int minutesRemaining = minutesTimeout - executionsAmount;
+                  statesBean.changeAlarmsIgnoringState(true, minutesRemaining);
+               }
             }
-         }, timeout * 60 * 1000);
-      } else if (timeout == -1) {
+         },
+   60 * 1000L,
+   60 * 1000L);
+      } else if (minutesTimeout < 0) {
          alarmsAreBeingIgnored = false;
       }
 
+      statesBean.changeAlarmsIgnoringState(alarmsAreBeingIgnored, minutesTimeout);
+
       if (alarmsAreBeingIgnored) {
-         LOGGER.info("Alarms will be ignored " + (timeout == 0 ? "indefinitely" : (timeout + " minutes and finishes ignoring at " + returnValue)));
+         LOGGER.info("Alarms will be ignored " + (minutesTimeout == 0 ? "indefinitely" : (minutesTimeout + " minutes and finishes ignoring at " + returnValue)));
       } else {
          returnValue = "Alarms are not ignored anymore";
 
          LOGGER.info(returnValue);
       }
-      return returnValue;
+      return new AlarmsState(alarmsAreBeingIgnored, minutesTimeout);
    }
 
    private void switchProjectors(ProjectorState newProjectorState) {
@@ -178,6 +200,19 @@ public class MainLogic {
    }
 
    private void sendProjectorsRequests(ProjectorState newProjectorsState) {
+      projectorResponsesCollector = new ProjectorResponsesCollector.Builder()
+            .setExpectedResponses(StreetProjectors.values().length)
+            .setTurnOn(newProjectorsState == ProjectorState.TURN_ON)
+            .setRunnableOnAllResponsesReceived((atLeastOneRequestReceived, turnOn) -> {
+               if (atLeastOneRequestReceived) {
+                  statesBean.changeProjectorState(turnOn);
+               } else {
+                  // To notify that no any changes occurred
+                  statesBean.changeProjectorState(!turnOn);
+               }
+            })
+            .build();
+
       for (StreetProjectors projector : StreetProjectors.values()) {
          failedStreetProjectors.remove(projector);
 
@@ -202,17 +237,31 @@ public class MainLogic {
             .bodyToMono(Void.class);
 
       Flux.merge(deferredResponse)
-            .subscribe(null, e -> failedStreetProjectors.put(projector, newProjectorState));
+            .subscribe(null,
+                  e -> {
+                     failedStreetProjectors.put(projector, newProjectorState);
+                     projectorResponsesCollector.errorResponseReceived();
+                  },
+                  () -> {
+                     projectorResponsesCollector.okResponseReceived();
+                  });
    }
 
    @Scheduled(fixedDelay=60000)
    public void resendToFailedStreetProjectors() {
-      for (Map.Entry<StreetProjectors, ProjectorState> entry : failedStreetProjectors.entrySet()) {
-         sendProjectorRequest(entry.getKey(), entry.getValue());
-         LOGGER.info("Request with " + entry.getValue() + " state has been resent to " + entry.getKey().getIpAddress());
-      }
+      Map<StreetProjectors, ProjectorState> failedCopy = new HashMap<>();
 
+      for (Map.Entry<StreetProjectors, ProjectorState> entry : failedStreetProjectors.entrySet()) {
+         failedCopy.put(entry.getKey(), entry.getValue());
+      }
       failedStreetProjectors.clear();
+
+      for (Map.Entry<StreetProjectors, ProjectorState> entry : failedCopy.entrySet()) {
+         sendProjectorRequest(entry.getKey(), entry.getValue());
+
+         LOGGER.info("Previously failed request with " + entry.getValue() + " state has been resent to "
+               + entry.getKey().getIpAddress());
+      }
    }
 
    private enum ProjectorState {
@@ -248,5 +297,74 @@ public class MainLogic {
    @Autowired
    public void setEnvSensorsBean(EnvSensorsBean envSensorsBean) {
       this.envSensorsBean = envSensorsBean;
+   }
+
+   @Autowired
+   public void setStatesBean(StatesBean statesBean) {
+      this.statesBean = statesBean;
+   }
+
+   private static final class ProjectorResponsesCollector {
+      private int expectedResponses;
+      private int receivedResponses;
+      private OnFinishRunnable runOnAllResponsesReceived;
+      private Boolean turnOn;
+      private boolean atLeastOneRequestReceived;
+
+      private ProjectorResponsesCollector() {
+      }
+
+      public void okResponseReceived() {
+         receivedResponses++;
+         atLeastOneRequestReceived = true;
+         runRunnable();
+      }
+
+      public void errorResponseReceived() {
+         receivedResponses++;
+         runRunnable();
+      }
+
+      public void runRunnable() {
+         if (expectedResponses == receivedResponses) {
+            runOnAllResponsesReceived.run(atLeastOneRequestReceived, turnOn);
+         }
+      }
+
+      public static final class Builder {
+         ProjectorResponsesCollector projectorResponsesCollector = new ProjectorResponsesCollector();
+
+         public Builder setExpectedResponses(int expectedResponses) {
+            projectorResponsesCollector.expectedResponses = expectedResponses;
+            return this;
+         }
+
+         public Builder setRunnableOnAllResponsesReceived(OnFinishRunnable runOnAllResponsesReceived) {
+            projectorResponsesCollector.runOnAllResponsesReceived = runOnAllResponsesReceived;
+            return this;
+         }
+
+         public Builder setTurnOn(boolean turnOn) {
+            projectorResponsesCollector.turnOn = turnOn;
+            return this;
+         }
+
+         public ProjectorResponsesCollector build() {
+            if (projectorResponsesCollector.expectedResponses == 0) {
+               throw new IllegalStateException("Expected responses amount isn't set");
+            }
+            if (projectorResponsesCollector.runOnAllResponsesReceived == null) {
+               throw new IllegalStateException("Runnable on all responses isn't set");
+            }
+            if (projectorResponsesCollector.turnOn == null) {
+               throw new IllegalStateException("Turn on/off state isn't set");
+            }
+            return projectorResponsesCollector;
+         }
+      }
+
+      public interface OnFinishRunnable {
+         void run(boolean atLeastOneRequestReceived, boolean turnOn);
+      }
    }
 }

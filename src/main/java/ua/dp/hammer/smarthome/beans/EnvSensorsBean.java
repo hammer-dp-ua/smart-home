@@ -37,6 +37,7 @@ public class EnvSensorsBean {
    private Environment environment;
    private EnvSensorsRepository envSensorsRepository;
    private CommonDevicesRepository commonDevicesRepository;
+   private StatesBean statesBean;
 
    @PostConstruct
    public void init() {
@@ -47,7 +48,10 @@ public class EnvSensorsBean {
 
    public void addEnvSensorState(DeviceInfo deviceInfo) {
       if (deviceInfo.getLight() != null) {
-         streetLightValue = deviceInfo.getLight();
+         int lightPercentages = ((int) deviceInfo.getLight()) * 100 / 1024;
+
+         deviceInfo.setLight((short) lightPercentages);
+         streetLightValue = lightPercentages;
       }
 
       envSensorsStates.put(deviceInfo.getDeviceName(), deviceInfo);
@@ -77,13 +81,20 @@ public class EnvSensorsBean {
       envSensorsDeferredResults.add(deferredResult);
    }
 
-   public boolean getBathroomFanState(float humidity) {
+   public boolean turnOnBathroomFan(float humidity) {
       if (humidity >= thresholdBathroomHumidity) {
          thresholdHumidityStartTime = LocalDateTime.now();
       }
 
       LocalDateTime currentTime = LocalDateTime.now();
-      return thresholdHumidityStartTime != null && currentTime.isBefore(thresholdHumidityStartTime.plusMinutes(10));
+      boolean turnOn = (thresholdHumidityStartTime != null)
+            && currentTime.isBefore(thresholdHumidityStartTime.plusMinutes(10));
+      boolean turnedOn = statesBean.getAllStates().getFanState().isTurnedOn();
+
+      if (turnOn != turnedOn) {
+         statesBean.changeFunState(turnOn);
+      }
+      return turnOn;
    }
 
    public void turnOnBathroomFan() {
@@ -111,5 +122,10 @@ public class EnvSensorsBean {
    @Autowired
    public void setCommonDevicesRepository(CommonDevicesRepository commonDevicesRepository) {
       this.commonDevicesRepository = commonDevicesRepository;
+   }
+
+   @Autowired
+   public void setStatesBean(StatesBean statesBean) {
+      this.statesBean = statesBean;
    }
 }

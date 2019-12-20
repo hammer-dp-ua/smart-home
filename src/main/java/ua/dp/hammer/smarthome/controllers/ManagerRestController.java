@@ -7,13 +7,17 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.async.DeferredResult;
 import ua.dp.hammer.smarthome.beans.EnvSensorsBean;
 import ua.dp.hammer.smarthome.beans.MainLogic;
+import ua.dp.hammer.smarthome.beans.StatesBean;
+import ua.dp.hammer.smarthome.models.ProjectorStateResponse;
 import ua.dp.hammer.smarthome.models.ServerStatus;
 import ua.dp.hammer.smarthome.models.StatusCodes;
+import ua.dp.hammer.smarthome.models.states.AlarmsState;
+import ua.dp.hammer.smarthome.models.states.AllStates;
 
 import javax.servlet.http.HttpServletRequest;
-
 import java.util.Enumeration;
 
 import static ua.dp.hammer.smarthome.utils.Utils.getClientIpAddr;
@@ -25,6 +29,7 @@ public class ManagerRestController {
 
    private MainLogic mainLogic;
    private EnvSensorsBean envSensorsBean;
+   private StatesBean statesBean;
 
    @GetMapping(path = "/testAlarm")
    public ServerStatus receiveTestAlarm(HttpServletRequest request,
@@ -42,7 +47,7 @@ public class ManagerRestController {
    }
 
    @GetMapping(path = "/switchProjectors")
-   public String switchProjectorsManually(@RequestParam("switchState") String switchState,
+   public ProjectorStateResponse switchProjectorsManually(@RequestParam("switchState") String switchState,
                                           HttpServletRequest request) {
       if (LOGGER.isDebugEnabled())
       {
@@ -60,7 +65,7 @@ public class ManagerRestController {
       } else if ("turnOff".equals(switchState)) {
          mainLogic.turnProjectorsOffManually();
       }
-      return switchState;
+      return new ProjectorStateResponse(switchState);
    }
 
    @GetMapping(path = "/turnOnBathroomFun")
@@ -77,8 +82,21 @@ public class ManagerRestController {
     *                if parameter is -1 the method stops alarms ignoring
     */
    @GetMapping(path = "/ignoreAlarms")
-   public String ignoreAlarms(@RequestParam("timeout") int timeout) {
+   public AlarmsState ignoreAlarms(@RequestParam("timeout") int timeout) {
       return mainLogic.ignoreAlarms(timeout);
+   }
+
+   @GetMapping(path = "/getCurrentStates")
+   public AllStates getCurrentStates() {
+      return statesBean.getAllStates();
+   }
+
+   @GetMapping(path = "/getCurrentStatesDeferred")
+   public DeferredResult<AllStates> getCurrentStatesDeferred() {
+      DeferredResult<AllStates> deferredResult = new DeferredResult<>(300_000L);
+
+      statesBean.addStateDeferredResult(deferredResult);
+      return deferredResult;
    }
 
    @Autowired
@@ -89,5 +107,10 @@ public class ManagerRestController {
    @Autowired
    public void setEnvSensorsBean(EnvSensorsBean envSensorsBean) {
       this.envSensorsBean = envSensorsBean;
+   }
+
+   @Autowired
+   public void setStatesBean(StatesBean statesBean) {
+      this.statesBean = statesBean;
    }
 }
