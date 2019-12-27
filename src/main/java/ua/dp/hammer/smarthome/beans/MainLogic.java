@@ -135,7 +135,7 @@ public class MainLogic {
 
    public AlarmsState ignoreAlarms(int minutesTimeout) {
       alarmsAreBeingIgnored = true;
-      String returnValue = null;
+      String finishesIgnoringTime = null;
 
       if (cancelIgnoringAlarmsTimer != null) {
          cancelIgnoringAlarmsTimer.cancel();
@@ -143,7 +143,7 @@ public class MainLogic {
 
       if (minutesTimeout > 0) {
          cancelIgnoringAlarmsTimer = new Timer();
-         returnValue = LocalDateTime.now().plusMinutes(minutesTimeout).toString();
+         finishesIgnoringTime = LocalDateTime.now().plusMinutes(minutesTimeout).toString();
 
          cancelIgnoringAlarmsTimer.scheduleAtFixedRate(new TimerTask() {
             private int executionsAmount = 0;
@@ -174,11 +174,9 @@ public class MainLogic {
       statesBean.changeAlarmsIgnoringState(alarmsAreBeingIgnored, minutesTimeout);
 
       if (alarmsAreBeingIgnored) {
-         LOGGER.info("Alarms will be ignored " + (minutesTimeout == 0 ? "indefinitely" : (minutesTimeout + " minutes and finishes ignoring at " + returnValue)));
+         LOGGER.info("Alarms will be ignored " + (minutesTimeout == 0 ? "indefinitely" : (minutesTimeout + " minutes and finishes ignoring at " + finishesIgnoringTime)));
       } else {
-         returnValue = "Alarms are not ignored anymore";
-
-         LOGGER.info(returnValue);
+         LOGGER.info("Alarms are not ignored anymore");
       }
       return new AlarmsState(alarmsAreBeingIgnored, minutesTimeout);
    }

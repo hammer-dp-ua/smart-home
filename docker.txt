@@ -4,11 +4,13 @@ docker build -t super-home .
 Run
 docker run -it --rm --name my-running-app my-java-app
 docker run --rm --detach --name super-home-container super-home
-
+As "root" user
+docker run -it --rm --user=root --name my-running-app my-java-app
 
 docker run --network=super_home_nw --rm -it --name postgres-container --publish 5432:5432 -v "z:\USER\PostgreSQL\my-postgres.conf":/etc/postgresql/postgresql.conf --mount type=volume,source=postgres_data_volume,destination=/var/lib/postgresql/data postgres-image -c config_file=/etc/postgresql/postgresql.conf
 
-docker exec -it super-home-container bash
+docker exec -it postgres-container bash
+docker exec -it pgadmin-container /bin/sh
 -it: starts the container in the interactive mode
 
 docker container run --publish 8000:8080 --detach --name bb bulletinboard:1.0
@@ -22,3 +24,10 @@ docker network create --driver bridge super_home_nw
 
 Current resources statistics
 docker stats --no-trunc
+
+Execute "ls -la" command with alternative entrypoint
+docker run --rm -it --entrypoint ls --mount type=volume,source=super_home_data_volume,destination=/data --name super-home-container super-home -la /data
+
+List of images
+docker image ls
+

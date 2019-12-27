@@ -4,7 +4,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
@@ -15,7 +14,7 @@ public class EntryPointBean {
 
    private static final Logger LOGGER = LogManager.getLogger(EntryPointBean.class);
 
-   @Autowired
+   //@Autowired
    private DiscFilesHandlerBean discFilesHandlerBean;
 
    @Autowired
@@ -30,7 +29,7 @@ public class EntryPointBean {
    /**
     * Period will be measured from the completion time of each preceding invocation
     */
-   @Scheduled(fixedDelay=10000)
+   //@Scheduled(fixedDelay=10000)
    public void checkFilesAndTransfer() {
       if (LOGGER.isTraceEnabled()) {
          LOGGER.trace("Scheduled method is executed from thread " + Thread.currentThread().getId());
