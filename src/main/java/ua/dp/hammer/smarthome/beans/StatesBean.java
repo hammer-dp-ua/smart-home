@@ -30,8 +30,9 @@ public class StatesBean {
       updateDeferred();
    }
 
-   public void changeFunState(boolean turnedOn) {
+   public void changeFunState(boolean turnedOn, int minutesRemaining) {
       allStates.getFanState().setTurnedOn(turnedOn);
+      allStates.getFanState().setMinutesRemaining(minutesRemaining);
 
       updateDeferred();
    }

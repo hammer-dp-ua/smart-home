@@ -16,6 +16,7 @@ import ua.dp.hammer.smarthome.models.ServerStatus;
 import ua.dp.hammer.smarthome.models.StatusCodes;
 import ua.dp.hammer.smarthome.models.states.AlarmsState;
 import ua.dp.hammer.smarthome.models.states.AllStates;
+import ua.dp.hammer.smarthome.models.states.FanState;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Enumeration;
@@ -48,7 +49,7 @@ public class ManagerRestController {
 
    @GetMapping(path = "/switchProjectors")
    public ProjectorStateResponse switchProjectorsManually(@RequestParam("switchState") String switchState,
-                                          HttpServletRequest request) {
+                                                          HttpServletRequest request) {
       if (LOGGER.isDebugEnabled())
       {
          Enumeration<String> headerNamesEnum = request.getHeaderNames();
@@ -69,11 +70,11 @@ public class ManagerRestController {
    }
 
    @GetMapping(path = "/turnOnBathroomFun")
-   public String turnOnBathroomFun() {
+   public FanState turnOnBathroomFun() {
       LOGGER.info("Bathroom fan will be turned on");
 
-      envSensorsBean.turnOnBathroomFan();
-      return "OK";
+      envSensorsBean.setBathroomFanState();
+      return new FanState(true, envSensorsBean.getManuallyTurnedOnFanTimeoutMinutes());
    }
 
    /**

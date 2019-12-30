@@ -19,6 +19,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -26,10 +28,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class EnvSensorsBean {
    private static final Logger LOGGER = LogManager.getLogger(EnvSensorsBean.class);
 
-   private LocalDateTime thresholdHumidityStartTime;
+   private LocalDateTime manualEnabledFanTime;
    private float thresholdBathroomHumidity;
    private int manuallyTurnedOnFanTimeoutMinutes;
    private int streetLightValue;
+   private Timer fanStateTimer;
 
    private Map<String, DeviceInfo> envSensorsStates = new ConcurrentHashMap<>();
    private Queue<DeferredResult<List<DeviceInfo>>> envSensorsDeferredResults = new ConcurrentLinkedQueue<>();
@@ -81,24 +84,52 @@ public class EnvSensorsBean {
       envSensorsDeferredResults.add(deferredResult);
    }
 
-   public boolean turnOnBathroomFan(float humidity) {
+   public boolean setBathroomFanState(float humidity) {
+      boolean toBeTurnedOn = false;
+
       if (humidity >= thresholdBathroomHumidity) {
-         thresholdHumidityStartTime = LocalDateTime.now();
+         toBeTurnedOn = true;
       }
 
       LocalDateTime currentTime = LocalDateTime.now();
-      boolean turnOn = (thresholdHumidityStartTime != null)
-            && currentTime.isBefore(thresholdHumidityStartTime.plusMinutes(10));
-      boolean turnedOn = statesBean.getAllStates().getFanState().isTurnedOn();
+      boolean manuallyEnabled = (manualEnabledFanTime != null) &&
+            currentTime.isBefore(manualEnabledFanTime.plusMinutes(10));
+      toBeTurnedOn |= manuallyEnabled;
+      boolean isCurrentlyTurnedOn = statesBean.getAllStates().getFanState().isTurnedOn();
 
-      if (turnOn != turnedOn) {
-         statesBean.changeFunState(turnOn);
+      if (toBeTurnedOn != isCurrentlyTurnedOn) {
+         int minutesRemaining = (manuallyEnabled && toBeTurnedOn) ? manuallyTurnedOnFanTimeoutMinutes : 0;
+         statesBean.changeFunState(toBeTurnedOn, minutesRemaining);
+
+         if (fanStateTimer != null) {
+            fanStateTimer.cancel();
+         }
+         fanStateTimer = new Timer();
+         fanStateTimer.scheduleAtFixedRate(new TimerTask() {
+             private int executionsAmount = 0;
+
+             @Override
+             public void run() {
+                executionsAmount++;
+
+                if (executionsAmount >= manuallyTurnedOnFanTimeoutMinutes) {
+                   statesBean.changeFunState(false, 0);
+
+                   cancel();
+                } else {
+                   int minutesRemaining = manuallyTurnedOnFanTimeoutMinutes - executionsAmount;
+                   statesBean.changeFunState(true, minutesRemaining);
+                }
+             }
+          },
+         60 * 1000L,
+         60 * 1000L);
       }
-      return turnOn;
+      return toBeTurnedOn;
    }
 
-   public void turnOnBathroomFan() {
-      thresholdHumidityStartTime = LocalDateTime.now();
+   public void setBathroomFanState() {
+      manualEnabledFanTime = LocalDateTime.now();
    }
 
    public int getManuallyTurnedOnFanTimeoutMinutes() {
