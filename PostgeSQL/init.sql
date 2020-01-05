@@ -49,7 +49,9 @@ VALUES (nextval('device_type_names_aa_id_seq'), (SELECT aa_id FROM device_types 
 INSERT INTO device_type_names (aa_id, device_type, device_name)
 VALUES (nextval('device_type_names_aa_id_seq'), (SELECT aa_id FROM device_types WHERE type_id = 'ENV_SENSOR'), 'Street temp and humidity monitor');
 INSERT INTO device_type_names (aa_id, device_type, device_name)
+VALUES (nextval('device_type_names_aa_id_seq'), (SELECT aa_id FROM device_types WHERE type_id = 'ENV_SENSOR'), 'Room temp and humidity monitor');
 
+INSERT INTO device_type_names (aa_id, device_type, device_name)
 VALUES (nextval('device_type_names_aa_id_seq'), (SELECT aa_id FROM device_types WHERE type_id = 'PROJECTOR'), 'Entrance projectors');
 INSERT INTO device_type_names (aa_id, device_type, device_name)
 VALUES (nextval('device_type_names_aa_id_seq'), (SELECT aa_id FROM device_types WHERE type_id = 'PROJECTOR'), 'Storehouse projectore');

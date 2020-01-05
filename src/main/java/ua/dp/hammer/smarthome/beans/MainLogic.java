@@ -12,9 +12,11 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.StringUtils;
+import ua.dp.hammer.smarthome.clients.Shutters;
 import ua.dp.hammer.smarthome.clients.StreetProjectors;
 import ua.dp.hammer.smarthome.models.ServerStatus;
 import ua.dp.hammer.smarthome.models.states.AlarmsState;
+import ua.dp.hammer.smarthome.models.states.ShutterState;
 
 import javax.annotation.PostConstruct;
 import java.time.Duration;
@@ -27,6 +29,9 @@ import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+
+import static ua.dp.hammer.smarthome.clients.Shutters.KITCHEN_SHUTTER_1;
+import static ua.dp.hammer.smarthome.clients.Shutters.KITCHEN_SHUTTER_2;
 
 @Component
 public class MainLogic {
@@ -60,6 +65,7 @@ public class MainLogic {
             Integer.parseInt(environment.getRequiredProperty("ignoreVideoRecordingTimeoutAfterImmobilizerActivationSec"));
 
       turnProjectorsOffManually();
+      closeAllShutters();
    }
 
    public void receiveAlarm(String alarmSource) {
@@ -125,6 +131,12 @@ public class MainLogic {
    public void turnProjectorsOffManually() {
       turnProjectorsOnManually = false;
       switchProjectors(ProjectorState.TURN_OFF);
+   }
+
+   private void closeAllShutters() {
+      for (Shutters shutter : Shutters.values()) {
+         changeShutterState(shutter.getName(), false);
+      }
    }
 
    public String setDeviceNameToUpdateFirmware(String deviceNameToUpdateFirmware) {
@@ -242,6 +254,52 @@ public class MainLogic {
                   },
                   () -> {
                      projectorResponsesCollector.okResponseReceived();
+                  });
+   }
+
+   public void changeShutterState(String name, boolean open) {
+      for (Shutters shutter : Shutters.values()) {
+         if (shutter.getName().equals(name)) {
+            sendShutterStateRequest(shutter, open);
+            break;
+         }
+      }
+   }
+
+   private void sendShutterStateRequest(Shutters shutter, boolean open) {
+      WebClient client = WebClient.builder()
+            .baseUrl("http://" + shutter.getIpAddress())
+            .build();
+
+      client.method(HttpMethod.GET);
+
+      String action = open ? "open" : "close";
+      final int shutterNo;
+
+      if (shutter == KITCHEN_SHUTTER_1) {
+         shutterNo = 1;
+      } else if (shutter == KITCHEN_SHUTTER_2) {
+         shutterNo = 2;
+      } else {
+         shutterNo = 0;
+      }
+
+      Mono<Void> deferredResponse = client
+            .get()
+            .uri(uriBuilder -> uriBuilder
+                  .queryParam(action, shutter.getOpeningTimeSeconds())
+                  .queryParam("shutter_no", shutterNo)
+                  .build())
+            .retrieve()
+            .bodyToMono(Void.class);
+
+      Flux.merge(deferredResponse)
+            .subscribe(null,
+                  e -> {
+                     statesBean.changeShutterState(new ShutterState(shutter.getName(), !open));
+                  },
+                  () -> {
+                     statesBean.changeShutterState(new ShutterState(shutter.getName(), open));
                   });
    }
 

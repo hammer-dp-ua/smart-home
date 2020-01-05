@@ -17,6 +17,7 @@ import ua.dp.hammer.smarthome.models.StatusCodes;
 import ua.dp.hammer.smarthome.models.states.AlarmsState;
 import ua.dp.hammer.smarthome.models.states.AllStates;
 import ua.dp.hammer.smarthome.models.states.FanState;
+import ua.dp.hammer.smarthome.models.states.ShutterState;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Enumeration;
@@ -69,7 +70,7 @@ public class ManagerRestController {
       return new ProjectorStateResponse(switchState);
    }
 
-   @GetMapping(path = "/turnOnBathroomFun")
+   @GetMapping(path = "/turnOnBathroomFan")
    public FanState turnOnBathroomFun() {
       LOGGER.info("Bathroom fan will be turned on");
 
@@ -85,6 +86,13 @@ public class ManagerRestController {
    @GetMapping(path = "/ignoreAlarms")
    public AlarmsState ignoreAlarms(@RequestParam("timeout") int timeout) {
       return mainLogic.ignoreAlarms(timeout);
+   }
+
+   @GetMapping(path = "/changeShutterState")
+   public ShutterState changeShutterState(@RequestParam("name") String name,
+                                          @RequestParam("open") boolean open) {
+      mainLogic.changeShutterState(name, open);
+      return new ShutterState(name, open);
    }
 
    @GetMapping(path = "/getCurrentStates")

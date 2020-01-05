@@ -5,6 +5,7 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.async.DeferredResult;
 import ua.dp.hammer.smarthome.models.states.AllStates;
+import ua.dp.hammer.smarthome.models.states.ShutterState;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -40,6 +41,23 @@ public class StatesBean {
    public void changeAlarmsIgnoringState(boolean ignoring, int minutesRemaining) {
       allStates.getAlarmsState().setIgnoring(ignoring);
       allStates.getAlarmsState().setMinutesRemaining(minutesRemaining);
+
+      updateDeferred();
+   }
+
+   public void changeShutterState(ShutterState shutterState) {
+      ShutterState currentState = allStates.getShuttersState().stream()
+            .filter(x -> x.equals(shutterState))
+            .findFirst()
+            .orElse(null);
+
+      if (currentState != null && currentState.isOpened() == shutterState.isOpened()) {
+         return;
+      } else if (currentState == null) {
+         allStates.getShuttersState().add(shutterState);
+      } else {
+         currentState.setOpened(shutterState.isOpened());
+      }
 
       updateDeferred();
    }
