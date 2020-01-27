@@ -17,6 +17,7 @@ import ua.dp.hammer.smarthome.clients.StreetProjectors;
 import ua.dp.hammer.smarthome.models.ServerStatus;
 import ua.dp.hammer.smarthome.models.states.AlarmsState;
 import ua.dp.hammer.smarthome.models.states.ShutterState;
+import ua.dp.hammer.smarthome.models.states.ShutterStates;
 
 import javax.annotation.PostConstruct;
 import java.time.Duration;
@@ -29,9 +30,6 @@ import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-
-import static ua.dp.hammer.smarthome.clients.Shutters.KITCHEN_SHUTTER_1;
-import static ua.dp.hammer.smarthome.clients.Shutters.KITCHEN_SHUTTER_2;
 
 @Component
 public class MainLogic {
@@ -65,7 +63,6 @@ public class MainLogic {
             Integer.parseInt(environment.getRequiredProperty("ignoreVideoRecordingTimeoutAfterImmobilizerActivationSec"));
 
       turnProjectorsOffManually();
-      closeAllShutters();
    }
 
    public void receiveAlarm(String alarmSource) {
@@ -131,12 +128,6 @@ public class MainLogic {
    public void turnProjectorsOffManually() {
       turnProjectorsOnManually = false;
       switchProjectors(ProjectorState.TURN_OFF);
-   }
-
-   private void closeAllShutters() {
-      for (Shutters shutter : Shutters.values()) {
-         changeShutterState(shutter.getName(), false);
-      }
    }
 
    public String setDeviceNameToUpdateFirmware(String deviceNameToUpdateFirmware) {
@@ -257,16 +248,16 @@ public class MainLogic {
                   });
    }
 
-   public void changeShutterState(String name, boolean open) {
+   public void doShutter(String name, int no, boolean open) {
       for (Shutters shutter : Shutters.values()) {
          if (shutter.getName().equals(name)) {
-            sendShutterStateRequest(shutter, open);
+            sendShutterStateRequest(shutter, no, open);
             break;
          }
       }
    }
 
-   private void sendShutterStateRequest(Shutters shutter, boolean open) {
+   private void sendShutterStateRequest(Shutters shutter, int shutterNo, boolean open) {
       WebClient client = WebClient.builder()
             .baseUrl("http://" + shutter.getIpAddress())
             .build();
@@ -274,15 +265,6 @@ public class MainLogic {
       client.method(HttpMethod.GET);
 
       String action = open ? "open" : "close";
-      final int shutterNo;
-
-      if (shutter == KITCHEN_SHUTTER_1) {
-         shutterNo = 1;
-      } else if (shutter == KITCHEN_SHUTTER_2) {
-         shutterNo = 2;
-      } else {
-         shutterNo = 0;
-      }
 
       Mono<Void> deferredResponse = client
             .get()
@@ -296,10 +278,15 @@ public class MainLogic {
       Flux.merge(deferredResponse)
             .subscribe(null,
                   e -> {
-                     statesBean.changeShutterState(new ShutterState(shutter.getName(), !open));
-                  },
-                  () -> {
-                     statesBean.changeShutterState(new ShutterState(shutter.getName(), open));
+                     ShutterStates prevState;
+
+                     if (open) {
+                        prevState = ShutterStates.SHUTTER_CLOSED;
+                     } else {
+                        prevState = ShutterStates.SHUTTER_OPENED;
+                     }
+
+                     statesBean.changeShutterState(new ShutterState(shutter.getName(), shutterNo, prevState, true));
                   });
    }
 

@@ -58,6 +58,8 @@ VALUES (nextval('device_type_names_aa_id_seq'), (SELECT aa_id FROM device_types 
 
 INSERT INTO device_type_names (aa_id, device_type, device_name)
 VALUES (nextval('device_type_names_aa_id_seq'), (SELECT aa_id FROM device_types WHERE type_id = 'SHUTTER'), 'Room shutter');
+INSERT INTO device_type_names (aa_id, device_type, device_name)
+VALUES (nextval('device_type_names_aa_id_seq'), (SELECT aa_id FROM device_types WHERE type_id = 'SHUTTER'), 'Kitchen shutter');
 
 INSERT INTO device_type_names (aa_id, device_type, device_name)
 VALUES (nextval('device_type_names_aa_id_seq'), (SELECT aa_id FROM device_types WHERE type_id = 'MOTION_DETECTOR'), 'Entrance Motion Detector');

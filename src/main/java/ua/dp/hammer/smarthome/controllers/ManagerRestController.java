@@ -17,7 +17,8 @@ import ua.dp.hammer.smarthome.models.StatusCodes;
 import ua.dp.hammer.smarthome.models.states.AlarmsState;
 import ua.dp.hammer.smarthome.models.states.AllStates;
 import ua.dp.hammer.smarthome.models.states.FanState;
-import ua.dp.hammer.smarthome.models.states.ShutterState;
+import ua.dp.hammer.smarthome.models.states.ShutterStateRaw;
+import ua.dp.hammer.smarthome.models.states.ShutterStates;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Enumeration;
@@ -88,11 +89,17 @@ public class ManagerRestController {
       return mainLogic.ignoreAlarms(timeout);
    }
 
-   @GetMapping(path = "/changeShutterState")
-   public ShutterState changeShutterState(@RequestParam("name") String name,
-                                          @RequestParam("open") boolean open) {
-      mainLogic.changeShutterState(name, open);
-      return new ShutterState(name, open);
+   @GetMapping(path = "/shutters")
+   public ShutterStateRaw doShutter(@RequestParam("name") String name,
+                                    @RequestParam("no") int no,
+                                    @RequestParam("open") boolean open) {
+      mainLogic.doShutter(name, no, open);
+      int shutterState = open ? ShutterStates.SHUTTER_OPENING.getNo() : ShutterStates.SHUTTER_CLOSING.getNo();
+      ShutterStateRaw shutterStateRaw = new ShutterStateRaw();
+
+      shutterStateRaw.setShutterNo(no);
+      shutterStateRaw.setShutterState(shutterState);
+      return shutterStateRaw;
    }
 
    @GetMapping(path = "/getCurrentStates")

@@ -1,5 +1,9 @@
 package ua.dp.hammer.smarthome.models;
 
+import ua.dp.hammer.smarthome.models.states.ShutterStateRaw;
+
+import java.util.List;
+
 public class DeviceInfo {
    private String gain;
    private Integer errors;
@@ -15,6 +19,7 @@ public class DeviceInfo {
    private String systemRestartReason;
    private int pendingConnectionErrors;
    private Short light;
+   private List<ShutterStateRaw> shutterStates;
 
    public String getGain() {
       return gain;
@@ -126,5 +131,13 @@ public class DeviceInfo {
 
    public void setLight(Short light) {
       this.light = light;
+   }
+
+   public List<ShutterStateRaw> getShutterStates() {
+      return shutterStates;
+   }
+
+   public void setShutterStates(List<ShutterStateRaw> shutterStates) {
+      this.shutterStates = shutterStates;
    }
 }
