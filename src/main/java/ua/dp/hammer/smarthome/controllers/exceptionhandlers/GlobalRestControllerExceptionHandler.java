@@ -1,4 +1,4 @@
-package ua.dp.hammer.smarthome.controllers;
+package ua.dp.hammer.smarthome.controllers.exceptionhandlers;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
 import org.apache.logging.log4j.LogManager;

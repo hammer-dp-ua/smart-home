@@ -10,6 +10,7 @@ docker run -it --rm --user=root --name my-running-app my-java-app
 docker run --network=super_home_nw --rm -it --name postgres-container --publish 5432:5432 -v "z:\USER\PostgreSQL\my-postgres.conf":/etc/postgresql/postgresql.conf --mount type=volume,source=postgres_data_volume,destination=/var/lib/postgresql/data postgres-image -c config_file=/etc/postgresql/postgresql.conf
 
 docker exec -it postgres-container bash
+docker exec -it super-home-container bash
 docker exec -it pgadmin-container /bin/sh
 -it: starts the container in the interactive mode
 

@@ -70,12 +70,14 @@ public class StatesBean {
             .findFirst()
             .orElse(null);
 
-      if (currentState != null && currentState.getState() == shutterState.getState()) {
+      if (currentState != null && currentState.getState() == shutterState.getState() &&
+            currentState.isNotAvailable() == shutterState.isNotAvailable()) {
          return;
       } else if (currentState == null) {
          allStates.getShuttersState().add(shutterState);
       } else {
          currentState.setState(shutterState.getState());
+         currentState.setNotAvailable(shutterState.isNotAvailable());
       }
 
       updateDeferred();

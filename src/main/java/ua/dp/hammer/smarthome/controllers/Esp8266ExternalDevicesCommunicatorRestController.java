@@ -61,7 +61,7 @@ public class Esp8266ExternalDevicesCommunicatorRestController {
 
    @GetMapping(path = "/falseAlarm")
    public ServerStatus receiveFalseAlarm(@RequestParam("alarmSource") String alarmSource) {
-      LOGGER.info("False alarm. Source: " + alarmSource);
+      LOGGER.debug("False alarm. Source: " + alarmSource);
       return new ServerStatus(StatusCodes.OK);
    }
 

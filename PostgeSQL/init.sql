@@ -54,7 +54,7 @@ VALUES (nextval('device_type_names_aa_id_seq'), (SELECT aa_id FROM device_types 
 INSERT INTO device_type_names (aa_id, device_type, device_name)
 VALUES (nextval('device_type_names_aa_id_seq'), (SELECT aa_id FROM device_types WHERE type_id = 'PROJECTOR'), 'Entrance projectors');
 INSERT INTO device_type_names (aa_id, device_type, device_name)
-VALUES (nextval('device_type_names_aa_id_seq'), (SELECT aa_id FROM device_types WHERE type_id = 'PROJECTOR'), 'Storehouse projectore');
+VALUES (nextval('device_type_names_aa_id_seq'), (SELECT aa_id FROM device_types WHERE type_id = 'PROJECTOR'), 'Storehouse projector');
 
 INSERT INTO device_type_names (aa_id, device_type, device_name)
 VALUES (nextval('device_type_names_aa_id_seq'), (SELECT aa_id FROM device_types WHERE type_id = 'SHUTTER'), 'Room shutter');

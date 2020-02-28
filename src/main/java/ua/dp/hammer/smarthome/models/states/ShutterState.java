@@ -41,6 +41,10 @@ public class ShutterState {
       return notAvailable;
    }
 
+   public void setNotAvailable(boolean notAvailable) {
+      this.notAvailable = notAvailable;
+   }
+
    @Override
    public boolean equals(Object o) {
       if (!(o instanceof ShutterState)) {
