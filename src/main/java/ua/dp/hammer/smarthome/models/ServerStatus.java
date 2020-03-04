@@ -6,6 +6,8 @@ public class ServerStatus {
    private boolean updateFirmware;
    private boolean ignoreAlarms;
 
+   ServerStatus() {}
+
    public ServerStatus(StatusCodes statusCode) {
       this.statusCode = statusCode;
    }

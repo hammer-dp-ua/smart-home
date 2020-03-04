@@ -9,7 +9,7 @@ import org.springframework.web.context.request.async.DeferredResult;
 import ua.dp.hammer.smarthome.entities.EnvSensorEntity;
 import ua.dp.hammer.smarthome.entities.TechnicalDeviceInfoEntity;
 import ua.dp.hammer.smarthome.models.DeviceInfo;
-import ua.dp.hammer.smarthome.repositories.CommonDevicesRepository;
+import ua.dp.hammer.smarthome.repositories.DevicesRepository;
 import ua.dp.hammer.smarthome.repositories.EnvSensorsRepository;
 
 import javax.annotation.PostConstruct;
@@ -39,8 +39,8 @@ public class EnvSensorsBean {
 
    private Environment environment;
    private EnvSensorsRepository envSensorsRepository;
-   private CommonDevicesRepository commonDevicesRepository;
-   private StatesBean statesBean;
+   private DevicesRepository devicesRepository;
+   private ManagerStatesBean managerStatesBean;
 
    @PostConstruct
    public void init() {
@@ -71,9 +71,9 @@ public class EnvSensorsBean {
       envSensorEntity.setHumidity(deviceInfo.getHumidity());
       envSensorEntity.setLight(deviceInfo.getLight());
       TechnicalDeviceInfoEntity deviceInfoEntity =
-            CommonDevicesRepository.createTechnicalDeviceInfoEntity(deviceInfo);
+            DevicesRepository.createTechnicalDeviceInfoEntity(deviceInfo);
       deviceInfoEntity.addEnvSensor(envSensorEntity);
-      commonDevicesRepository.saveTechnicalDeviceInfo(deviceInfoEntity, deviceInfo.getDeviceName());
+      devicesRepository.saveTechnicalDeviceInfo(deviceInfoEntity, deviceInfo.getDeviceName());
    }
 
    public Collection<DeviceInfo> getEnvSensors() {
@@ -95,11 +95,11 @@ public class EnvSensorsBean {
       boolean manuallyEnabled = (manualEnabledFanTime != null) &&
             currentTime.isBefore(manualEnabledFanTime.plusMinutes(10));
       toBeTurnedOn |= manuallyEnabled;
-      boolean isCurrentlyTurnedOn = statesBean.getAllStates().getFanState().isTurnedOn();
+      boolean isCurrentlyTurnedOn = managerStatesBean.getAllManagerStates().getFanState().isTurnedOn();
 
       if (toBeTurnedOn != isCurrentlyTurnedOn) {
          int minutesRemaining = (manuallyEnabled && toBeTurnedOn) ? manuallyTurnedOnFanTimeoutMinutes : 0;
-         statesBean.changeFunState(toBeTurnedOn, minutesRemaining);
+         managerStatesBean.changeFunState(toBeTurnedOn, minutesRemaining);
 
          if (fanStateTimer != null) {
             fanStateTimer.cancel();
@@ -113,12 +113,12 @@ public class EnvSensorsBean {
                 executionsAmount++;
 
                 if (executionsAmount >= manuallyTurnedOnFanTimeoutMinutes) {
-                   statesBean.changeFunState(false, 0);
+                   managerStatesBean.changeFunState(false, 0);
 
                    cancel();
                 } else {
                    int minutesRemaining = manuallyTurnedOnFanTimeoutMinutes - executionsAmount;
-                   statesBean.changeFunState(true, minutesRemaining);
+                   managerStatesBean.changeFunState(true, minutesRemaining);
                 }
              }
           },
@@ -151,12 +151,12 @@ public class EnvSensorsBean {
    }
 
    @Autowired
-   public void setCommonDevicesRepository(CommonDevicesRepository commonDevicesRepository) {
-      this.commonDevicesRepository = commonDevicesRepository;
+   public void setDevicesRepository(DevicesRepository devicesRepository) {
+      this.devicesRepository = devicesRepository;
    }
 
    @Autowired
-   public void setStatesBean(StatesBean statesBean) {
-      this.statesBean = statesBean;
+   public void setManagerStatesBean(ManagerStatesBean managerStatesBean) {
+      this.managerStatesBean = managerStatesBean;
    }
 }

@@ -2,31 +2,31 @@ package ua.dp.hammer.smarthome.models.states;
 
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-public class ShutterState {
-   private String name;
+public class ShutterState extends CommonSate {
    private int shutterNo;
    private ShutterStates state;
-   private boolean notAvailable;
 
    private int hashCode = -1;
+
+   public ShutterState() {}
 
    public ShutterState(String name, int shutterNo, ShutterStates state, boolean notAvailable) {
       if (name == null || name.length() == 0) {
          throw new IllegalStateException("Name can't be empty");
       }
 
-      this.name = name;
       this.shutterNo = shutterNo;
       this.state = state;
-      this.notAvailable = notAvailable;
-   }
-
-   public String getName() {
-      return name;
+      super.setName(name);
+      super.setNotAvailable(notAvailable);
    }
 
    public int getShutterNo() {
       return shutterNo;
+   }
+
+   public void setShutterNo(int shutterNo) {
+      this.shutterNo = shutterNo;
    }
 
    public ShutterStates getState() {
@@ -37,14 +37,6 @@ public class ShutterState {
       this.state = state;
    }
 
-   public boolean isNotAvailable() {
-      return notAvailable;
-   }
-
-   public void setNotAvailable(boolean notAvailable) {
-      this.notAvailable = notAvailable;
-   }
-
    @Override
    public boolean equals(Object o) {
       if (!(o instanceof ShutterState)) {
@@ -52,14 +44,14 @@ public class ShutterState {
       }
 
       ShutterState thatObject = (ShutterState) o;
-      return name.equals(thatObject.name) && (shutterNo == thatObject.shutterNo);
+      return getName().equals(thatObject.getName()) && (shutterNo == thatObject.shutterNo);
    }
 
    @Override
    public int hashCode() {
       if (hashCode == -1) {
          hashCode = new HashCodeBuilder()
-               .append(name)
+               .append(getName())
                .append(shutterNo)
                .hashCode();
       }

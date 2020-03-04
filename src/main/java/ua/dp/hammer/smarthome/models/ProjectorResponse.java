@@ -2,11 +2,12 @@ package ua.dp.hammer.smarthome.models;
 
 public class ProjectorResponse extends ServerStatus {
    private boolean turnOn;
-   private long timeStamp;
 
-   public ProjectorResponse(StatusCodes statusCodes) {
-      super(statusCodes);
-      timeStamp = System.currentTimeMillis();
+   public ProjectorResponse(ServerStatus serverStatus) {
+      super();
+      super.setStatusCode(serverStatus.getStatusCode());
+      super.setIncludeDebugInfo(serverStatus.isIncludeDebugInfo());
+      super.setUpdateFirmware(serverStatus.isUpdateFirmware());
    }
 
    public boolean isTurnOn() {
@@ -15,13 +16,5 @@ public class ProjectorResponse extends ServerStatus {
 
    public void setTurnOn(boolean turnOn) {
       this.turnOn = turnOn;
-   }
-
-   public long getTimeStamp() {
-      return timeStamp;
-   }
-
-   public void setTimeStamp(long timeStamp) {
-      this.timeStamp = timeStamp;
    }
 }

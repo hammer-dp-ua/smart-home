@@ -10,12 +10,12 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.async.DeferredResult;
 import ua.dp.hammer.smarthome.beans.EnvSensorsBean;
 import ua.dp.hammer.smarthome.beans.MainLogic;
-import ua.dp.hammer.smarthome.beans.StatesBean;
+import ua.dp.hammer.smarthome.beans.ManagerStatesBean;
 import ua.dp.hammer.smarthome.models.ProjectorStateResponse;
 import ua.dp.hammer.smarthome.models.ServerStatus;
 import ua.dp.hammer.smarthome.models.StatusCodes;
 import ua.dp.hammer.smarthome.models.states.AlarmsState;
-import ua.dp.hammer.smarthome.models.states.AllStates;
+import ua.dp.hammer.smarthome.models.states.AllManagerStates;
 import ua.dp.hammer.smarthome.models.states.FanState;
 import ua.dp.hammer.smarthome.models.states.ShutterStateRaw;
 import ua.dp.hammer.smarthome.models.states.ShutterStates;
@@ -32,7 +32,7 @@ public class ManagerRestController {
 
    private MainLogic mainLogic;
    private EnvSensorsBean envSensorsBean;
-   private StatesBean statesBean;
+   private ManagerStatesBean managerStatesBean;
 
    @GetMapping(path = "/testAlarm")
    public ServerStatus receiveTestAlarm(HttpServletRequest request,
@@ -52,12 +52,10 @@ public class ManagerRestController {
    @GetMapping(path = "/switchProjectors")
    public ProjectorStateResponse switchProjectorsManually(@RequestParam("switchState") String switchState,
                                                           HttpServletRequest request) {
-      if (LOGGER.isDebugEnabled())
-      {
+      if (LOGGER.isDebugEnabled()) {
          Enumeration<String> headerNamesEnum = request.getHeaderNames();
 
-         while (headerNamesEnum.hasMoreElements())
-         {
+         while (headerNamesEnum.hasMoreElements()) {
             String headerName = headerNamesEnum.nextElement();
             LOGGER.debug("Header: " + headerName + ", value: " + request.getHeader(headerName));
          }
@@ -93,6 +91,7 @@ public class ManagerRestController {
    public ShutterStateRaw doShutter(@RequestParam("name") String name,
                                     @RequestParam("no") int no,
                                     @RequestParam("open") boolean open) {
+      // Closing/opening/closed/opened state will be set in ManagerStatesBean by a shutter status request
       mainLogic.doShutter(name, no, open);
       int shutterState = open ? ShutterStates.SHUTTER_OPENING.getNo() : ShutterStates.SHUTTER_CLOSING.getNo();
       ShutterStateRaw shutterStateRaw = new ShutterStateRaw();
@@ -103,15 +102,15 @@ public class ManagerRestController {
    }
 
    @GetMapping(path = "/getCurrentStates")
-   public AllStates getCurrentStates() {
-      return statesBean.getAllStates();
+   public AllManagerStates getCurrentStates() {
+      return managerStatesBean.getAllManagerStates();
    }
 
    @GetMapping(path = "/getCurrentStatesDeferred")
-   public DeferredResult<AllStates> getCurrentStatesDeferred() {
-      DeferredResult<AllStates> deferredResult = new DeferredResult<>(300_000L);
+   public DeferredResult<AllManagerStates> getCurrentStatesDeferred() {
+      DeferredResult<AllManagerStates> deferredResult = new DeferredResult<>(300_000L);
 
-      statesBean.addStateDeferredResult(deferredResult);
+      managerStatesBean.addStateDeferredResult(deferredResult);
       return deferredResult;
    }
 
@@ -126,7 +125,7 @@ public class ManagerRestController {
    }
 
    @Autowired
-   public void setStatesBean(StatesBean statesBean) {
-      this.statesBean = statesBean;
+   public void setManagerStatesBean(ManagerStatesBean managerStatesBean) {
+      this.managerStatesBean = managerStatesBean;
    }
 }

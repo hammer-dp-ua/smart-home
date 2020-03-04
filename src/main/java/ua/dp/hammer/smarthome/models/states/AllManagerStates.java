@@ -4,23 +4,23 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-public class AllStates {
-   private final static AllStates INSTANCE = new AllStates();
+public class AllManagerStates {
+   private final static AllManagerStates INSTANCE = new AllManagerStates();
 
-   private AllStates() {
+   private AllManagerStates() {
    }
 
-   public static AllStates getInstance() {
+   public static AllManagerStates getInstance() {
       return INSTANCE;
    }
 
-   private ProjectorState projectorState = new ProjectorState();
+   private Set<ProjectorState> projectorsState = Collections.synchronizedSet(new HashSet<>());
    private FanState fanState = new FanState();
    private AlarmsState alarmsState = new AlarmsState();
    private Set<ShutterState> shuttersState = Collections.synchronizedSet(new HashSet<>());
 
-   public ProjectorState getProjectorState() {
-      return projectorState;
+   public Set<ProjectorState> getProjectorsState() {
+      return projectorsState;
    }
 
    public FanState getFanState() {

@@ -4,26 +4,29 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
 import reactor.util.StringUtils;
-import ua.dp.hammer.smarthome.entities.DeviceType;
 import ua.dp.hammer.smarthome.entities.DeviceTypeEntity;
 import ua.dp.hammer.smarthome.entities.DeviceTypeNameEntity;
 import ua.dp.hammer.smarthome.entities.TechnicalDeviceInfoEntity;
 import ua.dp.hammer.smarthome.models.DeviceInfo;
+import ua.dp.hammer.smarthome.models.setup.DeviceType;
 
 import javax.annotation.PostConstruct;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Transactional
 @Repository
-public class CommonDevicesRepository {
-   private static final Logger LOGGER = LogManager.getLogger(CommonDevicesRepository.class);
+public class DevicesRepository {
+   private static final Logger LOGGER = LogManager.getLogger(DevicesRepository.class);
 
    // Something like second level cache
    private Map<DeviceType, DeviceTypeEntity> allDeviceTypeEntities = new HashMap<>();
@@ -52,6 +55,42 @@ public class CommonDevicesRepository {
 
    public DeviceTypeNameEntity getDeviceTypeNameEntity(String deviceName) {
       return allDeviceTypeNameEntities.get(deviceName);
+   }
+
+   public Collection<DeviceTypeNameEntity> getAllDeviceTypeNameEntities() {
+      return allDeviceTypeNameEntities.values();
+   }
+
+   public List<DeviceTypeNameEntity> getDevicesByType(DeviceType type) {
+      return allDeviceTypeNameEntities.values()
+            .stream()
+            .filter(d -> d.getType().getType() == type)
+            .collect(Collectors.toList());
+   }
+
+   private boolean isDeviceTypeExists(DeviceTypeEntity deviceType) {
+      return deviceType != null && allDeviceTypeEntities.containsKey(deviceType.getType());
+   }
+
+   public DeviceTypeEntity getDeviceTypeEntity(DeviceType deviceType) {
+      return allDeviceTypeEntities.get(deviceType);
+   }
+
+   public void saveNewDevice(DeviceTypeNameEntity entity) {
+      Assert.isTrue(isDeviceTypeExists(entity.getType()), "Unknown device type");
+      Assert.isNull(getDeviceTypeNameEntity(entity.getName()),
+            "Such device name already exists");
+
+      entityManager.persist(entity);
+      allDeviceTypeNameEntities.put(entity.getName(), entity);
+   }
+
+   public void deleteDevice(String name) {
+      DeviceTypeNameEntity persistedDevice = allDeviceTypeNameEntities.get(name);
+      Assert.notNull(persistedDevice, "Device doesn't exist");
+
+      entityManager.remove(persistedDevice);
+      allDeviceTypeNameEntities.remove(name);
    }
 
    public static TechnicalDeviceInfoEntity createTechnicalDeviceInfoEntity(DeviceInfo deviceInfo) {

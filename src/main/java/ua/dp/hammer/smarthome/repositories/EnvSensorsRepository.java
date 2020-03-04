@@ -15,7 +15,7 @@ public class EnvSensorsRepository {
    private static final Logger LOGGER = LogManager.getLogger(EnvSensorsRepository.class);
 
    private EntityManager entityManager;
-   private CommonDevicesRepository commonDevicesRepository;
+   private DevicesRepository devicesRepository;
 
    public String loadDbVersion() {
       Query query = entityManager.createNativeQuery("SELECT version()");
@@ -28,7 +28,7 @@ public class EnvSensorsRepository {
    }
 
    //@Autowired
-   public void setCommonDevicesRepository(CommonDevicesRepository commonDevicesRepository) {
-      this.commonDevicesRepository = commonDevicesRepository;
+   public void setDevicesRepository(DevicesRepository devicesRepository) {
+      this.devicesRepository = devicesRepository;
    }
 }

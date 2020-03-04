@@ -3,13 +3,25 @@ package ua.dp.hammer.smarthome.controllers;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import ua.dp.hammer.smarthome.beans.EnvSensorsBean;
+import ua.dp.hammer.smarthome.beans.KeepAliveStatusesBean;
 import ua.dp.hammer.smarthome.beans.MainLogic;
-import ua.dp.hammer.smarthome.beans.StatesBean;
+import ua.dp.hammer.smarthome.beans.ManagerStatesBean;
 import ua.dp.hammer.smarthome.entities.TechnicalDeviceInfoEntity;
-import ua.dp.hammer.smarthome.models.*;
-import ua.dp.hammer.smarthome.repositories.CommonDevicesRepository;
+import ua.dp.hammer.smarthome.models.DeviceInfo;
+import ua.dp.hammer.smarthome.models.Esp8266ResetReasons;
+import ua.dp.hammer.smarthome.models.FanResponse;
+import ua.dp.hammer.smarthome.models.ProjectorResponse;
+import ua.dp.hammer.smarthome.models.ServerStatus;
+import ua.dp.hammer.smarthome.models.StatusCodes;
+import ua.dp.hammer.smarthome.models.states.ProjectorState;
+import ua.dp.hammer.smarthome.repositories.DevicesRepository;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -23,8 +35,9 @@ public class Esp8266ExternalDevicesCommunicatorRestController {
 
    private MainLogic mainLogic;
    private EnvSensorsBean envSensorsBean;
-   private CommonDevicesRepository commonDevicesRepository;
-   private StatesBean statesBean;
+   private DevicesRepository devicesRepository;
+   private ManagerStatesBean managerStatesBean;
+   private KeepAliveStatusesBean keepAliveStatusesBean;
 
    @PostMapping(path = "/statusInfo", consumes="application/json")
    public ServerStatus receiveStatusInfo(@RequestBody DeviceInfo deviceInfo) {
@@ -35,20 +48,36 @@ public class Esp8266ExternalDevicesCommunicatorRestController {
          serverStatus.setIncludeDebugInfo(true);
       }
 
+      keepAliveStatusesBean.update(deviceInfo.getDeviceName());
+
       if (isEnvSensor(deviceInfo)) {
          envSensorsBean.addEnvSensorState(deviceInfo);
       } else {
          TechnicalDeviceInfoEntity deviceInfoEntity =
-               CommonDevicesRepository.createTechnicalDeviceInfoEntity(deviceInfo);
-         commonDevicesRepository.saveTechnicalDeviceInfo(deviceInfoEntity, deviceInfo.getDeviceName());
+               DevicesRepository.createTechnicalDeviceInfoEntity(deviceInfo);
+         devicesRepository.saveTechnicalDeviceInfo(deviceInfoEntity, deviceInfo.getDeviceName());
       }
 
       if (deviceInfo.getShutterStates() != null) {
-         statesBean.changeShutterState(deviceInfo);
+         managerStatesBean.receiveNewShutterState(deviceInfo);
       }
 
       mainLogic.setUpdateFirmwareStatus(serverStatus, deviceInfo.getDeviceName());
       return serverStatus;
+   }
+
+   @PostMapping(path = "/projectorStatusInfo", consumes="application/json")
+   public ProjectorResponse receiveProjectorStatusInfo(@RequestBody DeviceInfo deviceInfo) {
+      ProjectorResponse projectorResponse = new ProjectorResponse(receiveStatusInfo(deviceInfo));
+      ProjectorState projectorState = new ProjectorState();
+
+      projectorState.setTurnedOn(managerStatesBean.isProjectorTurnedOn(deviceInfo.getDeviceName()));
+      projectorState.setName(deviceInfo.getDeviceName());
+      projectorState.setNotAvailable(false);
+      managerStatesBean.changeProjectorState(projectorState);
+
+      projectorResponse.setTurnOn(projectorState.isTurnedOn());
+      return projectorResponse;
    }
 
    @GetMapping(path = "/alarm")
@@ -212,12 +241,17 @@ public class Esp8266ExternalDevicesCommunicatorRestController {
    }
 
    @Autowired
-   public void setCommonDevicesRepository(CommonDevicesRepository commonDevicesRepository) {
-      this.commonDevicesRepository = commonDevicesRepository;
+   public void setDevicesRepository(DevicesRepository devicesRepository) {
+      this.devicesRepository = devicesRepository;
    }
 
    @Autowired
-   public void setStatesBean(StatesBean statesBean) {
-      this.statesBean = statesBean;
+   public void setManagerStatesBean(ManagerStatesBean managerStatesBean) {
+      this.managerStatesBean = managerStatesBean;
+   }
+
+   @Autowired
+   public void setKeepAliveStatusesBean(KeepAliveStatusesBean keepAliveStatusesBean) {
+      this.keepAliveStatusesBean = keepAliveStatusesBean;
    }
 }
