@@ -37,6 +37,12 @@ public class ShutterState extends CommonSate {
       this.state = state;
    }
 
+   public void setNewState(ShutterState newState) {
+      shutterNo = newState.shutterNo;
+      state = newState.state;
+      super.setNewSate(newState);
+   }
+
    @Override
    public boolean equals(Object o) {
       if (!(o instanceof ShutterState)) {
@@ -44,7 +50,10 @@ public class ShutterState extends CommonSate {
       }
 
       ShutterState thatObject = (ShutterState) o;
-      return getName().equals(thatObject.getName()) && (shutterNo == thatObject.shutterNo);
+      return getName().equals(thatObject.getName()) &&
+            shutterNo == thatObject.shutterNo &&
+            state == thatObject.state &&
+            isNotAvailable() == thatObject.isNotAvailable();
    }
 
    @Override
@@ -53,6 +62,8 @@ public class ShutterState extends CommonSate {
          hashCode = new HashCodeBuilder()
                .append(getName())
                .append(shutterNo)
+               .append(state)
+               .append(isNotAvailable())
                .hashCode();
       }
       return hashCode;

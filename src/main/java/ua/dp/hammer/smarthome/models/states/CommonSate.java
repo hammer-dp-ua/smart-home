@@ -8,8 +8,9 @@ public class CommonSate {
       return name;
    }
 
-   public void setName(String name) {
+   public CommonSate setName(String name) {
       this.name = name;
+      return this;
    }
 
    public boolean isNotAvailable() {
@@ -18,5 +19,10 @@ public class CommonSate {
 
    public void setNotAvailable(boolean notAvailable) {
       this.notAvailable = notAvailable;
+   }
+
+   public void setNewSate(CommonSate newSate) {
+      setName(newSate.getName());
+      setNotAvailable(newSate.isNotAvailable());
    }
 }

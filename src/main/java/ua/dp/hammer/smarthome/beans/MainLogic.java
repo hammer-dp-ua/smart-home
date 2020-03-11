@@ -220,9 +220,8 @@ public class MainLogic {
             .retrieve()
             .bodyToMono(Void.class);
 
-      ProjectorState projectorState = new ProjectorState();
+      ProjectorState projectorState = new ProjectorState(projector.getName());
       projectorState.setTurnedOn(turnOn);
-      projectorState.setName(projector.getName());
 
       Flux.merge(deferredResponse)
             .subscribe(null,

@@ -69,10 +69,9 @@ public class Esp8266ExternalDevicesCommunicatorRestController {
    @PostMapping(path = "/projectorStatusInfo", consumes="application/json")
    public ProjectorResponse receiveProjectorStatusInfo(@RequestBody DeviceInfo deviceInfo) {
       ProjectorResponse projectorResponse = new ProjectorResponse(receiveStatusInfo(deviceInfo));
-      ProjectorState projectorState = new ProjectorState();
+      ProjectorState projectorState = new ProjectorState(deviceInfo.getDeviceName());
 
       projectorState.setTurnedOn(managerStatesBean.isProjectorTurnedOn(deviceInfo.getDeviceName()));
-      projectorState.setName(deviceInfo.getDeviceName());
       projectorState.setNotAvailable(false);
       managerStatesBean.changeProjectorState(projectorState);
 

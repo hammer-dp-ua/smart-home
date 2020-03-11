@@ -21,7 +21,6 @@ import ua.dp.hammer.smarthome.models.states.ShutterStateRaw;
 import ua.dp.hammer.smarthome.models.states.ShutterStates;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.Enumeration;
 
 import static ua.dp.hammer.smarthome.utils.Utils.getClientIpAddr;
 
@@ -52,15 +51,6 @@ public class ManagerRestController {
    @GetMapping(path = "/switchProjectors")
    public ProjectorStateResponse switchProjectorsManually(@RequestParam("switchState") String switchState,
                                                           HttpServletRequest request) {
-      if (LOGGER.isDebugEnabled()) {
-         Enumeration<String> headerNamesEnum = request.getHeaderNames();
-
-         while (headerNamesEnum.hasMoreElements()) {
-            String headerName = headerNamesEnum.nextElement();
-            LOGGER.debug("Header: " + headerName + ", value: " + request.getHeader(headerName));
-         }
-      }
-
       if ("turnOn".equals(switchState)) {
          mainLogic.turnProjectorsOnManually();
       } else if ("turnOff".equals(switchState)) {

@@ -1,7 +1,15 @@
 package ua.dp.hammer.smarthome.models.states;
 
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
 public class ProjectorState extends CommonSate {
    private boolean turnedOn;
+
+   private int hashCode = -1;
+
+   public ProjectorState(String name) {
+      setName(name);
+   }
 
    public boolean isTurnedOn() {
       return turnedOn;
@@ -11,6 +19,11 @@ public class ProjectorState extends CommonSate {
       this.turnedOn = turnedOn;
    }
 
+   public void setNewState(ProjectorState projectorState) {
+      turnedOn = projectorState.turnedOn;
+      super.setNewSate(projectorState);
+   }
+
    @Override
    public boolean equals(Object o) {
       if (!(o instanceof ProjectorState)) {
@@ -18,11 +31,20 @@ public class ProjectorState extends CommonSate {
       }
 
       ProjectorState thatObject = (ProjectorState) o;
-      return getName().equals(thatObject.getName());
+      return turnedOn == thatObject.turnedOn &&
+            isNotAvailable() == thatObject.isNotAvailable() &&
+            getName().equals(thatObject.getName());
    }
 
    @Override
    public int hashCode() {
-      return getName().hashCode();
+      if (hashCode == -1) {
+         hashCode = new HashCodeBuilder()
+               .append(getName())
+               .append(isNotAvailable())
+               .append(turnedOn)
+               .hashCode();
+      }
+      return hashCode;
    }
 }

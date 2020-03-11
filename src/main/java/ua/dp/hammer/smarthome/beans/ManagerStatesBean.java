@@ -37,23 +37,33 @@ public class ManagerStatesBean {
 
       keepAliveStatusesBean.addSubscriber(KeepAliveStatusesBean.class, (deviceName) -> {
          /*if (deviceName.equals(allManagerStates.getFanState().getName())) {
+            projectorState.setNotAvailable(true);
             updateDeferred();
             return;
          }*/
 
          for (CommonSate projectorState : allManagerStates.getProjectorsState()) {
             if (deviceName.equals(projectorState.getName())) {
-               updateDeferred();
+               updateKeepAliveState(projectorState);
                return;
             }
          }
          for (CommonSate shutterState : allManagerStates.getShuttersState()) {
             if (deviceName.equals(shutterState.getName())) {
-               updateDeferred();
+               updateKeepAliveState(shutterState);
                return;
             }
          }
       });
+   }
+
+   private void updateKeepAliveState(CommonSate commonState) {
+      if (commonState.isNotAvailable()) {
+         return;
+      }
+
+      commonState.setNotAvailable(true);
+      updateDeferred();
    }
 
    public void changeProjectorState(ProjectorState projectorState, int expectedSequentialInvocations) {
@@ -79,15 +89,17 @@ public class ManagerStatesBean {
    private boolean changeProjectorStateInternal(ProjectorState projectorState) {
       ProjectorState existingProjectorState = allManagerStates.getProjectorsState()
             .stream()
-            .filter(p -> p.equals(projectorState))
+            .filter(p -> p.getName().equals(projectorState.getName()))
             .findFirst()
             .orElse(null);
       boolean shouldBeUpdated = false;
 
-      if (existingProjectorState == null ||
-            existingProjectorState.isTurnedOn() != projectorState.isTurnedOn() ||
-            existingProjectorState.isNotAvailable() != projectorState.isNotAvailable()) {
-         allManagerStates.getProjectorsState().add(projectorState);
+      if (!projectorState.equals(existingProjectorState)) {
+         if (existingProjectorState == null) {
+            allManagerStates.getProjectorsState().add(projectorState);
+         } else {
+            existingProjectorState.setNewState(projectorState);
+         }
          shouldBeUpdated = true;
       }
       return shouldBeUpdated;
@@ -119,18 +131,16 @@ public class ManagerStatesBean {
 
    public void setShutterState(ShutterState shutterState) {
       ShutterState currentState = allManagerStates.getShuttersState().stream()
-            .filter(x -> x.equals(shutterState))
+            .filter(x -> x.getName().equals(shutterState.getName()) && (x.getShutterNo() == shutterState.getShutterNo()))
             .findFirst()
             .orElse(null);
 
-      if (currentState != null && currentState.getState() == shutterState.getState() &&
-            currentState.isNotAvailable() == shutterState.isNotAvailable()) {
+      if (shutterState.equals(currentState)) {
          return;
       } else if (currentState == null) {
          allManagerStates.getShuttersState().add(shutterState);
       } else {
-         currentState.setState(shutterState.getState());
-         currentState.setNotAvailable(shutterState.isNotAvailable());
+         currentState.setNewState(shutterState);
       }
 
       updateDeferred();
