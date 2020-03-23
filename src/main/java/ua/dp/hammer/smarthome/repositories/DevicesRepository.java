@@ -64,7 +64,7 @@ public class DevicesRepository {
    public List<DeviceTypeNameEntity> getDevicesByType(DeviceType type) {
       return allDeviceTypeNameEntities.values()
             .stream()
-            .filter(d -> d.getType().getType() == type)
+            .filter(device -> device.getType().getType() == type)
             .collect(Collectors.toList());
    }
 

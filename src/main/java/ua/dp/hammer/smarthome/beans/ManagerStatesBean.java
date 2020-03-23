@@ -13,8 +13,11 @@ import ua.dp.hammer.smarthome.models.states.ShutterState;
 import ua.dp.hammer.smarthome.models.states.ShutterStateRaw;
 import ua.dp.hammer.smarthome.models.states.ShutterStates;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Collectors;
 
 @Component
 public class ManagerStatesBean {
@@ -35,35 +38,44 @@ public class ManagerStatesBean {
    public void addStateDeferredResult(DeferredResult<AllManagerStates> defResult) {
       allStatesDeferredResults.add(defResult);
 
-      keepAliveStatusesBean.addSubscriber(KeepAliveStatusesBean.class, (deviceName) -> {
+      keepAliveStatusesBean.addSubscriber(KeepAliveStatusesBean.class, (deviceNames) -> {
+         List<CommonSate> notAvailableSates = new LinkedList<>();
          /*if (deviceName.equals(allManagerStates.getFanState().getName())) {
             projectorState.setNotAvailable(true);
             updateDeferred();
             return;
          }*/
 
-         for (CommonSate projectorState : allManagerStates.getProjectorsState()) {
-            if (deviceName.equals(projectorState.getName())) {
-               updateKeepAliveState(projectorState);
-               return;
-            }
-         }
-         for (CommonSate shutterState : allManagerStates.getShuttersState()) {
-            if (deviceName.equals(shutterState.getName())) {
-               updateKeepAliveState(shutterState);
-               return;
-            }
-         }
+         List<CommonSate> projectorStates = allManagerStates.getProjectorsState()
+               .stream()
+               .filter(projectorState -> deviceNames.contains(projectorState.getName()))
+               .collect(Collectors.toList());
+         notAvailableSates.addAll(projectorStates);
+
+         // There are 2 for kitchen shutters
+         List<CommonSate> shutterSates = allManagerStates.getShuttersState()
+               .stream()
+               .filter(shutterState -> deviceNames.contains(shutterState.getName()))
+               .collect(Collectors.toList());
+         notAvailableSates.addAll(shutterSates);
+
+         updateKeepAliveStates(notAvailableSates);
       });
    }
 
-   private void updateKeepAliveState(CommonSate commonState) {
-      if (commonState.isNotAvailable()) {
-         return;
-      }
+   private void updateKeepAliveStates(List<CommonSate> shutterSates) {
+      boolean isAnyAvailable = shutterSates
+            .stream()
+            .anyMatch(shutterSate -> !shutterSate.isNotAvailable());
 
-      commonState.setNotAvailable(true);
-      updateDeferred();
+      if (isAnyAvailable) {
+         shutterSates.forEach(shutterSate -> shutterSate.setNotAvailable(true));
+         updateDeferred();
+      }
+   }
+
+   public void resetExpectedSequentialProjectorCounter() {
+      sequentialProjectorsChangesAmount = 0;
    }
 
    public void changeProjectorState(ProjectorState projectorState, int expectedSequentialInvocations) {
