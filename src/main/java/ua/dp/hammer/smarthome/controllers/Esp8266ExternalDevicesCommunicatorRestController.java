@@ -48,7 +48,7 @@ public class Esp8266ExternalDevicesCommunicatorRestController {
          serverStatus.setIncludeDebugInfo(true);
       }
 
-      keepAliveStatusesBean.update(deviceInfo.getDeviceName());
+      keepAliveStatusesBean.update(deviceInfo);
 
       if (isEnvSensor(deviceInfo)) {
          envSensorsBean.addEnvSensorState(deviceInfo);

@@ -8,7 +8,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.async.DeferredResult;
 import ua.dp.hammer.smarthome.entities.DeviceTypeNameEntity;
-import ua.dp.hammer.smarthome.models.states.keepalive.KeepAliveState;
+import ua.dp.hammer.smarthome.models.DeviceInfo;
+import ua.dp.hammer.smarthome.models.states.keepalive.DeviceTechInfo;
 import ua.dp.hammer.smarthome.models.states.keepalive.PhoneAwareDeviceState;
 import ua.dp.hammer.smarthome.repositories.DevicesRepository;
 
@@ -31,49 +32,61 @@ public class KeepAliveStatusesBean {
    private DevicesRepository devicesRepository;
 
    private Map<String, LocalDateTime> devicesStatusesTimestamps = new ConcurrentHashMap<>();
+   private Map<String, DeviceInfo> devicesInfo = new ConcurrentHashMap<>();
    private Map<Class, Consumer<Set<String>>> subscribers = new ConcurrentHashMap<>();
-   private Map<DeferredResult<List<KeepAliveState>>, Set<PhoneAwareDeviceState>> allKeepAliveStatesDeferredResponses =
+   private Map<DeferredResult<List<DeviceTechInfo>>, Set<PhoneAwareDeviceState>> devicesTechInfoDeferredResponses =
          new ConcurrentHashMap<>();
    private Queue<DeferredResult<Set<String>>> unavailableDevicesDeferredResponses = new ConcurrentLinkedQueue<>();
 
    @Async
-   public void update(String deviceName) {
-      devicesStatusesTimestamps.put(deviceName, LocalDateTime.now());
+   public void update(DeviceInfo deviceInfo) {
+      devicesStatusesTimestamps.put(deviceInfo.getDeviceName(), LocalDateTime.now());
+      devicesInfo.put(deviceInfo.getDeviceName(), deviceInfo);
+      updateDevicesTechInfoDeferred();
+   }
 
-      for (Map.Entry<DeferredResult<List<KeepAliveState>>, Set<PhoneAwareDeviceState>> entry :
-            allKeepAliveStatesDeferredResponses.entrySet()) {
-         DeferredResult<List<KeepAliveState>> deferredResult = entry.getKey();
+   private void updateDevicesTechInfoDeferred() {
+      for (Map.Entry<DeferredResult<List<DeviceTechInfo>>, Set<PhoneAwareDeviceState>> entry :
+            devicesTechInfoDeferredResponses.entrySet()) {
+         DeferredResult<List<DeviceTechInfo>> deferredResult = entry.getKey();
          Set<PhoneAwareDeviceState> phoneAwareDevicesStates = entry.getValue();
-         List<KeepAliveState> deferredResultList = new LinkedList<>();
+         List<DeviceTechInfo> deferredResultList = new LinkedList<>();
 
          devicesRepository.getAllDeviceTypeNameEntities().forEach(deviceEntity -> {
             LocalDateTime lastStatusTime = devicesStatusesTimestamps.get(deviceEntity.getName());
             Long lastStatusTimeMs = lastStatusTime != null ?
                   lastStatusTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() : null;
-            KeepAliveState keepAliveState = null;
+            DeviceTechInfo deviceTechInfo = null;
 
             if (lastStatusTimeMs == null) {
-               keepAliveState = new KeepAliveState();
-               keepAliveState.setName(deviceEntity.getName());
+               deviceTechInfo = new DeviceTechInfo();
+               deviceTechInfo.setDeviceName(deviceEntity.getName());
             } else {
                PhoneAwareDeviceState phoneAwareDeviceStateToSearch =
                      new PhoneAwareDeviceState(deviceEntity.getName(), lastStatusTimeMs);
 
                if (!phoneAwareDevicesStates.contains(phoneAwareDeviceStateToSearch)) {
-                  keepAliveState = new KeepAliveState();
-                  keepAliveState.setName(deviceEntity.getName());
-                  keepAliveState.setLastDeviceRequestTimestamp(lastStatusTimeMs);
-                  keepAliveState.setNotAvailable(isNotAvailable(deviceEntity.getName(), lastStatusTime));
+                  deviceTechInfo = new DeviceTechInfo();
+                  deviceTechInfo.setDeviceName(deviceEntity.getName());
+                  deviceTechInfo.setLastDeviceRequestTimestamp(lastStatusTimeMs);
+                  deviceTechInfo.setNotAvailable(isNotAvailable(deviceEntity.getName(), lastStatusTime));
+                  deviceTechInfo.setDeviceType(deviceEntity.getType().getType());
+
+                  DeviceInfo deviceInfo = devicesInfo.get(deviceEntity.getName());
+                  if (deviceInfo != null) {
+                     deviceTechInfo.setUptime(deviceInfo.getUptime());
+                     deviceTechInfo.setBuildTimestamp(deviceInfo.getBuildTimestamp());
+                  }
                }
             }
 
-            if (keepAliveState != null) {
-               deferredResultList.add(keepAliveState);
+            if (deviceTechInfo != null) {
+               deferredResultList.add(deviceTechInfo);
             }
          });
          deferredResult.setResult(deferredResultList);
       }
-      allKeepAliveStatesDeferredResponses.clear();
+      devicesTechInfoDeferredResponses.clear();
    }
 
    public DeferredResult<Set<String>> getUnavailableDevices(Class subscriber) {
@@ -97,8 +110,8 @@ public class KeepAliveStatusesBean {
    }
 
    public void addNewToAllKeepAliveStatesDeferred(Set<PhoneAwareDeviceState> knownStatuses,
-                                                  DeferredResult<List<KeepAliveState>> response) {
-      allKeepAliveStatesDeferredResponses.put(response, knownStatuses);
+                                                  DeferredResult<List<DeviceTechInfo>> response) {
+      devicesTechInfoDeferredResponses.put(response, knownStatuses);
    }
 
    @Scheduled(fixedDelay=5000)

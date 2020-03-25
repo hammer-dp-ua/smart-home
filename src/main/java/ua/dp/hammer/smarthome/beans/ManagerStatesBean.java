@@ -48,14 +48,14 @@ public class ManagerStatesBean {
 
          List<CommonSate> projectorStates = allManagerStates.getProjectorsState()
                .stream()
-               .filter(projectorState -> deviceNames.contains(projectorState.getName()))
+               .filter(projectorState -> deviceNames.contains(projectorState.getDeviceName()))
                .collect(Collectors.toList());
          notAvailableSates.addAll(projectorStates);
 
          // There are 2 for kitchen shutters
          List<CommonSate> shutterSates = allManagerStates.getShuttersState()
                .stream()
-               .filter(shutterState -> deviceNames.contains(shutterState.getName()))
+               .filter(shutterState -> deviceNames.contains(shutterState.getDeviceName()))
                .collect(Collectors.toList());
          notAvailableSates.addAll(shutterSates);
 
@@ -101,7 +101,7 @@ public class ManagerStatesBean {
    private boolean changeProjectorStateInternal(ProjectorState projectorState) {
       ProjectorState existingProjectorState = allManagerStates.getProjectorsState()
             .stream()
-            .filter(p -> p.getName().equals(projectorState.getName()))
+            .filter(p -> p.getDeviceName().equals(projectorState.getDeviceName()))
             .findFirst()
             .orElse(null);
       boolean shouldBeUpdated = false;
@@ -143,7 +143,7 @@ public class ManagerStatesBean {
 
    public void setShutterState(ShutterState shutterState) {
       ShutterState currentState = allManagerStates.getShuttersState().stream()
-            .filter(x -> x.getName().equals(shutterState.getName()) && (x.getShutterNo() == shutterState.getShutterNo()))
+            .filter(x -> x.getDeviceName().equals(shutterState.getDeviceName()) && (x.getShutterNo() == shutterState.getShutterNo()))
             .findFirst()
             .orElse(null);
 
@@ -161,7 +161,7 @@ public class ManagerStatesBean {
    public boolean isProjectorTurnedOn(String projectorName) {
       return allManagerStates.getProjectorsState()
             .stream()
-            .filter(p -> projectorName.equals(p.getName()))
+            .filter(p -> projectorName.equals(p.getDeviceName()))
             .findFirst()
             .map(ProjectorState::isTurnedOn)
             .orElse(false);

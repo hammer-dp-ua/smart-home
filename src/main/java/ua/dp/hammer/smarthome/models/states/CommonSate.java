@@ -1,15 +1,15 @@
 package ua.dp.hammer.smarthome.models.states;
 
 public class CommonSate {
-   private String name;
+   private String deviceName;
    private boolean notAvailable = true;
 
-   public String getName() {
-      return name;
+   public String getDeviceName() {
+      return deviceName;
    }
 
-   public CommonSate setName(String name) {
-      this.name = name;
+   public CommonSate setDeviceName(String deviceName) {
+      this.deviceName = deviceName;
       return this;
    }
 
@@ -22,7 +22,7 @@ public class CommonSate {
    }
 
    public void setNewSate(CommonSate newSate) {
-      setName(newSate.getName());
+      setDeviceName(newSate.getDeviceName());
       setNotAvailable(newSate.isNotAvailable());
    }
 }

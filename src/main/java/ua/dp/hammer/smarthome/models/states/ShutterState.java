@@ -17,7 +17,7 @@ public class ShutterState extends CommonSate {
 
       this.shutterNo = shutterNo;
       this.state = state;
-      super.setName(name);
+      super.setDeviceName(name);
       super.setNotAvailable(notAvailable);
    }
 
@@ -50,7 +50,7 @@ public class ShutterState extends CommonSate {
       }
 
       ShutterState thatObject = (ShutterState) o;
-      return getName().equals(thatObject.getName()) &&
+      return getDeviceName().equals(thatObject.getDeviceName()) &&
             shutterNo == thatObject.shutterNo &&
             state == thatObject.state &&
             isNotAvailable() == thatObject.isNotAvailable();
@@ -60,7 +60,7 @@ public class ShutterState extends CommonSate {
    public int hashCode() {
       if (hashCode == -1) {
          hashCode = new HashCodeBuilder()
-               .append(getName())
+               .append(getDeviceName())
                .append(shutterNo)
                .append(state)
                .append(isNotAvailable())

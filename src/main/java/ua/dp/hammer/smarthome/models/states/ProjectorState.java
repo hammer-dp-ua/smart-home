@@ -8,7 +8,7 @@ public class ProjectorState extends CommonSate {
    private int hashCode = -1;
 
    public ProjectorState(String name) {
-      setName(name);
+      setDeviceName(name);
    }
 
    public boolean isTurnedOn() {
@@ -33,14 +33,14 @@ public class ProjectorState extends CommonSate {
       ProjectorState thatObject = (ProjectorState) o;
       return turnedOn == thatObject.turnedOn &&
             isNotAvailable() == thatObject.isNotAvailable() &&
-            getName().equals(thatObject.getName());
+            getDeviceName().equals(thatObject.getDeviceName());
    }
 
    @Override
    public int hashCode() {
       if (hashCode == -1) {
          hashCode = new HashCodeBuilder()
-               .append(getName())
+               .append(getDeviceName())
                .append(isNotAvailable())
                .append(turnedOn)
                .hashCode();

@@ -261,7 +261,7 @@ public class MainLogic {
             .bodyToMono(Void.class);
       ShutterState shutterState = new ShutterState();
 
-      shutterState.setName(shutter.getName());
+      shutterState.setDeviceName(shutter.getName());
       shutterState.setShutterNo(shutterNo);
       shutterState.setNotAvailable(true);
 

@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.async.DeferredResult;
 import ua.dp.hammer.smarthome.beans.KeepAliveStatusesBean;
-import ua.dp.hammer.smarthome.models.states.keepalive.KeepAliveState;
+import ua.dp.hammer.smarthome.models.states.keepalive.DeviceTechInfo;
 import ua.dp.hammer.smarthome.models.states.keepalive.PhoneAwareDeviceState;
 
 import java.util.HashSet;
@@ -15,14 +15,14 @@ import java.util.List;
 import java.util.Set;
 
 @RestController
-@RequestMapping(path = "/server/keepAlive")
-public class KeepAliveStatusesController {
+@RequestMapping(path = "/server/devicesTechInfo")
+public class DevicesTechInfoController {
 
    private KeepAliveStatusesBean keepAliveStatusesBean;
 
-   @PostMapping(path = "/getAllKeepAliveStates", consumes="application/json")
-   public DeferredResult<List<KeepAliveState>> getAllKeepAliveStates(HashSet<PhoneAwareDeviceState> knownStatuses) {
-      DeferredResult<List<KeepAliveState>> response = new DeferredResult<>(300_000L);
+   @PostMapping(path = "/getAllDevicesTechInfoStates", consumes="application/json")
+   public DeferredResult<List<DeviceTechInfo>> getAllDevicesTechInfoStates(HashSet<PhoneAwareDeviceState> knownStatuses) {
+      DeferredResult<List<DeviceTechInfo>> response = new DeferredResult<>(300_000L);
 
       keepAliveStatusesBean.addNewToAllKeepAliveStatesDeferred(knownStatuses, response);
       return response;
@@ -30,7 +30,7 @@ public class KeepAliveStatusesController {
 
    @GetMapping("/getUnavailableDevices")
    public DeferredResult<Set<String>> getUnavailableDevices() {
-      return keepAliveStatusesBean.getUnavailableDevices(KeepAliveStatusesController.class);
+      return keepAliveStatusesBean.getUnavailableDevices(DevicesTechInfoController.class);
    }
 
    @Autowired
