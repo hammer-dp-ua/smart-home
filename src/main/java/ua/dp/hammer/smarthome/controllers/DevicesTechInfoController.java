@@ -3,6 +3,7 @@ package ua.dp.hammer.smarthome.controllers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.async.DeferredResult;
@@ -21,7 +22,7 @@ public class DevicesTechInfoController {
    private KeepAliveStatusesBean keepAliveStatusesBean;
 
    @PostMapping(path = "/getAllDevicesTechInfoStates", consumes="application/json")
-   public DeferredResult<List<DeviceTechInfo>> getAllDevicesTechInfoStates(HashSet<PhoneAwareDeviceState> knownStatuses) {
+   public DeferredResult<List<DeviceTechInfo>> getAllDevicesTechInfoStates(@RequestBody HashSet<PhoneAwareDeviceState> knownStatuses) {
       DeferredResult<List<DeviceTechInfo>> response = new DeferredResult<>(300_000L);
 
       keepAliveStatusesBean.addNewToAllKeepAliveStatesDeferred(knownStatuses, response);

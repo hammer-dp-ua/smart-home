@@ -1,7 +1,8 @@
 # docker build -t super-home .
+# docker build -t super-home -f Dockerfile_debug .
 # docker stop super-home-container && docker rm super-home-container && docker run --network=super_home_nw --restart always --detach --publish 8080:8080 --mount type=volume,source=super_home_data_volume,destination=/data --name super-home-container super-home
 # Logs will be displayed in console:
-# docker run --network=super_home_nw --rm -it --publish 8080:8080 --mount type=volume,source=super_home_data_volume,destination=/data --name super-home-container super-home
+# docker run --network=super_home_nw --rm -it -p 8080:8080 -p 8000:8000 --mount type=volume,source=super_home_data_volume,destination=/data --name super-home-container super-home
 
 # Backup
 # docker run --rm -it --entrypoint tar --mount type=volume,source=super_home_data_volume,destination=/data --mount type=bind,source=z:\docker_backup,destination=/backup --name super-home-container-tmp super-home cvf /backup/super-home_backup.tar /data

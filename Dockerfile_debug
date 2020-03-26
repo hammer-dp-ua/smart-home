@@ -1,0 +1,22 @@
+FROM openjdk:8
+
+RUN unlink /etc/localtime
+RUN ln -s /usr/share/zoneinfo/Europe/Kiev /etc/localtime
+
+COPY super-home.jar /usr/super-home.jar
+COPY log4j2.xml /usr/log4j2.xml
+COPY config/application.properties /usr/application.properties
+
+EXPOSE 8080
+EXPOSE 8000
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+   vim \
+   && rm -rf /var/lib/apt/lists/*
+   
+ENV JAVA_TOOL_OPTIONS -agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n
+
+ENV ENTRYPOINT_SCRIPT=/usr/entrypoint.sh
+COPY entrypoint.sh $ENTRYPOINT_SCRIPT
+RUN chmod 755 $ENTRYPOINT_SCRIPT
+ENTRYPOINT exec $ENTRYPOINT_SCRIPT
