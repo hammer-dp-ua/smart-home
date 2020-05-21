@@ -2,7 +2,7 @@ package ua.dp.hammer.smarthome.models;
 
 public class FanResponse extends ServerStatus {
    private boolean turnOn;
-   private int manuallyTurnedOnTimeout;
+   private int manuallyTurnedOnTimeoutSetting;
 
    public FanResponse(StatusCodes statusCodes) {
       super(statusCodes);
@@ -16,11 +16,11 @@ public class FanResponse extends ServerStatus {
       this.turnOn = turnOn;
    }
 
-   public int getManuallyTurnedOnTimeout() {
-      return manuallyTurnedOnTimeout;
+   public int getManuallyTurnedOnTimeoutSetting() {
+      return manuallyTurnedOnTimeoutSetting;
    }
 
-   public void setManuallyTurnedOnTimeout(int manuallyTurnedOnTimeout) {
-      this.manuallyTurnedOnTimeout = manuallyTurnedOnTimeout;
+   public void setManuallyTurnedOnTimeoutSetting(int manuallyTurnedOnTimeoutSetting) {
+      this.manuallyTurnedOnTimeoutSetting = manuallyTurnedOnTimeoutSetting;
    }
 }

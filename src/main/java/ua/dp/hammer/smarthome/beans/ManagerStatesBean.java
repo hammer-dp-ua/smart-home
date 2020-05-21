@@ -117,9 +117,9 @@ public class ManagerStatesBean {
       return shouldBeUpdated;
    }
 
-   public void changeFunState(boolean turnedOn, int minutesRemaining) {
+   public void changeFunState(boolean turnedOn, int minutesLeft) {
       allManagerStates.getFanState().setTurnedOn(turnedOn);
-      allManagerStates.getFanState().setMinutesRemaining(minutesRemaining);
+      allManagerStates.getFanState().setMinutesRemaining(minutesLeft);
 
       updateDeferred();
    }
@@ -132,30 +132,35 @@ public class ManagerStatesBean {
    }
 
    public void receiveNewShutterState(DeviceInfo deviceInfo) {
+      boolean deferredShouldBeUpdated = false;
+
       for (ShutterStateRaw shutterStateRaw : deviceInfo.getShutterStates()) {
          String name = deviceInfo.getDeviceName();
          int no = shutterStateRaw.getShutterNo();
          ShutterStates state = ShutterStates.getState(shutterStateRaw.getShutterState());
 
-         setShutterState(new ShutterState(name, no, state, false));
+         deferredShouldBeUpdated |= setShutterState(new ShutterState(name, no, state, false));
+      }
+
+      if (deferredShouldBeUpdated) {
+         updateDeferred();
       }
    }
 
-   public void setShutterState(ShutterState shutterState) {
+   public boolean setShutterState(ShutterState shutterState) {
       ShutterState currentState = allManagerStates.getShuttersState().stream()
             .filter(x -> x.getDeviceName().equals(shutterState.getDeviceName()) && (x.getShutterNo() == shutterState.getShutterNo()))
             .findFirst()
             .orElse(null);
 
       if (shutterState.equals(currentState)) {
-         return;
+         return false;
       } else if (currentState == null) {
          allManagerStates.getShuttersState().add(shutterState);
       } else {
          currentState.setNewState(shutterState);
       }
-
-      updateDeferred();
+      return true;
    }
 
    public boolean isProjectorTurnedOn(String projectorName) {

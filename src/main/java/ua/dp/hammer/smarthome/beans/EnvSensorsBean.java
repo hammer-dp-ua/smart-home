@@ -9,6 +9,7 @@ import org.springframework.web.context.request.async.DeferredResult;
 import ua.dp.hammer.smarthome.entities.EnvSensorEntity;
 import ua.dp.hammer.smarthome.entities.TechnicalDeviceInfoEntity;
 import ua.dp.hammer.smarthome.models.DeviceInfo;
+import ua.dp.hammer.smarthome.models.FanRequestInfo;
 import ua.dp.hammer.smarthome.repositories.DevicesRepository;
 import ua.dp.hammer.smarthome.repositories.EnvSensorsRepository;
 
@@ -84,10 +85,10 @@ public class EnvSensorsBean {
       envSensorsDeferredResults.add(deferredResult);
    }
 
-   public boolean setBathroomFanState(float humidity) {
+   public boolean setBathroomFanState(FanRequestInfo fanRequest) {
       boolean toBeTurnedOn = false;
 
-      if (humidity >= thresholdBathroomHumidity) {
+      if (fanRequest.getHumidity() >= thresholdBathroomHumidity) {
          toBeTurnedOn = true;
       }
 
@@ -95,11 +96,19 @@ public class EnvSensorsBean {
       boolean manuallyEnabled = (manualEnabledFanTime != null) &&
             currentTime.isBefore(manualEnabledFanTime.plusMinutes(10));
       toBeTurnedOn |= manuallyEnabled;
-      boolean isCurrentlyTurnedOn = managerStatesBean.getAllManagerStates().getFanState().isTurnedOn();
+      boolean currentTurnedOnState = managerStatesBean.getAllManagerStates().getFanState().isTurnedOn();
 
-      if (toBeTurnedOn != isCurrentlyTurnedOn) {
-         int minutesRemaining = (manuallyEnabled && toBeTurnedOn) ? manuallyTurnedOnFanTimeoutMinutes : 0;
-         managerStatesBean.changeFunState(toBeTurnedOn, minutesRemaining);
+      if (fanRequest.isSwitchedOnManually() && fanRequest.getSwitchedOnManuallySecondsLeft() != null) {
+         int minutesLeft = fanRequest.getSwitchedOnManuallySecondsLeft() / 60;
+         int moduloSeconds = fanRequest.getSwitchedOnManuallySecondsLeft() % 60;
+         if (moduloSeconds > 30) {
+            // If it's 9:59 or 9:31, consider it as 10 minutes
+            minutesLeft++;
+         }
+         managerStatesBean.changeFunState(true, minutesLeft);
+      } else if (toBeTurnedOn != currentTurnedOnState) {
+         int minutesLeft = (manuallyEnabled && toBeTurnedOn) ? manuallyTurnedOnFanTimeoutMinutes : 0;
+         managerStatesBean.changeFunState(toBeTurnedOn, minutesLeft);
 
          if (fanStateTimer != null) {
             fanStateTimer.cancel();

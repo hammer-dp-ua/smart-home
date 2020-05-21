@@ -45,10 +45,10 @@ CREATE TABLE shutters_action_time_setup (
    action_time SMALLINT
 );
 
-INSERT INTO device_types (type_id) VALUES ('ENV_SENSOR');
-INSERT INTO device_types (type_id) VALUES ('SHUTTER');
-INSERT INTO device_types (type_id) VALUES ('PROJECTOR');
-INSERT INTO device_types (type_id) VALUES ('MOTION_DETECTOR');
+INSERT INTO device_types (type_id, keep_alive_interval_sec) VALUES ('ENV_SENSOR', 60);
+INSERT INTO device_types (type_id, keep_alive_interval_sec) VALUES ('SHUTTER', 60);
+INSERT INTO device_types (type_id, keep_alive_interval_sec) VALUES ('PROJECTOR', 60);
+INSERT INTO device_types (type_id, keep_alive_interval_sec) VALUES ('MOTION_DETECTOR', 30);
 
 INSERT INTO device_type_names (aa_id, device_type, device_name)
 VALUES (nextval('device_type_names_aa_id_seq'), (SELECT aa_id FROM device_types WHERE type_id = 'ENV_SENSOR'), 'Basement temp and humidity monitor');

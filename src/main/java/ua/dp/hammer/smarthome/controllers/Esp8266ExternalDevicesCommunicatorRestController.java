@@ -16,6 +16,7 @@ import ua.dp.hammer.smarthome.beans.ManagerStatesBean;
 import ua.dp.hammer.smarthome.entities.TechnicalDeviceInfoEntity;
 import ua.dp.hammer.smarthome.models.DeviceInfo;
 import ua.dp.hammer.smarthome.models.Esp8266ResetReasons;
+import ua.dp.hammer.smarthome.models.FanRequestInfo;
 import ua.dp.hammer.smarthome.models.FanResponse;
 import ua.dp.hammer.smarthome.models.ProjectorResponse;
 import ua.dp.hammer.smarthome.models.ServerStatus;
@@ -102,18 +103,18 @@ public class Esp8266ExternalDevicesCommunicatorRestController {
    }
 
    @PostMapping(path = "/bathroomFan", consumes="application/json")
-   public FanResponse receiveBathroomParameters(@RequestBody DeviceInfo deviceInfo) {
+   public FanResponse receiveBathroomParameters(@RequestBody FanRequestInfo fanRequest) {
       FanResponse fanResponse = new FanResponse(StatusCodes.OK);
 
       if (LOGGER.isDebugEnabled()) {
-         writeGeneralDebugInfo(deviceInfo);
+         writeGeneralDebugInfo(fanRequest);
          fanResponse.setIncludeDebugInfo(true);
       }
 
-      envSensorsBean.addEnvSensorState(deviceInfo);
+      envSensorsBean.addEnvSensorState(fanRequest);
 
-      fanResponse.setTurnOn(envSensorsBean.setBathroomFanState(deviceInfo.getHumidity()));
-      fanResponse.setManuallyTurnedOnTimeout(envSensorsBean.getManuallyTurnedOnFanTimeoutMinutes());
+      fanResponse.setTurnOn(envSensorsBean.setBathroomFanState(fanRequest));
+      fanResponse.setManuallyTurnedOnTimeoutSetting(envSensorsBean.getManuallyTurnedOnFanTimeoutMinutes());
       return fanResponse;
    }
 

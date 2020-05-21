@@ -61,15 +61,18 @@ public class KeepAliveStatusesBean {
             if (lastStatusTimeMs == null) {
                deviceTechInfo = new DeviceTechInfo();
                deviceTechInfo.setDeviceName(deviceEntity.getName());
+               deviceTechInfo.setDeviceType(deviceEntity.getType().getType());
             } else {
                PhoneAwareDeviceState phoneAwareDeviceStateToSearch =
                      new PhoneAwareDeviceState(deviceEntity.getName(), lastStatusTimeMs);
+               boolean phoneInfoOutdated = !phoneAwareDevicesStates.contains(phoneAwareDeviceStateToSearch);
+               boolean notAvailable = isNotAvailable(deviceEntity.getName(), lastStatusTime);
 
-               if (!phoneAwareDevicesStates.contains(phoneAwareDeviceStateToSearch)) {
+               if (phoneInfoOutdated || notAvailable) {
                   deviceTechInfo = new DeviceTechInfo();
                   deviceTechInfo.setDeviceName(deviceEntity.getName());
                   deviceTechInfo.setLastDeviceRequestTimestamp(lastStatusTimeMs);
-                  deviceTechInfo.setNotAvailable(isNotAvailable(deviceEntity.getName(), lastStatusTime));
+                  deviceTechInfo.setNotAvailable(notAvailable);
                   deviceTechInfo.setDeviceType(deviceEntity.getType().getType());
 
                   DeviceInfo deviceInfo = devicesInfo.get(deviceEntity.getName());
@@ -81,6 +84,7 @@ public class KeepAliveStatusesBean {
             }
 
             if (deviceTechInfo != null) {
+               // Response will contain only required elements
                deferredResultList.add(deviceTechInfo);
             }
          });
