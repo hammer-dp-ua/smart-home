@@ -105,16 +105,13 @@ public class Esp8266ExternalDevicesCommunicatorRestController {
    @PostMapping(path = "/bathroomFan", consumes="application/json")
    public FanResponse receiveBathroomParameters(@RequestBody FanRequestInfo fanRequest) {
       FanResponse fanResponse = new FanResponse(StatusCodes.OK);
+      ServerStatus serverStatus = receiveStatusInfo(fanRequest);
 
-      if (LOGGER.isDebugEnabled()) {
-         writeGeneralDebugInfo(fanRequest);
-         fanResponse.setIncludeDebugInfo(true);
-      }
-
-      envSensorsBean.addEnvSensorState(fanRequest);
-
-      fanResponse.setTurnOn(envSensorsBean.setBathroomFanState(fanRequest));
-      fanResponse.setManuallyTurnedOnTimeoutSetting(envSensorsBean.getManuallyTurnedOnFanTimeoutMinutes());
+      fanResponse.setUpdateFirmware(serverStatus.isUpdateFirmware());
+      fanResponse.setIncludeDebugInfo(serverStatus.isIncludeDebugInfo());
+      fanResponse.setTurnOn(envSensorsBean.setManualEnabledFanTime(fanRequest));
+      fanResponse.setManuallyTurnedOnTimeoutSetting(envSensorsBean
+            .getManuallyTurnedOnFanTimeoutMinutes(fanRequest.getDeviceName()));
       return fanResponse;
    }
 

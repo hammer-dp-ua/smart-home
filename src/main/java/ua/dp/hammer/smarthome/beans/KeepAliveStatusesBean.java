@@ -31,12 +31,12 @@ public class KeepAliveStatusesBean {
 
    private DevicesRepository devicesRepository;
 
-   private Map<String, LocalDateTime> devicesStatusesTimestamps = new ConcurrentHashMap<>();
-   private Map<String, DeviceInfo> devicesInfo = new ConcurrentHashMap<>();
-   private Map<Class, Consumer<Set<String>>> subscribers = new ConcurrentHashMap<>();
-   private Map<DeferredResult<List<DeviceTechInfo>>, Set<PhoneAwareDeviceState>> devicesTechInfoDeferredResponses =
+   private final Map<String, LocalDateTime> devicesStatusesTimestamps = new ConcurrentHashMap<>();
+   private final Map<String, DeviceInfo> devicesInfo = new ConcurrentHashMap<>();
+   private final Map<Class, Consumer<Set<String>>> subscribers = new ConcurrentHashMap<>();
+   private final Map<DeferredResult<List<DeviceTechInfo>>, Set<PhoneAwareDeviceState>> devicesTechInfoDeferredResponses =
          new ConcurrentHashMap<>();
-   private Queue<DeferredResult<Set<String>>> unavailableDevicesDeferredResponses = new ConcurrentLinkedQueue<>();
+   private final Queue<DeferredResult<Set<String>>> unavailableDevicesDeferredResponses = new ConcurrentLinkedQueue<>();
 
    @Async
    public void update(DeviceInfo deviceInfo) {

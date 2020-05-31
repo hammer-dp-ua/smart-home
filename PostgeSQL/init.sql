@@ -45,6 +45,15 @@ CREATE TABLE shutters_action_time_setup (
    action_time SMALLINT
 );
 
+CREATE TABLE fan_setup (
+   aa_id SERIAL PRIMARY KEY,
+   device_type_name INTEGER NOT NULL REFERENCES device_type_names,
+   turn_on_humidity_threshold REAL,
+   manually_turned_on_timeout_minutes SMALLINT,
+    -- to not turn off immediately after turning on on threshold
+   after_falling_threshold_work_timeout_minutes SMALLINT
+);
+
 INSERT INTO device_types (type_id, keep_alive_interval_sec) VALUES ('ENV_SENSOR', 60);
 INSERT INTO device_types (type_id, keep_alive_interval_sec) VALUES ('SHUTTER', 60);
 INSERT INTO device_types (type_id, keep_alive_interval_sec) VALUES ('PROJECTOR', 60);
@@ -78,3 +87,6 @@ INSERT INTO shutters_action_time_setup (aa_id, device_type_name, action_time)
 VALUES (nextval('shutters_action_time_setup_aa_id_seq'), (SELECT aa_id FROM device_type_names WHERE device_name = 'Room shutter'), 19);
 INSERT INTO shutters_action_time_setup (aa_id, device_type_name, action_time)
 VALUES (nextval('shutters_action_time_setup_aa_id_seq'), (SELECT aa_id FROM device_type_names WHERE device_name = 'Kitchen shutter'), 25);
+
+INSERT INTO fan_setup (aa_id, device_type_name, turn_on_humidity_threshold, manually_turned_on_timeout_minutes, after_falling_threshold_work_timeout_minutes)
+VALUES (nextval('fan_setup_aa_id_seq'), (SELECT aa_id FROM device_type_names WHERE device_name = 'Bathroom fan'), 85, 10, 30);

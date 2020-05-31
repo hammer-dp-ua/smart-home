@@ -45,6 +45,10 @@ public class DeviceTypeNameEntity {
    @OnDelete(action = OnDeleteAction.CASCADE) // Used for DDL generations and mostly just declarative
    private ShutterActionTimeSetupEntity shutterActionTimeSetup;
 
+   @OneToOne(mappedBy = "typeName", fetch = FetchType.EAGER, cascade = CascadeType.ALL, optional = true)
+   @OnDelete(action = OnDeleteAction.CASCADE) // Used for DDL generations and mostly just declarative
+   private FanSetupEntity fanSetupEntity;
+
    public Integer getId() {
       return id;
    }
@@ -83,5 +87,13 @@ public class DeviceTypeNameEntity {
 
    public void setShutterActionTimeSetup(ShutterActionTimeSetupEntity shutterActionTimeSetup) {
       this.shutterActionTimeSetup = shutterActionTimeSetup;
+   }
+
+   public FanSetupEntity getFanSetupEntity() {
+      return fanSetupEntity;
+   }
+
+   public void setFanSetupEntity(FanSetupEntity fanSetupEntity) {
+      this.fanSetupEntity = fanSetupEntity;
    }
 }

@@ -63,8 +63,8 @@ public class ManagerRestController {
    public FanState turnOnBathroomFun() {
       LOGGER.info("Bathroom fan will be turned on");
 
-      envSensorsBean.setBathroomFanState();
-      return new FanState(true, 0);
+      envSensorsBean.setManualEnabledFanTime();
+      return new FanState(0, true);
    }
 
    /**

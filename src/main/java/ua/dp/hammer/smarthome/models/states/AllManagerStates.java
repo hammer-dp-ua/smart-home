@@ -14,10 +14,10 @@ public class AllManagerStates {
       return INSTANCE;
    }
 
-   private Set<ProjectorState> projectorsState = Collections.synchronizedSet(new HashSet<>());
-   private FanState fanState = new FanState();
-   private AlarmsState alarmsState = new AlarmsState();
-   private Set<ShutterState> shuttersState = Collections.synchronizedSet(new HashSet<>());
+   private final Set<ProjectorState> projectorsState = Collections.synchronizedSet(new HashSet<>());
+   private final FanState fanState = new FanState();
+   private final AlarmsState alarmsState = new AlarmsState();
+   private final Set<ShutterState> shuttersState = Collections.synchronizedSet(new HashSet<>());
 
    public Set<ProjectorState> getProjectorsState() {
       return projectorsState;

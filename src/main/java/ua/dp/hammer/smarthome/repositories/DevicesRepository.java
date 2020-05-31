@@ -29,8 +29,8 @@ public class DevicesRepository {
    private static final Logger LOGGER = LogManager.getLogger(DevicesRepository.class);
 
    // Something like second level cache
-   private Map<DeviceType, DeviceTypeEntity> allDeviceTypeEntities = new HashMap<>();
-   private Map<String, DeviceTypeNameEntity> allDeviceTypeNameEntities = new HashMap<>();
+   private final Map<DeviceType, DeviceTypeEntity> allDeviceTypeEntities = new HashMap<>();
+   private final Map<String, DeviceTypeNameEntity> allDeviceTypeNameEntities = new HashMap<>();
 
    @PersistenceContext
    private EntityManager entityManager;

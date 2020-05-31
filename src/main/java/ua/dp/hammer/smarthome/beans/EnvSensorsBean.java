@@ -7,11 +7,14 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.async.DeferredResult;
 import ua.dp.hammer.smarthome.entities.EnvSensorEntity;
+import ua.dp.hammer.smarthome.entities.FanSetupEntity;
 import ua.dp.hammer.smarthome.entities.TechnicalDeviceInfoEntity;
 import ua.dp.hammer.smarthome.models.DeviceInfo;
 import ua.dp.hammer.smarthome.models.FanRequestInfo;
+import ua.dp.hammer.smarthome.models.states.FanState;
 import ua.dp.hammer.smarthome.repositories.DevicesRepository;
 import ua.dp.hammer.smarthome.repositories.EnvSensorsRepository;
+import ua.dp.hammer.smarthome.repositories.SettingsRepository;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
@@ -30,24 +33,20 @@ public class EnvSensorsBean {
    private static final Logger LOGGER = LogManager.getLogger(EnvSensorsBean.class);
 
    private LocalDateTime manualEnabledFanTime;
-   private float thresholdBathroomHumidity;
-   private int manuallyTurnedOnFanTimeoutMinutes;
    private int streetLightValue;
    private Timer fanStateTimer;
 
-   private Map<String, DeviceInfo> envSensorsStates = new ConcurrentHashMap<>();
-   private Queue<DeferredResult<List<DeviceInfo>>> envSensorsDeferredResults = new ConcurrentLinkedQueue<>();
+   private final Map<String, DeviceInfo> envSensorsStates = new ConcurrentHashMap<>();
+   private final Queue<DeferredResult<List<DeviceInfo>>> envSensorsDeferredResults = new ConcurrentLinkedQueue<>();
 
    private Environment environment;
    private EnvSensorsRepository envSensorsRepository;
    private DevicesRepository devicesRepository;
    private ManagerStatesBean managerStatesBean;
+   private SettingsRepository settingsRepository;
 
    @PostConstruct
    public void init() {
-      thresholdBathroomHumidity = Float.parseFloat(environment.getRequiredProperty("thresholdBathroomHumidity"));
-      manuallyTurnedOnFanTimeoutMinutes =
-            Integer.parseInt(environment.getRequiredProperty("manuallyTurnedOnFanTimeoutMinutes"));
    }
 
    public void addEnvSensorState(DeviceInfo deviceInfo) {
@@ -85,18 +84,40 @@ public class EnvSensorsBean {
       envSensorsDeferredResults.add(deferredResult);
    }
 
-   public boolean setBathroomFanState(FanRequestInfo fanRequest) {
+   public boolean setManualEnabledFanTime(FanRequestInfo fanRequest) {
       boolean toBeTurnedOn = false;
+      FanSetupEntity fanSetting = settingsRepository.getFanSettingSetup(fanRequest.getDeviceName());
+      FanState currentFanState = managerStatesBean.getAllManagerStates().getFanState();
+      FanState fanState = new FanState();
 
-      if (fanRequest.getHumidity() >= thresholdBathroomHumidity) {
+      fanState.setNotAvailable(false);
+      fanState.setDeviceName(fanRequest.getDeviceName());
+
+      if (fanRequest.getHumidity() >= fanSetting.getTurnOnHumidityThreshold()) {
          toBeTurnedOn = true;
+         currentFanState.setHumidityThresholdDetected(true);
+
+         if (fanStateTimer != null) {
+            fanStateTimer.cancel();
+            fanStateTimer = null;
+         }
+      } else if (fanStateTimer == null && currentFanState.isHumidityThresholdDetected()) {
+         int timeoutMinutes = fanSetting.getAfterFallingThresholdWorkTimeoutMinutes();
+         scheduleFanTurningOff(timeoutMinutes, fanRequest.getDeviceName());
+         fanState.setMinutesRemaining(timeoutMinutes);
       }
+
+      toBeTurnedOn |= currentFanState.isHumidityThresholdDetected();
 
       LocalDateTime currentTime = LocalDateTime.now();
       boolean manuallyEnabled = (manualEnabledFanTime != null) &&
-            currentTime.isBefore(manualEnabledFanTime.plusMinutes(10));
+            currentTime.isBefore(manualEnabledFanTime.plusMinutes(fanSetting.getManuallyTurnedOnTimeoutMinutes()));
       toBeTurnedOn |= manuallyEnabled;
-      boolean currentTurnedOnState = managerStatesBean.getAllManagerStates().getFanState().isTurnedOn();
+
+      Boolean currentTurnedOnState = currentFanState.isTurnedOn();
+      if (currentTurnedOnState == null) {
+         currentTurnedOnState = false;
+      }
 
       if (fanRequest.isSwitchedOnManually() && fanRequest.getSwitchedOnManuallySecondsLeft() != null) {
          int minutesLeft = fanRequest.getSwitchedOnManuallySecondsLeft() / 60;
@@ -105,44 +126,70 @@ public class EnvSensorsBean {
             // If it's 9:59 or 9:31, consider it as 10 minutes
             minutesLeft++;
          }
-         managerStatesBean.changeFunState(true, minutesLeft);
+
+         fanState.setTurnedOn(true);
+         fanState.setMinutesRemaining(minutesLeft);
       } else if (toBeTurnedOn != currentTurnedOnState) {
-         int minutesLeft = (manuallyEnabled && toBeTurnedOn) ? manuallyTurnedOnFanTimeoutMinutes : 0;
-         managerStatesBean.changeFunState(toBeTurnedOn, minutesLeft);
+         int timeoutMinutes = (manuallyEnabled && toBeTurnedOn) ? fanSetting.getManuallyTurnedOnTimeoutMinutes() : 0;
+
+         fanState.setTurnedOn(toBeTurnedOn);
+         fanState.setMinutesRemaining(timeoutMinutes);
 
          if (fanStateTimer != null) {
             fanStateTimer.cancel();
          }
-         fanStateTimer = new Timer();
-         fanStateTimer.scheduleAtFixedRate(new TimerTask() {
-             private int executionsAmount = 0;
 
-             @Override
-             public void run() {
-                executionsAmount++;
+         if (timeoutMinutes < 1) {
+            return toBeTurnedOn;
+         }
 
-                if (executionsAmount >= manuallyTurnedOnFanTimeoutMinutes) {
-                   managerStatesBean.changeFunState(false, 0);
-
-                   cancel();
-                } else {
-                   int minutesRemaining = manuallyTurnedOnFanTimeoutMinutes - executionsAmount;
-                   managerStatesBean.changeFunState(true, minutesRemaining);
-                }
-             }
-          },
-         60 * 1000L,
-         60 * 1000L);
+         scheduleFanTurningOff(timeoutMinutes, fanRequest.getDeviceName());
       }
+
+      managerStatesBean.changeFunState(fanState);
       return toBeTurnedOn;
    }
 
-   public void setBathroomFanState() {
+   private void scheduleFanTurningOff(int timeoutMinutes, String name) {
+      fanStateTimer = new Timer();
+      fanStateTimer.scheduleAtFixedRate(new TimerTask() {
+          private int executionsCounter = 0;
+
+          @Override
+          public void run() {
+             executionsCounter++;
+
+             if (executionsCounter >= timeoutMinutes) {
+                FanState fanState = new FanState();
+
+                fanState.setTurnedOn(false);
+                fanState.setMinutesRemaining(0);
+                fanState.setDeviceName(name);
+                fanState.setHumidityThresholdDetected(false);
+                managerStatesBean.changeFunState(fanState);
+
+                cancel();
+             } else {
+                int minutesRemaining = timeoutMinutes - executionsCounter;
+                FanState fanState = new FanState();
+
+                fanState.setTurnedOn(true);
+                fanState.setMinutesRemaining(minutesRemaining);
+                fanState.setDeviceName(name);
+                managerStatesBean.changeFunState(fanState);
+             }
+          }
+       },
+   60 * 1000L,
+   60 * 1000L);
+   }
+
+   public void setManualEnabledFanTime() {
       manualEnabledFanTime = LocalDateTime.now();
    }
 
-   public int getManuallyTurnedOnFanTimeoutMinutes() {
-      return manuallyTurnedOnFanTimeoutMinutes;
+   public int getManuallyTurnedOnFanTimeoutMinutes(String name) {
+      return settingsRepository.getFanSettingSetup(name).getManuallyTurnedOnTimeoutMinutes();
    }
 
    public int getStreetLightValue() {
@@ -167,5 +214,10 @@ public class EnvSensorsBean {
    @Autowired
    public void setManagerStatesBean(ManagerStatesBean managerStatesBean) {
       this.managerStatesBean = managerStatesBean;
+   }
+
+   @Autowired
+   public void setSettingsRepository(SettingsRepository settingsRepository) {
+      this.settingsRepository = settingsRepository;
    }
 }

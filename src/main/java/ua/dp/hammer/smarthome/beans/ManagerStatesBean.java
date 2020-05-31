@@ -8,6 +8,7 @@ import org.springframework.web.context.request.async.DeferredResult;
 import ua.dp.hammer.smarthome.models.DeviceInfo;
 import ua.dp.hammer.smarthome.models.states.AllManagerStates;
 import ua.dp.hammer.smarthome.models.states.CommonSate;
+import ua.dp.hammer.smarthome.models.states.FanState;
 import ua.dp.hammer.smarthome.models.states.ProjectorState;
 import ua.dp.hammer.smarthome.models.states.ShutterState;
 import ua.dp.hammer.smarthome.models.states.ShutterStateRaw;
@@ -28,8 +29,8 @@ public class ManagerStatesBean {
    private static boolean sequentialProjectorsStatesShouldBeUpdated;
    private static int sequentialProjectorsChangesAmount;
 
-   private Queue<DeferredResult<AllManagerStates>> allStatesDeferredResults = new ConcurrentLinkedQueue<>();
-   private AllManagerStates allManagerStates = AllManagerStates.getInstance();
+   private final Queue<DeferredResult<AllManagerStates>> allStatesDeferredResults = new ConcurrentLinkedQueue<>();
+   private final AllManagerStates allManagerStates = AllManagerStates.getInstance();
 
    public AllManagerStates getAllManagerStates() {
       return allManagerStates;
@@ -38,24 +39,23 @@ public class ManagerStatesBean {
    public void addStateDeferredResult(DeferredResult<AllManagerStates> defResult) {
       allStatesDeferredResults.add(defResult);
 
-      keepAliveStatusesBean.addSubscriber(KeepAliveStatusesBean.class, (deviceNames) -> {
+      keepAliveStatusesBean.addSubscriber(KeepAliveStatusesBean.class, (notAvailableDevices) -> {
          List<CommonSate> notAvailableSates = new LinkedList<>();
-         /*if (deviceName.equals(allManagerStates.getFanState().getName())) {
-            projectorState.setNotAvailable(true);
-            updateDeferred();
-            return;
-         }*/
+
+         if (notAvailableDevices.contains(allManagerStates.getFanState().getDeviceName())) {
+            notAvailableSates.add(allManagerStates.getFanState());
+         }
 
          List<CommonSate> projectorStates = allManagerStates.getProjectorsState()
                .stream()
-               .filter(projectorState -> deviceNames.contains(projectorState.getDeviceName()))
+               .filter(projectorState -> notAvailableDevices.contains(projectorState.getDeviceName()))
                .collect(Collectors.toList());
          notAvailableSates.addAll(projectorStates);
 
          // There are 2 for kitchen shutters
          List<CommonSate> shutterSates = allManagerStates.getShuttersState()
                .stream()
-               .filter(shutterState -> deviceNames.contains(shutterState.getDeviceName()))
+               .filter(shutterState -> notAvailableDevices.contains(shutterState.getDeviceName()))
                .collect(Collectors.toList());
          notAvailableSates.addAll(shutterSates);
 
@@ -63,13 +63,13 @@ public class ManagerStatesBean {
       });
    }
 
-   private void updateKeepAliveStates(List<CommonSate> shutterSates) {
-      boolean isAnyAvailable = shutterSates
+   private void updateKeepAliveStates(List<CommonSate> notAvailableSates) {
+      boolean isAnyConsideredAvailable = notAvailableSates
             .stream()
-            .anyMatch(shutterSate -> !shutterSate.isNotAvailable());
+            .anyMatch(deviceSate -> !deviceSate.isNotAvailable());
 
-      if (isAnyAvailable) {
-         shutterSates.forEach(shutterSate -> shutterSate.setNotAvailable(true));
+      if (isAnyConsideredAvailable) {
+         notAvailableSates.forEach(deviceSate -> deviceSate.setNotAvailable(true));
          updateDeferred();
       }
    }
@@ -117,11 +117,30 @@ public class ManagerStatesBean {
       return shouldBeUpdated;
    }
 
-   public void changeFunState(boolean turnedOn, int minutesLeft) {
-      allManagerStates.getFanState().setTurnedOn(turnedOn);
-      allManagerStates.getFanState().setMinutesRemaining(minutesLeft);
+   public void changeFunState(FanState newState) {
+      boolean stateChanged = false;
+      FanState currentState = allManagerStates.getFanState();
 
-      updateDeferred();
+      if (newState.getMinutesRemaining() != null &&
+            !newState.getMinutesRemaining().equals(currentState.getMinutesRemaining())) {
+         stateChanged = true;
+         currentState.setMinutesRemaining(newState.getMinutesRemaining());
+      }
+
+      if (newState.isTurnedOn() != null &&
+            !newState.isTurnedOn().equals(currentState.isTurnedOn())) {
+         stateChanged = true;
+         currentState.setTurnedOn(newState.isTurnedOn());
+      }
+
+      if (newState.isNotAvailable() != currentState.isNotAvailable()) {
+         stateChanged = true;
+         currentState.setNotAvailable(newState.isNotAvailable());
+      }
+
+      if (stateChanged) {
+         updateDeferred();
+      }
    }
 
    public void changeAlarmsIgnoringState(boolean ignoring, int minutesRemaining) {

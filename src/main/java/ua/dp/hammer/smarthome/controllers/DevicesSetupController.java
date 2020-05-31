@@ -11,8 +11,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import ua.dp.hammer.smarthome.entities.DeviceTypeNameEntity;
+import ua.dp.hammer.smarthome.models.FanSetupInfo;
 import ua.dp.hammer.smarthome.models.setup.GeneralDevice;
 import ua.dp.hammer.smarthome.repositories.DevicesRepository;
+import ua.dp.hammer.smarthome.repositories.SettingsRepository;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -25,6 +27,7 @@ public class DevicesSetupController {
    private static final Logger LOGGER = LogManager.getLogger(DevicesSetupController.class);
 
    private DevicesRepository devicesRepository;
+   private SettingsRepository settingsRepository;
 
    @GetMapping(path = "/allDevices")
    public List<GeneralDevice> getAllDevices() {
@@ -63,8 +66,23 @@ public class DevicesSetupController {
       devicesRepository.deleteDevice(deviceName);
    }
 
+   @GetMapping(path = "/getFanSetting")
+   public FanSetupInfo getFanSetting(@RequestParam("name") String name) {
+      return settingsRepository.getFanSetting(name);
+   }
+
+   @PostMapping(path = "/saveFanSetting", consumes="application/json")
+   public void saveFanSetting(@RequestBody FanSetupInfo fanSetup) {
+      settingsRepository.saveFanSetting(fanSetup);
+   }
+
    @Autowired
    public void setDevicesRepository(DevicesRepository devicesRepository) {
       this.devicesRepository = devicesRepository;
+   }
+
+   @Autowired
+   public void setSettingsRepository(SettingsRepository settingsRepository) {
+      this.settingsRepository = settingsRepository;
    }
 }
