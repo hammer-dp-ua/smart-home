@@ -119,7 +119,9 @@ public class EnvSensorsBean {
          currentTurnedOnState = false;
       }
 
-      if (fanRequest.isSwitchedOnManually() && fanRequest.getSwitchedOnManuallySecondsLeft() != null) {
+      if (fanRequest.isSwitchedOnManually() &&
+            fanRequest.getSwitchedOnManuallySecondsLeft() != null &&
+            !currentFanState.isHumidityThresholdDetected()) {
          int minutesLeft = fanRequest.getSwitchedOnManuallySecondsLeft() / 60;
          int moduloSeconds = fanRequest.getSwitchedOnManuallySecondsLeft() % 60;
          if (moduloSeconds > 30) {
@@ -129,7 +131,8 @@ public class EnvSensorsBean {
 
          fanState.setTurnedOn(true);
          fanState.setMinutesRemaining(minutesLeft);
-      } else if (toBeTurnedOn != currentTurnedOnState) {
+      } else if (toBeTurnedOn != currentTurnedOnState &&
+            !currentFanState.isHumidityThresholdDetected()) {
          int timeoutMinutes = (manuallyEnabled && toBeTurnedOn) ? fanSetting.getManuallyTurnedOnTimeoutMinutes() : 0;
 
          fanState.setTurnedOn(toBeTurnedOn);
