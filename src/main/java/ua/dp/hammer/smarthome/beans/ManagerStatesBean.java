@@ -121,6 +121,12 @@ public class ManagerStatesBean {
       boolean stateChanged = false;
       FanState currentState = allManagerStates.getFanState();
 
+      currentState.setDeviceName(newState.getDeviceName());
+
+      if (newState.getTurningOnStateProlonged() != null) {
+         currentState.setTurningOnStateProlonged(newState.getTurningOnStateProlonged());
+      }
+
       if (newState.getMinutesRemaining() != null &&
             !newState.getMinutesRemaining().equals(currentState.getMinutesRemaining())) {
          stateChanged = true;
@@ -133,7 +139,8 @@ public class ManagerStatesBean {
          currentState.setTurnedOn(newState.isTurnedOn());
       }
 
-      if (newState.isNotAvailable() != currentState.isNotAvailable()) {
+      if (newState.isNotAvailable() != null &&
+            !newState.isNotAvailable().equals(currentState.isNotAvailable())) {
          stateChanged = true;
          currentState.setNotAvailable(newState.isNotAvailable());
       }

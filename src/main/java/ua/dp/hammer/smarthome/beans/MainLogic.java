@@ -259,22 +259,22 @@ public class MainLogic {
                   .build())
             .retrieve()
             .bodyToMono(Void.class);
-      ShutterState shutterState = new ShutterState();
 
-      shutterState.setDeviceName(shutter.getName());
-      shutterState.setShutterNo(shutterNo);
-      shutterState.setNotAvailable(true);
+      ShutterState onErrorShutterState = new ShutterState();
+      onErrorShutterState.setDeviceName(shutter.getName());
+      onErrorShutterState.setShutterNo(shutterNo);
+      onErrorShutterState.setNotAvailable(true);
 
       Flux.merge(deferredResponse)
             .subscribe(null,
                   e -> {
                      if (open) {
-                        shutterState.setState(ShutterStates.SHUTTER_CLOSED);
+                        onErrorShutterState.setState(ShutterStates.SHUTTER_CLOSED);
                      } else {
-                        shutterState.setState(ShutterStates.SHUTTER_OPENED);
+                        onErrorShutterState.setState(ShutterStates.SHUTTER_OPENED);
                      }
 
-                     managerStatesBean.setShutterState(shutterState);
+                     managerStatesBean.setShutterState(onErrorShutterState);
                   });
    }
 

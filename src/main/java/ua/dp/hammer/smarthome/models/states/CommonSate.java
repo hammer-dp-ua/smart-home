@@ -2,22 +2,21 @@ package ua.dp.hammer.smarthome.models.states;
 
 public class CommonSate {
    private String deviceName;
-   private boolean notAvailable = true;
+   private Boolean notAvailable;
 
    public String getDeviceName() {
       return deviceName;
    }
 
-   public CommonSate setDeviceName(String deviceName) {
+   public void setDeviceName(String deviceName) {
       this.deviceName = deviceName;
-      return this;
    }
 
-   public boolean isNotAvailable() {
+   public Boolean isNotAvailable() {
       return notAvailable;
    }
 
-   public void setNotAvailable(boolean notAvailable) {
+   public void setNotAvailable(Boolean notAvailable) {
       this.notAvailable = notAvailable;
    }
 
