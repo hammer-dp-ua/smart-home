@@ -64,7 +64,15 @@ public class ManagerRestController {
       LOGGER.info("Bathroom fan will be turned on");
 
       envSensorsBean.setManualEnabledFanTime();
-      return new FanState(0, true);
+
+      FanState currentState = managerStatesBean.getAllManagerStates().getFanState();
+      FanState newState = new FanState();
+
+      newState.setTurnedOn(true);
+      newState.setDeviceName(currentState.getDeviceName());
+      newState.setMinutesRemaining(0);
+      newState.setNotAvailable(currentState.isNotAvailable());
+      return newState;
    }
 
    /**

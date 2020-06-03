@@ -10,11 +10,6 @@ public class FanState extends CommonSate {
 
    public FanState(){}
 
-   public FanState(Integer minutesRemaining, Boolean turnedOn) {
-      this.minutesRemaining = minutesRemaining;
-      this.turnedOn = turnedOn;
-   }
-
    public Integer getMinutesRemaining() {
       return minutesRemaining;
    }
@@ -27,6 +22,7 @@ public class FanState extends CommonSate {
       return turnedOn;
    }
 
+   @Transient
    public boolean isTurnedOnSafe() {
       return turnedOn != null && turnedOn;
    }

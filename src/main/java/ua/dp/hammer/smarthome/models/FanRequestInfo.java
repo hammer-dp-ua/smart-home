@@ -3,7 +3,7 @@ package ua.dp.hammer.smarthome.models;
 public class FanRequestInfo extends DeviceInfo {
    // switched by fan's switcher
    private boolean switchedOnManually;
-   private Integer switchedOnManuallySecondsLeft;
+   private int switchedOnManuallySecondsLeft;
 
    public boolean isSwitchedOnManually() {
       return switchedOnManually;
@@ -13,11 +13,11 @@ public class FanRequestInfo extends DeviceInfo {
       this.switchedOnManually = switchedOnManually;
    }
 
-   public Integer getSwitchedOnManuallySecondsLeft() {
+   public int getSwitchedOnManuallySecondsLeft() {
       return switchedOnManuallySecondsLeft;
    }
 
-   public void setSwitchedOnManuallySecondsLeft(Integer switchedOnManuallySecondsLeft) {
+   public void setSwitchedOnManuallySecondsLeft(int switchedOnManuallySecondsLeft) {
       this.switchedOnManuallySecondsLeft = switchedOnManuallySecondsLeft;
    }
 }

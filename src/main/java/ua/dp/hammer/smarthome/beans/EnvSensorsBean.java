@@ -89,6 +89,7 @@ public class EnvSensorsBean {
       FanState currentFanState = managerStatesBean.getAllManagerStates().getFanState();
       FanState fanState = new FanState();
       boolean currentTurnedOnState = currentFanState.isTurnedOnSafe();
+      boolean toBeTurnedOn = false;
 
       fanState.setNotAvailable(false);
       fanState.setDeviceName(fanRequest.getDeviceName());
@@ -96,6 +97,7 @@ public class EnvSensorsBean {
       if (fanRequest.getHumidity() >= fanSetting.getTurnOnHumidityThreshold()) {
          currentFanState.setHumidityThresholdDetected(true);
          fanState.setTurnedOn(true);
+         toBeTurnedOn = true;
 
          if (fanStateTimer != null) {
             fanStateTimer.cancel();
@@ -109,17 +111,22 @@ public class EnvSensorsBean {
          currentFanState.setTurningOnStateProlonged(true);
       }
 
-      boolean toBeTurnedOn = currentFanState.isTurningOnStateProlongedSafe();
+      toBeTurnedOn |= currentFanState.isTurningOnStateProlongedSafe();
       LocalDateTime currentTime = LocalDateTime.now();
       boolean manuallyEnabled = (manualEnabledFanTime != null) &&
             currentTime.isBefore(manualEnabledFanTime.plusMinutes(fanSetting.getManuallyTurnedOnTimeoutMinutes()));
+
       toBeTurnedOn |= manuallyEnabled;
 
-      if (fanRequest.isSwitchedOnManually() &&
-            fanRequest.getSwitchedOnManuallySecondsLeft() != null &&
-            !currentFanState.isTurningOnStateProlongedSafe()) {
+      boolean fanSwitchedOnByItsSwitcher = fanRequest.isSwitchedOnManually() &&
+            fanRequest.getSwitchedOnManuallySecondsLeft() > 0;
+      boolean stateHasChanged = (toBeTurnedOn != currentTurnedOnState) &&
+            !currentFanState.isTurningOnStateProlongedSafe();
+
+      if (fanSwitchedOnByItsSwitcher && !currentFanState.isTurningOnStateProlongedSafe()) {
          int minutesLeft = fanRequest.getSwitchedOnManuallySecondsLeft() / 60;
          int moduloSeconds = fanRequest.getSwitchedOnManuallySecondsLeft() % 60;
+
          if (moduloSeconds > 30) {
             // If it's 9:59 or 9:31, consider it as 10 minutes
             minutesLeft++;
@@ -127,8 +134,7 @@ public class EnvSensorsBean {
 
          fanState.setTurnedOn(true);
          fanState.setMinutesRemaining(minutesLeft);
-      } else if (toBeTurnedOn != currentTurnedOnState &&
-            !currentFanState.isTurningOnStateProlongedSafe()) {
+      } else if (stateHasChanged) {
          int timeoutMinutes = manuallyEnabled ? fanSetting.getManuallyTurnedOnTimeoutMinutes() : 0;
 
          fanState.setTurnedOn(toBeTurnedOn);
