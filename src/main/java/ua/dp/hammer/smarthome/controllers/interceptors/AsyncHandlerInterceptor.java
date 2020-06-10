@@ -18,6 +18,5 @@ public class AsyncHandlerInterceptor extends HandlerInterceptorAdapter {
 
       asyncManager.registerDeferredResultInterceptor(DEFERRED_INTERCEPTOR_KEY, new DeferredResultInterceptor());
       return true;
-
    }
 }

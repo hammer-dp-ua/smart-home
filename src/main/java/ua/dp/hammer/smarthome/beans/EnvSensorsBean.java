@@ -87,16 +87,19 @@ public class EnvSensorsBean {
    public boolean setManualEnabledFanTime(FanRequestInfo fanRequest) {
       FanSetupEntity fanSetting = settingsRepository.getFanSettingSetup(fanRequest.getDeviceName());
       FanState currentFanState = managerStatesBean.getAllManagerStates().getFanState();
-      FanState fanState = new FanState();
+      FanState newFanState = new FanState();
       boolean currentTurnedOnState = currentFanState.isTurnedOnSafe();
       boolean toBeTurnedOn = false;
 
-      fanState.setNotAvailable(false);
-      fanState.setDeviceName(fanRequest.getDeviceName());
+      newFanState.setNotAvailable(false);
+      newFanState.setDeviceName(fanRequest.getDeviceName());
 
       if (fanRequest.getHumidity() >= fanSetting.getTurnOnHumidityThreshold()) {
          currentFanState.setHumidityThresholdDetected(true);
-         fanState.setTurnedOn(true);
+
+         newFanState.setMinutesRemaining(0);
+         newFanState.setTurnedOn(true);
+
          toBeTurnedOn = true;
 
          if (fanStateTimer != null) {
@@ -105,18 +108,18 @@ public class EnvSensorsBean {
       } else if (currentFanState.isHumidityThresholdDetected()) {
          int timeoutMinutes = fanSetting.getAfterFallingThresholdWorkTimeoutMinutes();
          scheduleFanTurningOff(timeoutMinutes, fanRequest.getDeviceName());
-         fanState.setMinutesRemaining(timeoutMinutes);
-         fanState.setTurnedOn(true);
+         newFanState.setMinutesRemaining(timeoutMinutes);
+         newFanState.setTurnedOn(true);
          currentFanState.setHumidityThresholdDetected(false);
          currentFanState.setTurningOnStateProlonged(true);
       }
 
       toBeTurnedOn |= currentFanState.isTurningOnStateProlongedSafe();
       LocalDateTime currentTime = LocalDateTime.now();
-      boolean manuallyEnabled = (manualEnabledFanTime != null) &&
+      boolean turnedOnBySmartphone = (manualEnabledFanTime != null) &&
             currentTime.isBefore(manualEnabledFanTime.plusMinutes(fanSetting.getManuallyTurnedOnTimeoutMinutes()));
 
-      toBeTurnedOn |= manuallyEnabled;
+      toBeTurnedOn |= turnedOnBySmartphone;
 
       boolean fanSwitchedOnByItsSwitcher = fanRequest.isSwitchedOnManually() &&
             fanRequest.getSwitchedOnManuallySecondsLeft() > 0;
@@ -132,13 +135,14 @@ public class EnvSensorsBean {
             minutesLeft++;
          }
 
-         fanState.setTurnedOn(true);
-         fanState.setMinutesRemaining(minutesLeft);
+         toBeTurnedOn = true;
+         newFanState.setTurnedOn(true);
+         newFanState.setMinutesRemaining(minutesLeft);
       } else if (stateHasChanged) {
-         int timeoutMinutes = manuallyEnabled ? fanSetting.getManuallyTurnedOnTimeoutMinutes() : 0;
+         int timeoutMinutes = turnedOnBySmartphone ? fanSetting.getManuallyTurnedOnTimeoutMinutes() : 0;
 
-         fanState.setTurnedOn(toBeTurnedOn);
-         fanState.setMinutesRemaining(timeoutMinutes);
+         newFanState.setTurnedOn(toBeTurnedOn);
+         newFanState.setMinutesRemaining(timeoutMinutes);
 
          if (timeoutMinutes > 0) {
             if (fanStateTimer != null) {
@@ -149,7 +153,7 @@ public class EnvSensorsBean {
          }
       }
 
-      managerStatesBean.changeFunState(fanState);
+      managerStatesBean.changeFunState(newFanState);
       return toBeTurnedOn;
    }
 
