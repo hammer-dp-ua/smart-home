@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="INFO" monitorInterval="60">
+   <Properties>
+      <Property name="patternLayout">%d{DEFAULT} [%t] %logger{36} %line%n%-5level - %msg%n%n</Property>
+   </Properties>
+
+   <Appenders>
+      <Console name="Console">
+         <PatternLayout pattern="${patternLayout}"/>
+      </Console>
+   </Appenders>
+
+   <Loggers>
+      <Logger name="ua.dp.hammer" level="TRACE" additivity="false">
+         <AppenderRef ref="Console"/>
+      </Logger>
+      <Logger name="org.springframework" level="INFO" additivity="false">
+         <AppenderRef ref="Console"/>
+      </Logger>
+      
+      <!-- Log everything in hibernate -->
+      <Logger name="org.hibernate" level="WARN" additivity="false">
+         <AppenderRef ref="Console"/>
+      </Logger>
+      <!-- Log SQL statements -->
+      <Logger name="org.hibernate.SQL" level="WARN" additivity="false">
+         <AppenderRef ref="Console"/>
+      </Logger>
+      <!-- Log JDBC bind parameters -->
+      <Logger name="org.hibernate.type.descriptor.sql" level="INFO" additivity="false">
+         <AppenderRef ref="Console"/>
+      </Logger>
+      <!-- PostgreSQL log -->
+      <Logger name="org.postgresql" level="INFO" additivity="false">
+         <AppenderRef ref="Console"/>
+      </Logger>
+
+      <Root level="WARN">
+         <AppenderRef ref="Console"/>
+      </Root>
+   </Loggers>
+</Configuration>

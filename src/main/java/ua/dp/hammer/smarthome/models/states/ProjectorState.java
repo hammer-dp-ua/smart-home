@@ -7,6 +7,8 @@ public class ProjectorState extends CommonSate {
 
    private int hashCode = -1;
 
+   public ProjectorState() {};
+
    public ProjectorState(String name) {
       setDeviceName(name);
    }

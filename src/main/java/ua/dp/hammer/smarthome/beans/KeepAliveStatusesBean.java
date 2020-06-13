@@ -3,7 +3,6 @@ package ua.dp.hammer.smarthome.beans;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.async.DeferredResult;
@@ -38,7 +37,7 @@ public class KeepAliveStatusesBean {
          new ConcurrentHashMap<>();
    private final Queue<DeferredResult<Set<String>>> unavailableDevicesDeferredResponses = new ConcurrentLinkedQueue<>();
 
-   @Async
+   //@Async
    public void update(DeviceInfo deviceInfo) {
       devicesStatusesTimestamps.put(deviceInfo.getDeviceName(), LocalDateTime.now());
       devicesInfo.put(deviceInfo.getDeviceName(), deviceInfo);

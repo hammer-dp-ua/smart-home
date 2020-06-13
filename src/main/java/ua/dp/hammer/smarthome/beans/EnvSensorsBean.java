@@ -35,6 +35,7 @@ public class EnvSensorsBean {
    private LocalDateTime manualEnabledFanTime;
    private int streetLightValue;
    private Timer fanStateTimer;
+   private int secondsInMinute;
 
    private final Map<String, DeviceInfo> envSensorsStates = new ConcurrentHashMap<>();
    private final Queue<DeferredResult<List<DeviceInfo>>> envSensorsDeferredResults = new ConcurrentLinkedQueue<>();
@@ -47,6 +48,7 @@ public class EnvSensorsBean {
 
    @PostConstruct
    public void init() {
+      secondsInMinute = Integer.parseInt(environment.getRequiredProperty("secondsInMinute"));
    }
 
    public void addEnvSensorState(DeviceInfo deviceInfo) {
@@ -94,6 +96,11 @@ public class EnvSensorsBean {
       newFanState.setNotAvailable(false);
       newFanState.setDeviceName(fanRequest.getDeviceName());
 
+      if (LOGGER.isTraceEnabled()) {
+         LOGGER.trace(fanRequest);
+         LOGGER.trace("Current fan state: " + currentFanState);
+      }
+
       if (fanRequest.getHumidity() >= fanSetting.getTurnOnHumidityThreshold()) {
          currentFanState.setHumidityThresholdDetected(true);
 
@@ -105,6 +112,11 @@ public class EnvSensorsBean {
          if (fanStateTimer != null) {
             fanStateTimer.cancel();
          }
+
+         if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("Humidity threshold: +" + (fanRequest.getHumidity() - fanSetting.getTurnOnHumidityThreshold()) +
+                  "%");
+         }
       } else if (currentFanState.isHumidityThresholdDetected()) {
          int timeoutMinutes = fanSetting.getAfterFallingThresholdWorkTimeoutMinutes();
          scheduleFanTurningOff(timeoutMinutes, fanRequest.getDeviceName());
@@ -112,12 +124,16 @@ public class EnvSensorsBean {
          newFanState.setTurnedOn(true);
          currentFanState.setHumidityThresholdDetected(false);
          currentFanState.setTurningOnStateProlonged(true);
+
+         if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("Fan humidity threshold cancelled");
+         }
       }
 
       toBeTurnedOn |= currentFanState.isTurningOnStateProlongedSafe();
       LocalDateTime currentTime = LocalDateTime.now();
       boolean turnedOnBySmartphone = (manualEnabledFanTime != null) &&
-            currentTime.isBefore(manualEnabledFanTime.plusMinutes(fanSetting.getManuallyTurnedOnTimeoutMinutes()));
+            currentTime.isBefore(manualEnabledFanTime.plusSeconds(fanSetting.getManuallyTurnedOnTimeoutMinutes() * secondsInMinute));
 
       toBeTurnedOn |= turnedOnBySmartphone;
 
@@ -125,6 +141,10 @@ public class EnvSensorsBean {
             fanRequest.getSwitchedOnManuallySecondsLeft() > 0;
       boolean stateHasChanged = (toBeTurnedOn != currentTurnedOnState) &&
             !currentFanState.isTurningOnStateProlongedSafe();
+
+      if (LOGGER.isTraceEnabled()) {
+         LOGGER.trace("Fan turned on by smartphone: " + turnedOnBySmartphone);
+      }
 
       if (fanSwitchedOnByItsSwitcher && !currentFanState.isTurningOnStateProlongedSafe()) {
          int minutesLeft = fanRequest.getSwitchedOnManuallySecondsLeft() / 60;
@@ -138,11 +158,20 @@ public class EnvSensorsBean {
          toBeTurnedOn = true;
          newFanState.setTurnedOn(true);
          newFanState.setMinutesRemaining(minutesLeft);
+
+         if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("Fan turned on by its switcher. Minutes left: " + minutesLeft);
+         }
       } else if (stateHasChanged) {
          int timeoutMinutes = turnedOnBySmartphone ? fanSetting.getManuallyTurnedOnTimeoutMinutes() : 0;
 
          newFanState.setTurnedOn(toBeTurnedOn);
          newFanState.setMinutesRemaining(timeoutMinutes);
+
+         if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("State has changed." +
+                  "\nTo be turned on: " + toBeTurnedOn + ". Timeout: " + timeoutMinutes);
+         }
 
          if (timeoutMinutes > 0) {
             if (fanStateTimer != null) {
@@ -158,6 +187,10 @@ public class EnvSensorsBean {
    }
 
    private void scheduleFanTurningOff(int timeoutMinutes, String name) {
+      if (LOGGER.isTraceEnabled()) {
+         LOGGER.trace("'" + name + "' fan turning off scheduling. Timeout: " + timeoutMinutes);
+      }
+
       fanStateTimer = new Timer();
       fanStateTimer.scheduleAtFixedRate(new TimerTask() {
           private int executionsCounter = 0;
@@ -187,8 +220,8 @@ public class EnvSensorsBean {
              }
           }
        },
-   60 * 1000L,
-   60 * 1000L);
+       secondsInMinute * 1000L,
+       secondsInMinute * 1000L);
    }
 
    public void setManualEnabledFanTime() {

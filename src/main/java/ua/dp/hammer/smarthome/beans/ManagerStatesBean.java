@@ -14,6 +14,7 @@ import ua.dp.hammer.smarthome.models.states.ShutterState;
 import ua.dp.hammer.smarthome.models.states.ShutterStateRaw;
 import ua.dp.hammer.smarthome.models.states.ShutterStates;
 
+import javax.annotation.PostConstruct;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -29,8 +30,14 @@ public class ManagerStatesBean {
    private static boolean sequentialProjectorsStatesShouldBeUpdated;
    private static int sequentialProjectorsChangesAmount;
 
-   private final Queue<DeferredResult<AllManagerStates>> allStatesDeferredResults = new ConcurrentLinkedQueue<>();
-   private final AllManagerStates allManagerStates = AllManagerStates.getInstance();
+   private Queue<DeferredResult<AllManagerStates>> allStatesDeferredResults;
+   private AllManagerStates allManagerStates;
+
+   @PostConstruct
+   public void init() {
+      allStatesDeferredResults = new ConcurrentLinkedQueue<>();
+      allManagerStates = new AllManagerStates();
+   }
 
    public AllManagerStates getAllManagerStates() {
       return allManagerStates;
@@ -121,6 +128,10 @@ public class ManagerStatesBean {
       boolean stateChanged = false;
       FanState currentState = allManagerStates.getFanState();
 
+      if (LOGGER.isTraceEnabled()) {
+         LOGGER.trace("Old " + FanState.class.getSimpleName() + ": " + currentState);
+      }
+
       currentState.setDeviceName(newState.getDeviceName());
 
       if (newState.getTurningOnStateProlonged() != null) {
@@ -147,6 +158,11 @@ public class ManagerStatesBean {
 
       if (stateChanged) {
          updateDeferred();
+      }
+
+      if (LOGGER.isTraceEnabled()) {
+         LOGGER.trace("New " + FanState.class.getSimpleName() + ": " + currentState +
+               "\nState changed: " + stateChanged);
       }
    }
 

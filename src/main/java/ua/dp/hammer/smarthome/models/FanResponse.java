@@ -4,6 +4,8 @@ public class FanResponse extends ServerStatus {
    private boolean turnOn;
    private int manuallyTurnedOnTimeoutSetting;
 
+   public FanResponse(){};
+
    public FanResponse(StatusCodes statusCodes) {
       super(statusCodes);
    }

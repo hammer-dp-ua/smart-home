@@ -79,7 +79,7 @@ public class DbConfig {
 
       hibernateProperties.setProperty("hibernate.cache.use_query_cache", "false");
       hibernateProperties.setProperty("hibernate.cache.use_second_level_cache", "false");
-      hibernateProperties.setProperty("hibernate.show_sql", "true");
+      hibernateProperties.setProperty("hibernate.show_sql", "false");
       hibernateProperties.setProperty("hibernate.hbm2ddl.auto", "none");
       hibernateProperties.setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQL95Dialect");
       return hibernateProperties;

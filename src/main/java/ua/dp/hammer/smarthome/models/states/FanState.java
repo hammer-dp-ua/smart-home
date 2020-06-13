@@ -1,5 +1,7 @@
 package ua.dp.hammer.smarthome.models.states;
 
+import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
+
 import java.beans.Transient;
 
 public class FanState extends CommonSate {
@@ -27,7 +29,7 @@ public class FanState extends CommonSate {
       return turnedOn != null && turnedOn;
    }
 
-   public void setTurnedOn(boolean turnedOn) {
+   public void setTurnedOn(Boolean turnedOn) {
       this.turnedOn = turnedOn;
    }
 
@@ -52,5 +54,10 @@ public class FanState extends CommonSate {
 
    public void setTurningOnStateProlonged(boolean turningOnStateProlonged) {
       this.turningOnStateProlonged = turningOnStateProlonged;
+   }
+
+   @Override
+   public String toString() {
+      return ReflectionToStringBuilder.toString(this);
    }
 }
