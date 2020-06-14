@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import ua.dp.hammer.smarthome.entities.DeviceTypeNameEntity;
-import ua.dp.hammer.smarthome.models.FanSetupInfo;
+import ua.dp.hammer.smarthome.models.FanSettingsInfo;
 import ua.dp.hammer.smarthome.models.setup.GeneralDevice;
 import ua.dp.hammer.smarthome.repositories.DevicesRepository;
 import ua.dp.hammer.smarthome.repositories.SettingsRepository;
@@ -66,13 +66,13 @@ public class DevicesSetupController {
       devicesRepository.deleteDevice(deviceName);
    }
 
-   @GetMapping(path = "/getFanSetting")
-   public FanSetupInfo getFanSetting(@RequestParam("name") String name) {
-      return settingsRepository.getFanSetting(name);
+   @GetMapping(path = "/getFanSettings")
+   public FanSettingsInfo getFanSettings(@RequestParam("name") String name) {
+      return settingsRepository.getFanSettings(name);
    }
 
-   @PostMapping(path = "/saveFanSetting", consumes="application/json")
-   public void saveFanSetting(@RequestBody FanSetupInfo fanSetup) {
+   @PostMapping(path = "/saveFanSettings", consumes="application/json")
+   public void saveFanSettings(@RequestBody FanSettingsInfo fanSetup) {
       settingsRepository.saveFanSetting(fanSetup);
    }
 

@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import ua.dp.hammer.smarthome.entities.FanSetupEntity;
-import ua.dp.hammer.smarthome.models.FanSetupInfo;
+import ua.dp.hammer.smarthome.models.FanSettingsInfo;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -21,18 +21,18 @@ public class SettingsRepository {
 
    private DevicesRepository devicesRepository;
 
-   public FanSetupInfo getFanSetting(String name) {
+   public FanSettingsInfo getFanSettings(String name) {
       FanSetupEntity fanSetupEntity = getFanSettingSetup(name);
-      FanSetupInfo fanSetupInfo = new FanSetupInfo();
+      FanSettingsInfo fanSettingsInfo = new FanSettingsInfo();
 
-      fanSetupInfo.setName(fanSetupEntity.getTypeName().getName());
-      fanSetupInfo.setAfterFallingThresholdWorkTimeoutMinutes(fanSetupEntity.getAfterFallingThresholdWorkTimeoutMinutes());
-      fanSetupInfo.setManuallyTurnedOnTimeoutMinutes(fanSetupEntity.getManuallyTurnedOnTimeoutMinutes());
-      fanSetupInfo.setTurnOnHumidityThreshold(fanSetupEntity.getTurnOnHumidityThreshold());
-      return fanSetupInfo;
+      fanSettingsInfo.setName(fanSetupEntity.getTypeName().getName());
+      fanSettingsInfo.setAfterFallingThresholdWorkTimeoutMinutes(fanSetupEntity.getAfterFallingThresholdWorkTimeoutMinutes());
+      fanSettingsInfo.setManuallyTurnedOnTimeoutMinutes(fanSetupEntity.getManuallyTurnedOnTimeoutMinutes());
+      fanSettingsInfo.setTurnOnHumidityThreshold(fanSetupEntity.getTurnOnHumidityThreshold());
+      return fanSettingsInfo;
    }
 
-   public void saveFanSetting(FanSetupInfo newFanSetup) {
+   public void saveFanSetting(FanSettingsInfo newFanSetup) {
       FanSetupEntity currentFanSetup = getFanSettingSetup(newFanSetup.getName());
 
       currentFanSetup.setTurnOnHumidityThreshold(newFanSetup.getTurnOnHumidityThreshold());

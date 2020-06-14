@@ -8,7 +8,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import ua.dp.hammer.smarthome.models.FanRequestInfo;
 import ua.dp.hammer.smarthome.models.FanResponse;
-import ua.dp.hammer.smarthome.models.FanSetupInfo;
+import ua.dp.hammer.smarthome.models.FanSettingsInfo;
 import ua.dp.hammer.smarthome.models.StatusCodes;
 import ua.dp.hammer.smarthome.models.states.AllManagerStates;
 import ua.dp.hammer.smarthome.models.states.FanState;
@@ -148,13 +148,13 @@ public class SpringBootTests {
 
    @Test
    public void testFanTurnedOnBySmartphoneWithTimeout(@Autowired TestRestTemplate restTemplate) throws InterruptedException {
-      FanSetupInfo fanSetupRequest = new FanSetupInfo();
-      fanSetupRequest.setManuallyTurnedOnTimeoutMinutes(1);
-      fanSetupRequest.setAfterFallingThresholdWorkTimeoutMinutes(30);
-      fanSetupRequest.setTurnOnHumidityThreshold(85.0F);
-      fanSetupRequest.setName(FAN_NAME);
+      FanSettingsInfo fanSettingsRequest = new FanSettingsInfo();
+      fanSettingsRequest.setManuallyTurnedOnTimeoutMinutes(1);
+      fanSettingsRequest.setAfterFallingThresholdWorkTimeoutMinutes(30);
+      fanSettingsRequest.setTurnOnHumidityThreshold(85.0F);
+      fanSettingsRequest.setName(FAN_NAME);
 
-      restTemplate.postForObject(getSaveFanSettingUri(), fanSetupRequest, Void.class);
+      restTemplate.postForObject(getSaveFanSettingsUri(), fanSettingsRequest, Void.class);
 
       FanState fanTurnOnResponse = restTemplate.getForObject(getFanTurnOnUri(), FanState.class);
 
@@ -201,13 +201,13 @@ public class SpringBootTests {
    @Test
    public void testFanTurnedOnBySmartphoneWithTimeout2(@Autowired TestRestTemplate restTemplate) throws InterruptedException {
       int timeout = 2;
-      FanSetupInfo fanSetupRequest = new FanSetupInfo();
-      fanSetupRequest.setManuallyTurnedOnTimeoutMinutes(timeout);
-      fanSetupRequest.setAfterFallingThresholdWorkTimeoutMinutes(30);
-      fanSetupRequest.setTurnOnHumidityThreshold(85.0F);
-      fanSetupRequest.setName(FAN_NAME);
+      FanSettingsInfo fanSettingsRequest = new FanSettingsInfo();
+      fanSettingsRequest.setManuallyTurnedOnTimeoutMinutes(timeout);
+      fanSettingsRequest.setAfterFallingThresholdWorkTimeoutMinutes(30);
+      fanSettingsRequest.setTurnOnHumidityThreshold(85.0F);
+      fanSettingsRequest.setName(FAN_NAME);
 
-      restTemplate.postForObject(getSaveFanSettingUri(), fanSetupRequest, Void.class);
+      restTemplate.postForObject(getSaveFanSettingsUri(), fanSettingsRequest, Void.class);
 
       FanState fanTurnOnResponse = restTemplate.getForObject(getFanTurnOnUri(), FanState.class);
 
@@ -269,13 +269,13 @@ public class SpringBootTests {
    @Test
    public void testFanTurnedOnByHumidityThresholdWithTimeout(@Autowired TestRestTemplate restTemplate) throws InterruptedException {
       int timeout = 2;
-      FanSetupInfo fanSetupRequest = new FanSetupInfo();
-      fanSetupRequest.setManuallyTurnedOnTimeoutMinutes(10);
-      fanSetupRequest.setAfterFallingThresholdWorkTimeoutMinutes(timeout);
-      fanSetupRequest.setTurnOnHumidityThreshold(85.0F);
-      fanSetupRequest.setName(FAN_NAME);
+      FanSettingsInfo fanSettingsRequest = new FanSettingsInfo();
+      fanSettingsRequest.setManuallyTurnedOnTimeoutMinutes(10);
+      fanSettingsRequest.setAfterFallingThresholdWorkTimeoutMinutes(timeout);
+      fanSettingsRequest.setTurnOnHumidityThreshold(85.0F);
+      fanSettingsRequest.setName(FAN_NAME);
 
-      restTemplate.postForObject(getSaveFanSettingUri(), fanSetupRequest, Void.class);
+      restTemplate.postForObject(getSaveFanSettingsUri(), fanSettingsRequest, Void.class);
 
       FanRequestInfo fanRequestInfo = new FanRequestInfo();
       fanRequestInfo.setDeviceName(FAN_NAME);
@@ -358,7 +358,7 @@ public class SpringBootTests {
       return "/server/manager/getCurrentStates";
    }
 
-   private String getSaveFanSettingUri() {
-      return "/server/devicesSetup/saveFanSetting";
+   private String getSaveFanSettingsUri() {
+      return "/server/devicesSetup/saveFanSettings";
    }
 }

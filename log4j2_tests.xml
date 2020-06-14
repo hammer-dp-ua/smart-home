@@ -11,7 +11,7 @@
    </Appenders>
 
    <Loggers>
-      <Logger name="ua.dp.hammer" level="TRACE" additivity="false">
+      <Logger name="ua.dp.hammer" level="INFO" additivity="false">
          <AppenderRef ref="Console"/>
       </Logger>
       <Logger name="org.springframework" level="INFO" additivity="false">

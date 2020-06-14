@@ -13,7 +13,6 @@ import ua.dp.hammer.smarthome.models.DeviceInfo;
 import ua.dp.hammer.smarthome.models.FanRequestInfo;
 import ua.dp.hammer.smarthome.models.states.FanState;
 import ua.dp.hammer.smarthome.repositories.DevicesRepository;
-import ua.dp.hammer.smarthome.repositories.EnvSensorsRepository;
 import ua.dp.hammer.smarthome.repositories.SettingsRepository;
 
 import javax.annotation.PostConstruct;
@@ -35,20 +34,23 @@ public class EnvSensorsBean {
    private LocalDateTime manualEnabledFanTime;
    private int streetLightValue;
    private Timer fanStateTimer;
-   private int secondsInMinute;
+
+   private int secondsInMinute = 60;
 
    private final Map<String, DeviceInfo> envSensorsStates = new ConcurrentHashMap<>();
    private final Queue<DeferredResult<List<DeviceInfo>>> envSensorsDeferredResults = new ConcurrentLinkedQueue<>();
 
    private Environment environment;
-   private EnvSensorsRepository envSensorsRepository;
    private DevicesRepository devicesRepository;
    private ManagerStatesBean managerStatesBean;
    private SettingsRepository settingsRepository;
 
    @PostConstruct
    public void init() {
-      secondsInMinute = Integer.parseInt(environment.getRequiredProperty("secondsInMinute"));
+      String secondsInMinutePropVal = environment.getProperty("secondsInMinute");
+      if (secondsInMinutePropVal != null) {
+         secondsInMinute = Integer.parseInt(secondsInMinutePropVal);
+      }
    }
 
    public void addEnvSensorState(DeviceInfo deviceInfo) {
@@ -239,11 +241,6 @@ public class EnvSensorsBean {
    @Autowired
    public void setEnvironment(Environment environment) {
       this.environment = environment;
-   }
-
-   //@Autowired
-   public void setEnvSensorsRepository(EnvSensorsRepository envSensorsRepository) {
-      this.envSensorsRepository = envSensorsRepository;
    }
 
    @Autowired

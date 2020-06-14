@@ -1,6 +1,6 @@
 package ua.dp.hammer.smarthome.models;
 
-public class FanSetupInfo {
+public class FanSettingsInfo {
    private String name;
    private Float turnOnHumidityThreshold;
    private Integer manuallyTurnedOnTimeoutMinutes;
