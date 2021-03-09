@@ -81,7 +81,8 @@ public class Esp8266ExternalDevicesCommunicatorRestController {
    }
 
    @GetMapping(path = "/alarm")
-   public ServerStatus receiveAlarm(@RequestParam(value = "alarmSource", required = false) String alarmSource) {
+   public ServerStatus receiveAlarm(@RequestParam(value = "alarmSource", required = false) String alarmSource,
+                                    @RequestParam(value = "deviceName", required = false) String deviceName) {
       LOGGER.info("Alarm. Source: " + alarmSource);
 
       mainLogic.receiveAlarm(alarmSource);

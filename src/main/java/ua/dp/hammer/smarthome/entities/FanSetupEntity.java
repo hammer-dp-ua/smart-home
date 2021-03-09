@@ -26,7 +26,7 @@ public class FanSetupEntity {
    @NotNull
    @OneToOne(optional = false)
    @JoinColumn(name = "device_type_name")
-   private DeviceTypeNameEntity typeName;
+   private DeviceSetupEntity typeName;
 
    @Column(name = "turn_on_humidity_threshold")
    private Float turnOnHumidityThreshold;
@@ -41,11 +41,11 @@ public class FanSetupEntity {
       return id;
    }
 
-   public DeviceTypeNameEntity getTypeName() {
+   public DeviceSetupEntity getTypeName() {
       return typeName;
    }
 
-   public void setTypeName(DeviceTypeNameEntity typeName) {
+   public void setTypeName(DeviceSetupEntity typeName) {
       this.typeName = typeName;
    }
 

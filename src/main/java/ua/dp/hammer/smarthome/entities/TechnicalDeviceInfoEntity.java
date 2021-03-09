@@ -36,7 +36,7 @@ public class TechnicalDeviceInfoEntity {
    @NotNull
    @ManyToOne
    @JoinColumn(name = "device_type_name", nullable = false)
-   private DeviceTypeNameEntity typeName;
+   private DeviceSetupEntity typeName;
 
    @OneToOne(mappedBy = "technicalInfo", cascade = CascadeType.ALL, optional = true)
    @OnDelete(action = OnDeleteAction.CASCADE) // Used for DDL generations and mostly just declarative
@@ -71,11 +71,11 @@ public class TechnicalDeviceInfoEntity {
       return id;
    }
 
-   public DeviceTypeNameEntity getTypeName() {
+   public DeviceSetupEntity getTypeName() {
       return typeName;
    }
 
-   public void setTypeName(DeviceTypeNameEntity typeName) {
+   public void setTypeName(DeviceSetupEntity typeName) {
       this.typeName = typeName;
    }
 

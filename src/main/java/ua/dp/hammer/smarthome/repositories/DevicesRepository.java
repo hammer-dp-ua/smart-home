@@ -4,12 +4,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.Assert;
 import reactor.util.StringUtils;
 import ua.dp.hammer.smarthome.entities.DeviceTypeEntity;
-import ua.dp.hammer.smarthome.entities.DeviceTypeNameEntity;
+import ua.dp.hammer.smarthome.entities.DeviceSetupEntity;
 import ua.dp.hammer.smarthome.entities.TechnicalDeviceInfoEntity;
+import ua.dp.hammer.smarthome.exceptions.DeviceSetupException;
 import ua.dp.hammer.smarthome.models.DeviceInfo;
+import ua.dp.hammer.smarthome.models.setup.DeviceSetupInfo;
 import ua.dp.hammer.smarthome.models.setup.DeviceType;
 
 import javax.annotation.PostConstruct;
@@ -28,9 +29,13 @@ import java.util.stream.Collectors;
 public class DevicesRepository {
    private static final Logger LOGGER = LogManager.getLogger(DevicesRepository.class);
 
+   public static final String DOESNT_EXIST_ERROR = "Device doesn't exist";
+   public static final String UNKNOWN_TYPE_ERROR = "Unknown device type: ";
+   public static final String ALREADY_EXISTS_ERROR = "Such device already exists: ";
+
    // Something like second level cache
    private final Map<DeviceType, DeviceTypeEntity> allDeviceTypeEntities = new HashMap<>();
-   private final Map<String, DeviceTypeNameEntity> allDeviceTypeNameEntities = new HashMap<>();
+   private final Map<String, DeviceSetupEntity> allDeviceTypeNameEntities = new HashMap<>();
 
    @PersistenceContext
    private EntityManager entityManager;
@@ -42,7 +47,7 @@ public class DevicesRepository {
    }
 
    public void saveTechnicalDeviceInfo(TechnicalDeviceInfoEntity infoEntity, String deviceName) {
-      DeviceTypeNameEntity deviceTypeName = getDeviceTypeNameEntity(deviceName);
+      DeviceSetupEntity deviceTypeName = getDeviceTypeNameEntity(deviceName);
 
       if (deviceTypeName == null) {
          LOGGER.warn("Unknown device name: '" + deviceName + "'. Add it into a list of known devices.");
@@ -53,15 +58,15 @@ public class DevicesRepository {
       entityManager.persist(infoEntity);
    }
 
-   public DeviceTypeNameEntity getDeviceTypeNameEntity(String deviceName) {
+   public DeviceSetupEntity getDeviceTypeNameEntity(String deviceName) {
       return allDeviceTypeNameEntities.get(deviceName);
    }
 
-   public Collection<DeviceTypeNameEntity> getAllDeviceTypeNameEntities() {
+   public Collection<DeviceSetupEntity> getAllDeviceTypeNameEntities() {
       return allDeviceTypeNameEntities.values();
    }
 
-   public List<DeviceTypeNameEntity> getDevicesByType(DeviceType type) {
+   public List<DeviceSetupEntity> getDevicesByType(DeviceType type) {
       return allDeviceTypeNameEntities.values()
             .stream()
             .filter(device -> device.getType().getType() == type)
@@ -76,21 +81,65 @@ public class DevicesRepository {
       return allDeviceTypeEntities.get(deviceType);
    }
 
-   public void saveNewDevice(DeviceTypeNameEntity entity) {
-      Assert.isTrue(isDeviceTypeExists(entity.getType()), "Unknown device type");
-      Assert.isNull(getDeviceTypeNameEntity(entity.getName()),
-            "Such device name already exists");
+   public void saveNewDevice(DeviceSetupEntity entity) {
+      if (!isDeviceTypeExists(entity.getType())) {
+         throw new DeviceSetupException(UNKNOWN_TYPE_ERROR + entity.getType());
+      }
+      if (getDeviceTypeNameEntity(entity.getName()) != null) {
+         throw new DeviceSetupException(ALREADY_EXISTS_ERROR + entity.getName());
+      }
 
       entityManager.persist(entity);
       allDeviceTypeNameEntities.put(entity.getName(), entity);
    }
 
-   public void deleteDevice(String name) {
-      DeviceTypeNameEntity persistedDevice = allDeviceTypeNameEntities.get(name);
-      Assert.notNull(persistedDevice, "Device doesn't exist");
+   public void deleteDevice(Integer id) {
+      DeviceSetupEntity persistedDevice = findDevice(id);
 
       entityManager.remove(persistedDevice);
-      allDeviceTypeNameEntities.remove(name);
+      allDeviceTypeNameEntities.remove(persistedDevice.getName());
+   }
+
+   public void modifyDevice(DeviceSetupInfo device) {
+      DeviceSetupEntity persistedDeviceEntity = findDevice(device.getId());
+      String persistedName = persistedDeviceEntity.getName();
+      DeviceTypeEntity persistedDeviceTypeEntity = findDeviceType(device.getType());
+
+      persistedDeviceEntity.setName(device.getName());
+      persistedDeviceEntity.setIp4Address(device.getIp4Address());
+      persistedDeviceEntity.setType(persistedDeviceTypeEntity);
+
+      entityManager.persist(persistedDeviceEntity);
+
+      allDeviceTypeNameEntities.remove(persistedName);
+      allDeviceTypeNameEntities.put(device.getName(), persistedDeviceEntity);
+   }
+
+   private DeviceTypeEntity findDeviceType(DeviceType type) {
+      TypedQuery<DeviceTypeEntity> query =
+            entityManager.createQuery("from " + DeviceTypeEntity.class.getSimpleName() + " where type = :type",
+                  DeviceTypeEntity.class);
+      query.setParameter("type", type);
+      List<DeviceTypeEntity> result = query.getResultList();
+
+      if (result.isEmpty()) {
+         throw new DeviceSetupException(UNKNOWN_TYPE_ERROR + type);
+      }
+      return result.get(0);
+   }
+
+   private DeviceSetupEntity findDevice(Integer id) {
+      TypedQuery<DeviceSetupEntity> query =
+            entityManager.createQuery("from " + DeviceSetupEntity.class.getSimpleName() + " where id = :id",
+                  DeviceSetupEntity.class);
+      query.setParameter("id", id);
+      List<DeviceSetupEntity> persistedDevices = query.getResultList();
+
+      if (persistedDevices.isEmpty()) {
+         throw new DeviceSetupException(DOESNT_EXIST_ERROR);
+      }
+
+      return persistedDevices.get(0);
    }
 
    public static TechnicalDeviceInfoEntity createTechnicalDeviceInfoEntity(DeviceInfo deviceInfo) {
@@ -124,12 +173,12 @@ public class DevicesRepository {
    }
 
    private void loadAndSaveAllDeviceTypeNameEntities() {
-      TypedQuery<DeviceTypeNameEntity> query =
-            entityManager.createQuery("from " + DeviceTypeNameEntity.class.getSimpleName() + " e", DeviceTypeNameEntity.class);
-      List<DeviceTypeNameEntity> result = query.getResultList();
-      LOGGER.info("Loaded " + result.size() + " instances of " + DeviceTypeNameEntity.class.getSimpleName());
+      TypedQuery<DeviceSetupEntity> query =
+            entityManager.createQuery("from " + DeviceSetupEntity.class.getSimpleName() + " e", DeviceSetupEntity.class);
+      List<DeviceSetupEntity> result = query.getResultList();
+      LOGGER.info("Loaded " + result.size() + " instances of " + DeviceSetupEntity.class.getSimpleName());
 
-      for (DeviceTypeNameEntity entity : result) {
+      for (DeviceSetupEntity entity : result) {
          allDeviceTypeNameEntities.put(entity.getName(), entity);
       }
    }

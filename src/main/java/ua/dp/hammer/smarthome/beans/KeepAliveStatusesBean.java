@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.async.DeferredResult;
-import ua.dp.hammer.smarthome.entities.DeviceTypeNameEntity;
+import ua.dp.hammer.smarthome.entities.DeviceSetupEntity;
 import ua.dp.hammer.smarthome.models.DeviceInfo;
 import ua.dp.hammer.smarthome.models.states.keepalive.DeviceTechInfo;
 import ua.dp.hammer.smarthome.models.states.keepalive.PhoneAwareDeviceState;
@@ -136,7 +136,7 @@ public class KeepAliveStatusesBean {
    }
 
    private boolean isNotAvailable(String name, LocalDateTime lastStatusTime) {
-      DeviceTypeNameEntity deviceEntity = devicesRepository.getDeviceTypeNameEntity(name);
+      DeviceSetupEntity deviceEntity = devicesRepository.getDeviceTypeNameEntity(name);
 
       if (deviceEntity == null) {
          LOGGER.warn("'" + name + "'" + " device hasn't been found in repository");

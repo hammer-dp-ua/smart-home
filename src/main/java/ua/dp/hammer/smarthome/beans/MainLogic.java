@@ -11,7 +11,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.StringUtils;
-import ua.dp.hammer.smarthome.entities.DeviceTypeNameEntity;
+import ua.dp.hammer.smarthome.entities.DeviceSetupEntity;
 import ua.dp.hammer.smarthome.models.ServerStatus;
 import ua.dp.hammer.smarthome.models.setup.DeviceType;
 import ua.dp.hammer.smarthome.models.states.AlarmsState;
@@ -197,15 +197,15 @@ public class MainLogic {
    }
 
    private void sendProjectorsRequests(boolean turnOn) {
-      List<DeviceTypeNameEntity> projectors = devicesRepository.getDevicesByType(DeviceType.PROJECTOR);
+      List<DeviceSetupEntity> projectors = devicesRepository.getDevicesByType(DeviceType.PROJECTOR);
 
       managerStatesBean.resetExpectedSequentialProjectorCounter();
-      for (DeviceTypeNameEntity projector : projectors) {
+      for (DeviceSetupEntity projector : projectors) {
          sendProjectorRequest(projector, turnOn, projectors.size());
       }
    }
 
-   private void sendProjectorRequest(DeviceTypeNameEntity projector, boolean turnOn, int projectorsAmount) {
+   private void sendProjectorRequest(DeviceSetupEntity projector, boolean turnOn, int projectorsAmount) {
       WebClient client = WebClient.builder()
             .baseUrl("http://" + projector.getIp4Address())
             .build();
@@ -238,12 +238,12 @@ public class MainLogic {
    }
 
    public void doShutter(String name, int no, boolean open) {
-      DeviceTypeNameEntity shutterEntity = devicesRepository.getDeviceTypeNameEntity(name);
+      DeviceSetupEntity shutterEntity = devicesRepository.getDeviceTypeNameEntity(name);
 
       sendShutterStateRequest(shutterEntity, no, open);
    }
 
-   private void sendShutterStateRequest(DeviceTypeNameEntity shutter, int shutterNo, boolean open) {
+   private void sendShutterStateRequest(DeviceSetupEntity shutter, int shutterNo, boolean open) {
       WebClient client = WebClient.builder()
             .baseUrl("http://" + shutter.getIp4Address())
             .build();

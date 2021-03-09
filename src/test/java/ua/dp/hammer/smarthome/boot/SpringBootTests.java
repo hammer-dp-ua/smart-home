@@ -6,12 +6,19 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import ua.dp.hammer.smarthome.controllers.DevicesSetupController;
 import ua.dp.hammer.smarthome.models.FanRequestInfo;
 import ua.dp.hammer.smarthome.models.FanResponse;
 import ua.dp.hammer.smarthome.models.FanSettingsInfo;
 import ua.dp.hammer.smarthome.models.StatusCodes;
+import ua.dp.hammer.smarthome.models.StatusResponse;
+import ua.dp.hammer.smarthome.models.setup.DeviceSetupInfo;
+import ua.dp.hammer.smarthome.models.setup.DeviceType;
 import ua.dp.hammer.smarthome.models.states.AllManagerStates;
 import ua.dp.hammer.smarthome.models.states.FanState;
+import ua.dp.hammer.smarthome.repositories.DevicesRepository;
+
+import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD;
@@ -23,6 +30,158 @@ import static org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER
 public class SpringBootTests {
 
    private final String FAN_NAME = "Bathroom fan";
+
+   @Test
+   public void testGetAllDevices(@Autowired TestRestTemplate restTemplate) {
+      DeviceSetupInfo[] response = restTemplate.getForObject(getAllDevicesSetupUri(), DeviceSetupInfo[].class);
+
+      assertThat(response).isNotNull();
+      assertThat(response).isNotEmpty();
+   }
+
+   @Test
+   public void testAddAndDeleteDevice(@Autowired TestRestTemplate restTemplate) {
+      DeviceSetupInfo newDevice = new DeviceSetupInfo();
+      newDevice.setName(null); // skip
+      newDevice.setType(DeviceType.ENV_SENSOR);
+
+      StatusResponse addDeviceSetupResponse = restTemplate.postForObject(getAddDeviceSetupUri(), newDevice, StatusResponse.class);
+
+      assertThat(addDeviceSetupResponse).isNotNull();
+      assertThat(addDeviceSetupResponse.getStatusCode()).isEqualTo(StatusCodes.ERROR);
+      assertThat(addDeviceSetupResponse.getErrorMessage()).isNotNull();
+      assertThat(addDeviceSetupResponse.getErrorMessage()).isEqualTo(DevicesSetupController.EMPTY_NAME_ERROR);
+
+      newDevice.setName("ABC");
+      newDevice.setType(null);
+      addDeviceSetupResponse = restTemplate.postForObject(getAddDeviceSetupUri(), newDevice, StatusResponse.class);
+
+      assertThat(addDeviceSetupResponse).isNotNull();
+      assertThat(addDeviceSetupResponse.getStatusCode()).isEqualTo(StatusCodes.ERROR);
+      assertThat(addDeviceSetupResponse.getErrorMessage()).isNotNull();
+      assertThat(addDeviceSetupResponse.getErrorMessage()).isEqualTo(DevicesSetupController.EMPTY_TYPE_ERROR);
+
+      newDevice.setType(DeviceType.PROJECTOR);
+      newDevice.setIp4Address("192.168.0.55");
+      addDeviceSetupResponse = restTemplate.postForObject(getAddDeviceSetupUri(), newDevice, StatusResponse.class);
+
+      assertThat(addDeviceSetupResponse).isNotNull();
+      assertThat(addDeviceSetupResponse.getStatusCode()).isEqualTo(StatusCodes.OK);
+      assertThat(addDeviceSetupResponse.getErrorMessage()).isNull();
+
+      DeviceSetupInfo[] allDevicesResponse = restTemplate.getForObject(getAllDevicesSetupUri(), DeviceSetupInfo[].class);
+
+      assertThat(allDevicesResponse).isNotNull();
+      assertThat(allDevicesResponse).isNotEmpty();
+
+      DeviceSetupInfo savedDevice = Arrays.stream(allDevicesResponse)
+            .filter(device -> device.getName().equals(newDevice.getName()))
+            .findFirst()
+            .orElse(null);
+
+      assertThat(savedDevice).isNotNull();
+      assertThat(savedDevice.getIp4Address()).isEqualTo(newDevice.getIp4Address());
+      assertThat(savedDevice.getType()).isEqualTo(newDevice.getType());
+
+      StatusResponse deleteDeviceResponse = restTemplate.getForObject(getDeleteDeviceUri(), StatusResponse.class);
+      assertThat(deleteDeviceResponse).isNotNull();
+      assertThat(deleteDeviceResponse.getStatusCode()).isEqualTo(StatusCodes.ERROR);
+      assertThat(deleteDeviceResponse.getErrorMessage()).isEqualTo(DevicesSetupController.EMPTY_ID_ERROR);
+
+      deleteDeviceResponse = restTemplate.getForObject(getDeleteDeviceUri() + "?id=", StatusResponse.class);
+      assertThat(deleteDeviceResponse).isNotNull();
+      assertThat(deleteDeviceResponse.getStatusCode()).isEqualTo(StatusCodes.ERROR);
+      assertThat(deleteDeviceResponse.getErrorMessage()).isEqualTo(DevicesSetupController.EMPTY_ID_ERROR);
+
+      deleteDeviceResponse = restTemplate.getForObject(getDeleteDeviceUri() + "?id=123456789", StatusResponse.class);
+      assertThat(deleteDeviceResponse).isNotNull();
+      assertThat(deleteDeviceResponse.getStatusCode()).isEqualTo(StatusCodes.ERROR);
+      assertThat(deleteDeviceResponse.getErrorMessage()).isEqualTo(DevicesRepository.DOESNT_EXIST_ERROR);
+
+      deleteDeviceResponse = restTemplate.getForObject(getDeleteDeviceUri() + "?id=" + savedDevice.getId(), StatusResponse.class);
+      assertThat(deleteDeviceResponse).isNotNull();
+      assertThat(deleteDeviceResponse.getStatusCode()).isEqualTo(StatusCodes.OK);
+
+      allDevicesResponse = restTemplate.getForObject(getAllDevicesSetupUri(), DeviceSetupInfo[].class);
+
+      assertThat(allDevicesResponse).isNotNull();
+      assertThat(allDevicesResponse).isNotEmpty();
+
+      savedDevice = Arrays.stream(allDevicesResponse)
+            .filter(device -> device.getName().equals(newDevice.getName()))
+            .findFirst()
+            .orElse(null);
+
+      assertThat(savedDevice).isNull(); // Already deleted
+   }
+
+   @Test
+   public void testDeviceModification(@Autowired TestRestTemplate restTemplate) {
+      DeviceSetupInfo newDevice = new DeviceSetupInfo();
+      newDevice.setName("ABCD");
+      newDevice.setType(DeviceType.ENV_SENSOR);
+
+      restTemplate.postForObject(getAddDeviceSetupUri(), newDevice, StatusResponse.class);
+      DeviceSetupInfo[] allDevicesResponse = restTemplate.getForObject(getAllDevicesSetupUri(), DeviceSetupInfo[].class);
+      DeviceSetupInfo savedDevice = Arrays.stream(allDevicesResponse)
+            .filter(device -> device.getName().equals(newDevice.getName()))
+            .findFirst()
+            .orElse(null);
+      assertThat(savedDevice).isNotNull();
+
+      DeviceSetupInfo modifiedDevice = new DeviceSetupInfo();
+      modifiedDevice.setId(null);
+      modifiedDevice.setName(savedDevice.getName());
+      modifiedDevice.setType(savedDevice.getType());
+      StatusResponse modifyDeviceResponse = restTemplate.postForObject(getModifyDeviceUri(), modifiedDevice, StatusResponse.class);
+
+      assertThat(modifyDeviceResponse).isNotNull();
+      assertThat(modifyDeviceResponse.getStatusCode()).isEqualTo(StatusCodes.ERROR);
+      assertThat(modifyDeviceResponse.getErrorMessage()).isEqualTo(DevicesSetupController.EMPTY_ID_ERROR);
+
+      modifiedDevice.setId(savedDevice.getId());
+      modifiedDevice.setName(savedDevice.getName());
+      modifiedDevice.setType(null);
+      modifyDeviceResponse = restTemplate.postForObject(getModifyDeviceUri(), modifiedDevice, StatusResponse.class);
+
+      assertThat(modifyDeviceResponse).isNotNull();
+      assertThat(modifyDeviceResponse.getStatusCode()).isEqualTo(StatusCodes.ERROR);
+      assertThat(modifyDeviceResponse.getErrorMessage()).isEqualTo(DevicesSetupController.EMPTY_TYPE_ERROR);
+
+      modifiedDevice.setId(savedDevice.getId());
+      modifiedDevice.setName(null);
+      modifiedDevice.setType(savedDevice.getType());
+
+      modifyDeviceResponse = restTemplate.postForObject(getModifyDeviceUri(), modifiedDevice, StatusResponse.class);
+
+      assertThat(modifyDeviceResponse).isNotNull();
+      assertThat(modifyDeviceResponse.getStatusCode()).isEqualTo(StatusCodes.ERROR);
+      assertThat(modifyDeviceResponse.getErrorMessage()).isEqualTo(DevicesSetupController.EMPTY_NAME_ERROR);
+
+      modifiedDevice.setName("ABCDE");
+      modifiedDevice.setType(DeviceType.PROJECTOR);
+      modifiedDevice.setIp4Address("192.168.0.57");
+
+      modifyDeviceResponse = restTemplate.postForObject(getModifyDeviceUri(), modifiedDevice, StatusResponse.class);
+
+      assertThat(modifyDeviceResponse).isNotNull();
+      assertThat(modifyDeviceResponse.getStatusCode()).isEqualTo(StatusCodes.OK);
+
+      allDevicesResponse = restTemplate.getForObject(getAllDevicesSetupUri(), DeviceSetupInfo[].class);
+      savedDevice = Arrays.stream(allDevicesResponse)
+            .filter(device -> device.getName().equals(modifiedDevice.getName()))
+            .findFirst()
+            .orElse(null);
+
+      assertThat(savedDevice).isNotNull();
+      assertThat(savedDevice.getId()).isEqualTo(modifiedDevice.getId());
+      assertThat(savedDevice.getType()).isEqualTo(modifiedDevice.getType());
+      assertThat(savedDevice.getIp4Address()).isEqualTo(modifiedDevice.getIp4Address());
+
+      StatusResponse deleteDeviceResponse = restTemplate.getForObject(getDeleteDeviceUri() + "?id=" + savedDevice.getId(), StatusResponse.class);
+      assertThat(deleteDeviceResponse).isNotNull();
+      assertThat(deleteDeviceResponse.getStatusCode()).isEqualTo(StatusCodes.OK);
+   }
 
    @Test
    public void testFanTurnedOff(@Autowired TestRestTemplate restTemplate) {
@@ -360,5 +519,21 @@ public class SpringBootTests {
 
    private String getSaveFanSettingsUri() {
       return "/server/devicesSetup/saveFanSettings";
+   }
+
+   private String getAllDevicesSetupUri() {
+      return "/server/devicesSetup/allDevices";
+   }
+
+   private String getAddDeviceSetupUri() {
+      return "/server/devicesSetup/addDevice";
+   }
+
+   private String getDeleteDeviceUri() {
+      return "/server/devicesSetup/deleteDevice";
+   }
+
+   private String getModifyDeviceUri() {
+      return "/server/devicesSetup/modifyDevice";
    }
 }

@@ -10,17 +10,18 @@ import javax.persistence.OneToOne;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "shutters_action_time_setup")
-public class ShutterActionTimeSetupEntity {
+@Table(name = "alarm_sensors_data")
+public class AlarmSensorEntity {
    @Id
    @Column(name = "aa_id", unique = true, nullable = false)
-   @SequenceGenerator(name="shutters_action_time_setup_aa_id_seq",
-         sequenceName="shutters_action_time_setup_aa_id_seq",
+   @SequenceGenerator(name="alarm_sensors_data_aa_id_seq",
+         sequenceName="alarm_sensors_data_aa_id_seq",
          allocationSize = 1)
    // The sequence will be called separately before every INSERT, producing sequential numeric values.
-   @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="shutters_action_time_setup_aa_id_seq")
+   @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="alarm_sensors_data_aa_id_seq")
    private Integer id;
 
    @NotNull
@@ -28,8 +29,12 @@ public class ShutterActionTimeSetupEntity {
    @JoinColumn(name = "device_type_name")
    private DeviceSetupEntity typeName;
 
-   @Column(name = "action_time")
-   private Integer actionTime;
+   @Column(name = "source")
+   private String source;
+
+   @NotNull
+   @Column(name = "alarm_dt")
+   private LocalDateTime alarmDateTime;
 
    public Integer getId() {
       return id;
@@ -39,7 +44,23 @@ public class ShutterActionTimeSetupEntity {
       return typeName;
    }
 
-   public Integer getActionTime() {
-      return actionTime;
+   public void setTypeName(DeviceSetupEntity typeName) {
+      this.typeName = typeName;
+   }
+
+   public String getSource() {
+      return source;
+   }
+
+   public void setSource(String source) {
+      this.source = source;
+   }
+
+   public LocalDateTime getAlarmDateTime() {
+      return alarmDateTime;
+   }
+
+   public void setAlarmDateTime(LocalDateTime alarmDateTime) {
+      this.alarmDateTime = alarmDateTime;
    }
 }
