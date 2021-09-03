@@ -3,6 +3,9 @@ package ua.dp.hammer.smarthome.utils;
 import org.springframework.web.context.request.NativeWebRequest;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.constraints.NotNull;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -27,5 +30,9 @@ public class Utils {
             .filter(ip -> !ip.isEmpty() && !ip.equalsIgnoreCase("unknown"))
             .findFirst()
             .orElse(null);
+   }
+
+   public static long jodaLocalDateTimeToMilli(@NotNull LocalDateTime localDateTime) {
+      return localDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
    }
 }

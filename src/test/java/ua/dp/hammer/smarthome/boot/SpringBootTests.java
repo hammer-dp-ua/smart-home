@@ -6,22 +6,36 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import ua.dp.hammer.smarthome.controllers.AlarmsMonitorRestController;
 import ua.dp.hammer.smarthome.controllers.DevicesSetupController;
+import ua.dp.hammer.smarthome.controllers.Esp8266ExternalDevicesCommunicatorRestController;
+import ua.dp.hammer.smarthome.controllers.ManagerRestController;
 import ua.dp.hammer.smarthome.models.FanRequestInfo;
 import ua.dp.hammer.smarthome.models.FanResponse;
 import ua.dp.hammer.smarthome.models.FanSettingsInfo;
+import ua.dp.hammer.smarthome.models.ServerStatus;
 import ua.dp.hammer.smarthome.models.StatusCodes;
 import ua.dp.hammer.smarthome.models.StatusResponse;
+import ua.dp.hammer.smarthome.models.alarms.MotionDetector;
+import ua.dp.hammer.smarthome.models.alarms.StreetMotionDetectors;
 import ua.dp.hammer.smarthome.models.setup.DeviceSetupInfo;
 import ua.dp.hammer.smarthome.models.setup.DeviceType;
+import ua.dp.hammer.smarthome.models.states.AlarmsState;
 import ua.dp.hammer.smarthome.models.states.AllManagerStates;
 import ua.dp.hammer.smarthome.models.states.FanState;
 import ua.dp.hammer.smarthome.repositories.DevicesRepository;
 
 import java.util.Arrays;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD;
+import static ua.dp.hammer.smarthome.controllers.Esp8266ExternalDevicesCommunicatorRestController.BATHROOM_FAN_PATH;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
       args = {"--logging.config=log4j2_tests.xml", "--secondsInMinute=1"})
@@ -96,7 +110,7 @@ public class SpringBootTests {
       deleteDeviceResponse = restTemplate.getForObject(getDeleteDeviceUri() + "?id=123456789", StatusResponse.class);
       assertThat(deleteDeviceResponse).isNotNull();
       assertThat(deleteDeviceResponse.getStatusCode()).isEqualTo(StatusCodes.ERROR);
-      assertThat(deleteDeviceResponse.getErrorMessage()).isEqualTo(DevicesRepository.DOESNT_EXIST_ERROR);
+      assertThat(deleteDeviceResponse.getErrorMessage()).isEqualTo(DevicesRepository.DEVICE_DOESNT_EXIST_ERROR);
 
       deleteDeviceResponse = restTemplate.getForObject(getDeleteDeviceUri() + "?id=" + savedDevice.getId(), StatusResponse.class);
       assertThat(deleteDeviceResponse).isNotNull();
@@ -505,8 +519,78 @@ public class SpringBootTests {
       assertThat(allStatesResponse.getFanState().getMinutesRemaining()).isEqualTo(timeout - 2);
    }
 
+   @Test
+   public void testAlarmSources(@Autowired TestRestTemplate restTemplate) {
+      String source1 = "ALARM_SOURCE_1";
+      String source2 = "ALARM_SOURCE_2";
+
+      StatusResponse added = restTemplate.getForObject(DevicesSetupController.CONTROLLER_PATH +
+            DevicesSetupController.ADD_ALARM_SOURCE_PATH + "?source=" + source1, StatusResponse.class);
+      assertThat(added).isNotNull();
+      assertThat(added.getStatusCode()).isEqualTo(StatusCodes.OK);
+
+      added = restTemplate.getForObject(DevicesSetupController.CONTROLLER_PATH +
+            DevicesSetupController.ADD_ALARM_SOURCE_PATH + "?source=" + source2, StatusResponse.class);
+      assertThat(added).isNotNull();
+      assertThat(added.getStatusCode()).isEqualTo(StatusCodes.OK);
+
+      String[] allAlarmSourcesResponse = restTemplate.getForObject(DevicesSetupController.CONTROLLER_PATH +
+            DevicesSetupController.GET_ALARM_SOURCES_PATH, String[].class);
+
+      assertThat(allAlarmSourcesResponse).isNotNull();
+      assertThat(allAlarmSourcesResponse.length).isEqualTo(2);
+      assertThat(allAlarmSourcesResponse[0]).isEqualTo(source1);
+      assertThat(allAlarmSourcesResponse[1]).isEqualTo(source2);
+
+      StatusResponse deleted = restTemplate.getForObject(DevicesSetupController.CONTROLLER_PATH +
+            DevicesSetupController.DELETE_ALARM_SOURCE_PATH + "?source=" + source2, StatusResponse.class);
+      assertThat(deleted).isNotNull();
+      assertThat(deleted.getStatusCode()).isEqualTo(StatusCodes.OK);
+
+      allAlarmSourcesResponse = restTemplate.getForObject(DevicesSetupController.CONTROLLER_PATH +
+            DevicesSetupController.GET_ALARM_SOURCES_PATH, String[].class);
+      assertThat(allAlarmSourcesResponse).isNotNull();
+      assertThat(allAlarmSourcesResponse.length).isEqualTo(1);
+      assertThat(allAlarmSourcesResponse[0]).isEqualTo(source1);
+   }
+
+   @Test
+   public void testAlarms(@Autowired TestRestTemplate restTemplate) throws InterruptedException, ExecutionException, TimeoutException {
+      String source1 = "ALARM_SOURCE_1";
+      String deviceName = "Entrance Motion Detector";
+      restTemplate.getForObject(DevicesSetupController.CONTROLLER_PATH +
+            DevicesSetupController.ADD_ALARM_SOURCE_PATH + "?source=" + source1, StatusResponse.class);
+
+      AlarmsState alarmsStateResponse = restTemplate.getForObject(ManagerRestController.CONTROLLER_PATH +
+                  ManagerRestController.IGNORE_ALARMS_PATH + "?timeout=1&doNotTurnOnProjectors=true", AlarmsState.class);
+      assertThat(alarmsStateResponse).isNotNull();
+      assertThat(alarmsStateResponse.isIgnoring()).isTrue();
+      assertThat(alarmsStateResponse.getMinutesRemaining()).isEqualTo(1);
+
+      ExecutorService executorService = Executors.newSingleThreadExecutor();
+      FutureTask<StreetMotionDetectors> futureStatesResponse = new FutureTask<>(() ->
+            restTemplate.getForObject(AlarmsMonitorRestController.CONTROLLER_PATH +
+            AlarmsMonitorRestController.GET_CURRENT_STATES_DEFERRED, StreetMotionDetectors.class));
+      executorService.execute(futureStatesResponse);
+
+      ServerStatus alarmResponse = restTemplate.getForObject(Esp8266ExternalDevicesCommunicatorRestController.CONTROLLER_PATH +
+            Esp8266ExternalDevicesCommunicatorRestController.ALARM_PATH + "?alarmSource=" + source1 + "&deviceName=" + deviceName,
+            ServerStatus.class);
+
+      assertThat(alarmResponse).isNotNull();
+      assertThat(alarmResponse.getStatusCode()).isEqualTo(StatusCodes.OK);
+
+      StreetMotionDetectors statesResponse = futureStatesResponse.get(1, TimeUnit.SECONDS);
+      assertThat(statesResponse).isNotNull();
+      assertThat(statesResponse.getMotionDetectors().size()).isEqualTo(1);
+
+      MotionDetector motionDetectorResponse = statesResponse.getMotionDetectors().iterator().next();
+      assertThat(motionDetectorResponse.getName()).isEqualTo(deviceName);
+      assertThat(motionDetectorResponse.getSource()).isEqualTo(source1);
+   }
+
    private String getFanUri() {
-      return "/server/esp8266/bathroomFan";
+      return Esp8266ExternalDevicesCommunicatorRestController.CONTROLLER_PATH + BATHROOM_FAN_PATH;
    }
 
    private String getFanTurnOnUri() {

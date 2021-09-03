@@ -11,10 +11,10 @@
    </Appenders>
 
    <Loggers>
-      <Logger name="ua.dp.hammer" level="INFO" additivity="false">
+      <Logger name="ua.dp.hammer" level="DEBUG" additivity="false">
          <AppenderRef ref="Console"/>
       </Logger>
-      <Logger name="org.springframework" level="INFO" additivity="false">
+      <Logger name="org.springframework" level="DEBUG" additivity="false">
          <AppenderRef ref="Console"/>
       </Logger>
       

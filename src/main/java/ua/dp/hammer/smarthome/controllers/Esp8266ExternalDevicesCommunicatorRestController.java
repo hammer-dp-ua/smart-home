@@ -21,16 +21,23 @@ import ua.dp.hammer.smarthome.models.FanResponse;
 import ua.dp.hammer.smarthome.models.ProjectorResponse;
 import ua.dp.hammer.smarthome.models.ServerStatus;
 import ua.dp.hammer.smarthome.models.StatusCodes;
+import ua.dp.hammer.smarthome.models.alarms.Alarm;
 import ua.dp.hammer.smarthome.models.states.ProjectorState;
 import ua.dp.hammer.smarthome.repositories.DevicesRepository;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static ua.dp.hammer.smarthome.controllers.Esp8266ExternalDevicesCommunicatorRestController.CONTROLLER_PATH;
+
 @RestController
-@RequestMapping(path = "/server/esp8266")
+@RequestMapping(path = CONTROLLER_PATH)
 public class Esp8266ExternalDevicesCommunicatorRestController {
    private static final Logger LOGGER = LogManager.getLogger(Esp8266ExternalDevicesCommunicatorRestController.class);
+
+   public final static String CONTROLLER_PATH = "/server/esp8266";
+   public final static String BATHROOM_FAN_PATH = "/bathroomFan";
+   public final static String ALARM_PATH = "/alarm";
 
    private final static Pattern SINGLE_DIGIT_PATTERN = Pattern.compile("(.*?)(\\d{1})(.*)");
 
@@ -80,12 +87,14 @@ public class Esp8266ExternalDevicesCommunicatorRestController {
       return projectorResponse;
    }
 
-   @GetMapping(path = "/alarm")
+   @GetMapping(path = ALARM_PATH)
    public ServerStatus receiveAlarm(@RequestParam(value = "alarmSource", required = false) String alarmSource,
                                     @RequestParam(value = "deviceName", required = false) String deviceName) {
-      LOGGER.info("Alarm. Source: " + alarmSource);
+      Alarm alarm = new Alarm(alarmSource, deviceName);
 
-      mainLogic.receiveAlarm(alarmSource);
+      LOGGER.info("Alarm: " + alarm);
+
+      mainLogic.receiveAlarm(alarm);
       return new ServerStatus(StatusCodes.OK);
    }
 
@@ -103,7 +112,7 @@ public class Esp8266ExternalDevicesCommunicatorRestController {
       return new ServerStatus(StatusCodes.OK);
    }
 
-   @PostMapping(path = "/bathroomFan", consumes="application/json")
+   @PostMapping(path = BATHROOM_FAN_PATH, consumes="application/json")
    public FanResponse receiveBathroomParameters(@RequestBody FanRequestInfo fanRequest) {
       FanResponse fanResponse = new FanResponse(StatusCodes.OK);
       ServerStatus serverStatus = receiveStatusInfo(fanRequest);

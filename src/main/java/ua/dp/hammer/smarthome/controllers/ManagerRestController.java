@@ -22,12 +22,16 @@ import ua.dp.hammer.smarthome.models.states.ShutterStates;
 
 import javax.servlet.http.HttpServletRequest;
 
+import static ua.dp.hammer.smarthome.controllers.ManagerRestController.CONTROLLER_PATH;
 import static ua.dp.hammer.smarthome.utils.Utils.getClientIpAddr;
 
 @RestController
-@RequestMapping(path = "/server/manager")
+@RequestMapping(path = CONTROLLER_PATH)
 public class ManagerRestController {
    private static final Logger LOGGER = LogManager.getLogger(ManagerRestController.class);
+
+   public static final String CONTROLLER_PATH = "/server/manager";
+   public static final String IGNORE_ALARMS_PATH = "/ignoreAlarms";
 
    private MainLogic mainLogic;
    private EnvSensorsBean envSensorsBean;
@@ -80,9 +84,10 @@ public class ManagerRestController {
     * @param timeout in minutes. If parameter is 0, alarms will be ignored until switched on manually,
     *                if parameter is -1 the method stops alarms ignoring
     */
-   @GetMapping(path = "/ignoreAlarms")
-   public AlarmsState ignoreAlarms(@RequestParam("timeout") int timeout) {
-      return mainLogic.ignoreAlarms(timeout);
+   @GetMapping(path = IGNORE_ALARMS_PATH)
+   public AlarmsState ignoreAlarms(@RequestParam("timeout") int timeout,
+                                   @RequestParam(value = "doNotTurnOnProjectors", required = false) Boolean doNotTurnOnProjectors) {
+      return mainLogic.ignoreAlarms(timeout, doNotTurnOnProjectors);
    }
 
    @GetMapping(path = "/shutters")

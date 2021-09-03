@@ -11,9 +11,9 @@ import ua.dp.hammer.smarthome.models.DeviceInfo;
 import ua.dp.hammer.smarthome.models.states.keepalive.DeviceTechInfo;
 import ua.dp.hammer.smarthome.models.states.keepalive.PhoneAwareDeviceState;
 import ua.dp.hammer.smarthome.repositories.DevicesRepository;
+import ua.dp.hammer.smarthome.utils.Utils;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -54,7 +54,7 @@ public class KeepAliveStatusesBean {
          devicesRepository.getAllDeviceTypeNameEntities().forEach(deviceEntity -> {
             LocalDateTime lastStatusTime = devicesStatusesTimestamps.get(deviceEntity.getName());
             Long lastStatusTimeMs = lastStatusTime != null ?
-                  lastStatusTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() : null;
+                  Utils.jodaLocalDateTimeToMilli(lastStatusTime) : null;
             DeviceTechInfo deviceTechInfo = null;
 
             if (lastStatusTimeMs == null) {

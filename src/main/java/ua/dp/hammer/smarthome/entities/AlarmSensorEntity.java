@@ -29,8 +29,9 @@ public class AlarmSensorEntity {
    @JoinColumn(name = "device_type_name")
    private DeviceSetupEntity typeName;
 
-   @Column(name = "source")
-   private String source;
+   @OneToOne(optional = true)
+   @JoinColumn(name = "source")
+   private AlarmSourceSetupEntity source;
 
    @NotNull
    @Column(name = "alarm_dt")
@@ -48,11 +49,11 @@ public class AlarmSensorEntity {
       this.typeName = typeName;
    }
 
-   public String getSource() {
+   public AlarmSourceSetupEntity getSource() {
       return source;
    }
 
-   public void setSource(String source) {
+   public void setSource(AlarmSourceSetupEntity source) {
       this.source = source;
    }
 

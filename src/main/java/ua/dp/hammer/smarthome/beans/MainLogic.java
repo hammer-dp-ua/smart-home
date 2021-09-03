@@ -1,5 +1,6 @@
 package ua.dp.hammer.smarthome.beans;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,9 +11,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.util.StringUtils;
 import ua.dp.hammer.smarthome.entities.DeviceSetupEntity;
 import ua.dp.hammer.smarthome.models.ServerStatus;
+import ua.dp.hammer.smarthome.models.alarms.Alarm;
 import ua.dp.hammer.smarthome.models.setup.DeviceType;
 import ua.dp.hammer.smarthome.models.states.AlarmsState;
 import ua.dp.hammer.smarthome.models.states.ProjectorState;
@@ -21,6 +22,7 @@ import ua.dp.hammer.smarthome.models.states.ShutterStates;
 import ua.dp.hammer.smarthome.repositories.DevicesRepository;
 
 import javax.annotation.PostConstruct;
+import javax.validation.constraints.NotNull;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Date;
@@ -41,6 +43,7 @@ public class MainLogic {
    private String deviceNameToUpdateFirmware;
    private Timer cancelIgnoringAlarmsTimer;
    private boolean alarmsAreBeingIgnored;
+   private boolean projectorsAreNotTurnedOn;
    private int projectorTurnOffTimeoutSec;
 
    private int ignoreVideoRecordingTimeoutAfterImmobilizerActivationSec;
@@ -51,20 +54,22 @@ public class MainLogic {
    private EnvSensorsBean envSensorsBean;
    private ManagerStatesBean managerStatesBean;
    private DevicesRepository devicesRepository;
+   private AlarmsMonitorBean alarmsMonitorBean;
 
    @PostConstruct
    public void init() {
       projectorTurnOffTimeoutSec = Integer.parseInt(environment.getRequiredProperty("projectorTurnOffTimeoutSec"));
       ignoreVideoRecordingTimeoutAfterImmobilizerActivationSec =
             Integer.parseInt(environment.getRequiredProperty("ignoreVideoRecordingTimeoutAfterImmobilizerActivationSec"));
-
-      turnProjectorsOffManually();
    }
 
-   public void receiveAlarm(String alarmSource) {
+   public void receiveAlarm(@NotNull Alarm alarm) {
+      devicesRepository.saveAlarmEvent(alarm);
+      alarmsMonitorBean.receiveAlarm(alarm);
+
       turnProjectorsOn();
 
-      if (alarmsAreBeingIgnored || (alarmSource != null && alarmSource.equals("MOTION_SENSOR_2"))) {
+      if (alarmsAreBeingIgnored || "MOTION_SENSOR_2".equals(alarm.getAlarmSource())) {
          return;
       }
 
@@ -98,6 +103,10 @@ public class MainLogic {
    }
 
    private void turnProjectorsOn() {
+      if (projectorsAreNotTurnedOn) {
+         return;
+      }
+
       if (turnProjectorsOnManually || envSensorsBean.getStreetLightValue() < 5) {
          if (scheduledFutureProjectorTurningOff != null && !scheduledFutureProjectorTurningOff.isDone()) {
             scheduledFutureProjectorTurningOff.cancel(false);
@@ -132,8 +141,9 @@ public class MainLogic {
             (StringUtils.isEmpty(deviceNameToUpdateFirmware) ? 0 : deviceNameToUpdateFirmware.length());
    }
 
-   public AlarmsState ignoreAlarms(int minutesTimeout) {
+   public AlarmsState ignoreAlarms(int minutesTimeout, Boolean doNotTurnOnProjectors) {
       alarmsAreBeingIgnored = true;
+      this.projectorsAreNotTurnedOn = doNotTurnOnProjectors != null && doNotTurnOnProjectors;
       String finishesIgnoringTime = null;
 
       if (cancelIgnoringAlarmsTimer != null) {
@@ -153,6 +163,7 @@ public class MainLogic {
 
                if (executionsAmount >= minutesTimeout) {
                   alarmsAreBeingIgnored = false;
+                  projectorsAreNotTurnedOn = false;
                   managerStatesBean.changeAlarmsIgnoringState(false, 0);
 
                   LOGGER.info("Alarms are not ignored anymore");
@@ -168,6 +179,7 @@ public class MainLogic {
    60 * 1000L);
       } else if (minutesTimeout < 0) {
          alarmsAreBeingIgnored = false;
+         projectorsAreNotTurnedOn = false;
       }
 
       managerStatesBean.changeAlarmsIgnoringState(alarmsAreBeingIgnored, minutesTimeout);
@@ -321,5 +333,10 @@ public class MainLogic {
    @Autowired
    public void setDevicesRepository(DevicesRepository devicesRepository) {
       this.devicesRepository = devicesRepository;
+   }
+
+   @Autowired
+   public void setAlarmsBean(AlarmsMonitorBean alarmsMonitorBean) {
+      this.alarmsMonitorBean = alarmsMonitorBean;
    }
 }
