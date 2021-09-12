@@ -10,7 +10,7 @@ import org.springframework.web.context.request.async.DeferredResult;
 import ua.dp.hammer.smarthome.beans.AlarmsMonitorBean;
 import ua.dp.hammer.smarthome.models.alarms.StreetMotionDetectors;
 
-import static ua.dp.hammer.smarthome.controllers.DevicesSetupController.CONTROLLER_PATH;
+import static ua.dp.hammer.smarthome.controllers.AlarmsMonitorRestController.CONTROLLER_PATH;
 
 @RestController
 @RequestMapping(path = CONTROLLER_PATH)

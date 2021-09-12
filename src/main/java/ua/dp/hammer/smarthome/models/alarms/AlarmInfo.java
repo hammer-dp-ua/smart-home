@@ -3,11 +3,14 @@ package ua.dp.hammer.smarthome.models.alarms;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-public class Alarm {
+public class AlarmInfo {
    private String alarmSource;
    private String deviceName;
 
-   public Alarm(String alarmSource, String deviceName) {
+   public AlarmInfo() {
+   }
+
+   public AlarmInfo(String alarmSource, String deviceName) {
       this.alarmSource = alarmSource;
       this.deviceName = deviceName;
    }
@@ -34,7 +37,7 @@ public class Alarm {
 
       if (o == null || getClass() != o.getClass()) return false;
 
-      Alarm alarm = (Alarm) o;
+      AlarmInfo alarm = (AlarmInfo) o;
 
       return new EqualsBuilder().append(alarmSource, alarm.alarmSource).append(deviceName, alarm.deviceName).isEquals();
    }

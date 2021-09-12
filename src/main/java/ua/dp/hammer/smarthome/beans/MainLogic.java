@@ -13,7 +13,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import ua.dp.hammer.smarthome.entities.DeviceSetupEntity;
 import ua.dp.hammer.smarthome.models.ServerStatus;
-import ua.dp.hammer.smarthome.models.alarms.Alarm;
+import ua.dp.hammer.smarthome.models.alarms.AlarmInfo;
 import ua.dp.hammer.smarthome.models.setup.DeviceType;
 import ua.dp.hammer.smarthome.models.states.AlarmsState;
 import ua.dp.hammer.smarthome.models.states.ProjectorState;
@@ -63,8 +63,7 @@ public class MainLogic {
             Integer.parseInt(environment.getRequiredProperty("ignoreVideoRecordingTimeoutAfterImmobilizerActivationSec"));
    }
 
-   public void receiveAlarm(@NotNull Alarm alarm) {
-      devicesRepository.saveAlarmEvent(alarm);
+   public void receiveAlarm(@NotNull AlarmInfo alarm) {
       alarmsMonitorBean.receiveAlarm(alarm);
 
       turnProjectorsOn();

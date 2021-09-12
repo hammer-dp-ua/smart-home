@@ -5,14 +5,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
-import ua.dp.hammer.smarthome.entities.AlarmSensorEntity;
-import ua.dp.hammer.smarthome.entities.AlarmSourceSetupEntity;
 import ua.dp.hammer.smarthome.entities.DeviceSetupEntity;
 import ua.dp.hammer.smarthome.entities.DeviceTypeEntity;
 import ua.dp.hammer.smarthome.entities.TechnicalDeviceInfoEntity;
 import ua.dp.hammer.smarthome.exceptions.DeviceSetupException;
 import ua.dp.hammer.smarthome.models.DeviceInfo;
-import ua.dp.hammer.smarthome.models.alarms.Alarm;
 import ua.dp.hammer.smarthome.models.setup.DeviceSetupInfo;
 import ua.dp.hammer.smarthome.models.setup.DeviceType;
 
@@ -20,7 +17,6 @@ import javax.annotation.PostConstruct;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
-import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashMap;
@@ -34,14 +30,12 @@ public class DevicesRepository {
    private static final Logger LOGGER = LogManager.getLogger(DevicesRepository.class);
 
    public static final String DEVICE_DOESNT_EXIST_ERROR = "Device doesn't exist";
-   public static final String ALARM_SOURCE_DOESNT_EXIST_ERROR = "Alarm source doesn't exist";
    public static final String UNKNOWN_TYPE_ERROR = "Unknown device type: ";
    public static final String ALREADY_EXISTS_ERROR = "Such device already exists: ";
 
    // Something like second level cache
    private final Map<DeviceType, DeviceTypeEntity> allDeviceTypeEntities = new HashMap<>();
    private final Map<String, DeviceSetupEntity> allDeviceTypeNameEntities = new HashMap<>();
-   private final Map<String, AlarmSourceSetupEntity> alarmSourcesSetup = new HashMap<>();
 
    @PersistenceContext
    private EntityManager entityManager;
@@ -50,7 +44,6 @@ public class DevicesRepository {
    public void init() {
       loadAndSaveAllDeviceTypeEntities();
       loadAndSaveAllDeviceTypeNameEntities();
-      loadAndSaveAllAlarmSourcesSetup();
    }
 
    public void saveTechnicalDeviceInfo(TechnicalDeviceInfoEntity infoEntity, String deviceName) {
@@ -66,7 +59,12 @@ public class DevicesRepository {
    }
 
    public DeviceSetupEntity getDeviceTypeNameEntity(String deviceName) {
-      return allDeviceTypeNameEntities.get(deviceName);
+      DeviceSetupEntity result = allDeviceTypeNameEntities.get(deviceName);
+
+      if (result == null && LOGGER.isDebugEnabled()) {
+         LOGGER.debug("Device setup doesn't exist: " + deviceName);
+      }
+      return result;
    }
 
    public Collection<DeviceSetupEntity> getAllDeviceTypeNameEntities() {
@@ -84,11 +82,17 @@ public class DevicesRepository {
       return deviceType != null && allDeviceTypeEntities.containsKey(deviceType.getType());
    }
 
-   public DeviceTypeEntity getDeviceTypeEntity(DeviceType deviceType) {
+   private DeviceTypeEntity getDeviceTypeEntity(DeviceType deviceType) {
       return allDeviceTypeEntities.get(deviceType);
    }
 
-   public void saveNewDevice(DeviceSetupEntity entity) {
+   public void saveNewDevice(DeviceSetupInfo device) {
+      DeviceSetupEntity entity = new DeviceSetupEntity();
+
+      entity.setName(device.getName());
+      entity.setType(getDeviceTypeEntity(device.getType()));
+      entity.setIp4Address(device.getIp4Address());
+
       if (!isDeviceTypeExists(entity.getType())) {
          throw new DeviceSetupException(UNKNOWN_TYPE_ERROR + entity.getType());
       }
@@ -120,61 +124,6 @@ public class DevicesRepository {
 
       allDeviceTypeNameEntities.remove(persistedName);
       allDeviceTypeNameEntities.put(device.getName(), persistedDeviceEntity);
-   }
-
-   public void addAlarmSource(String source) {
-      if (StringUtils.isEmpty(source) || alarmSourcesSetup.containsKey(source)) {
-         return;
-      }
-
-      AlarmSourceSetupEntity alarmSourceSetupEntity = new AlarmSourceSetupEntity();
-      alarmSourceSetupEntity.setSource(source);
-      entityManager.persist(alarmSourceSetupEntity);
-      alarmSourcesSetup.put(source, alarmSourceSetupEntity);
-   }
-
-   public void deleteAlarmSource(String source) {
-      if (StringUtils.isEmpty(source)) {
-         return;
-      }
-
-      alarmSourcesSetup.remove(source);
-
-      TypedQuery<AlarmSourceSetupEntity> query =
-            entityManager.createQuery("from " + AlarmSourceSetupEntity.class.getSimpleName() + " where source = :source",
-                  AlarmSourceSetupEntity.class);
-      query.setParameter("source", source);
-      List<AlarmSourceSetupEntity> persistedDevices = query.getResultList();
-
-      if (persistedDevices.isEmpty()) {
-         throw new DeviceSetupException(ALARM_SOURCE_DOESNT_EXIST_ERROR);
-      }
-
-      entityManager.remove(persistedDevices.get(0));
-   }
-
-   public List<String> getAlarmSources() {
-      return alarmSourcesSetup.keySet()
-            .stream()
-            .sorted()
-            .collect(Collectors.toList());
-   }
-
-   public void saveAlarmEvent(@NotNull Alarm alarm) {
-      DeviceSetupEntity deviceSetupEntity = this.getDeviceTypeNameEntity(alarm.getDeviceName());
-
-      if (deviceSetupEntity != null && StringUtils.isNotEmpty(alarm.getAlarmSource())) {
-         AlarmSensorEntity alarmSensorEntity = new AlarmSensorEntity();
-
-         alarmSensorEntity.setTypeName(deviceSetupEntity);
-         alarmSensorEntity.setSource(alarmSourcesSetup.get(alarm.getAlarmSource()));
-         alarmSensorEntity.setAlarmDateTime(LocalDateTime.now());
-         entityManager.persist(alarmSensorEntity);
-
-         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Saved alarm state: " + alarm);
-         }
-      }
    }
 
    private DeviceTypeEntity findDeviceType(DeviceType type) {
@@ -244,19 +193,6 @@ public class DevicesRepository {
       allDeviceTypeNameEntities.clear();
       for (DeviceSetupEntity entity : result) {
          allDeviceTypeNameEntities.put(entity.getName(), entity);
-      }
-   }
-
-   private void loadAndSaveAllAlarmSourcesSetup() {
-      TypedQuery<AlarmSourceSetupEntity> query =
-            entityManager.createQuery("from " + AlarmSourceSetupEntity.class.getSimpleName() + " e", AlarmSourceSetupEntity.class);
-      List<AlarmSourceSetupEntity> result = query.getResultList();
-
-      LOGGER.info("Loaded " + result.size() + " instances of " + AlarmSourceSetupEntity.class.getSimpleName());
-
-      alarmSourcesSetup.clear();
-      for (AlarmSourceSetupEntity entity : result) {
-         alarmSourcesSetup.put(entity.getSource(), entity);
       }
    }
 }

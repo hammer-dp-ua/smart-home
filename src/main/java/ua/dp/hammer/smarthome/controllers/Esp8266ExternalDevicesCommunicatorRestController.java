@@ -21,7 +21,7 @@ import ua.dp.hammer.smarthome.models.FanResponse;
 import ua.dp.hammer.smarthome.models.ProjectorResponse;
 import ua.dp.hammer.smarthome.models.ServerStatus;
 import ua.dp.hammer.smarthome.models.StatusCodes;
-import ua.dp.hammer.smarthome.models.alarms.Alarm;
+import ua.dp.hammer.smarthome.models.alarms.AlarmInfo;
 import ua.dp.hammer.smarthome.models.states.ProjectorState;
 import ua.dp.hammer.smarthome.repositories.DevicesRepository;
 
@@ -90,7 +90,7 @@ public class Esp8266ExternalDevicesCommunicatorRestController {
    @GetMapping(path = ALARM_PATH)
    public ServerStatus receiveAlarm(@RequestParam(value = "alarmSource", required = false) String alarmSource,
                                     @RequestParam(value = "deviceName", required = false) String deviceName) {
-      Alarm alarm = new Alarm(alarmSource, deviceName);
+      AlarmInfo alarm = new AlarmInfo(alarmSource, deviceName);
 
       LOGGER.info("Alarm: " + alarm);
 
