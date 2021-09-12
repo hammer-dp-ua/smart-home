@@ -1,0 +1,17 @@
+https://hub.docker.com/_/postgres
+
+data: $PGDATA(/var/lib/postgresql/data)
+
+Create:
+createdb super_home
+
+To start working with "super_home" database
+> psql super_home
+
+general_role
+general
+
+Columns type changing
+ALTER TABLE wi_fi_technical_device_info 
+ALTER COLUMN reset_reason TYPE VARCHAR(500),
+ALTER COLUMN system_restart_reason TYPE VARCHAR(500);

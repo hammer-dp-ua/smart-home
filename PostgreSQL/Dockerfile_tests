@@ -1,0 +1,18 @@
+# docker build -t postgres-image-tests -f Dockerfile_tests .
+# docker exec -it --user postgres postgres-tests bash
+
+# For integration tests. Port 5433 is used by tests
+# docker run --rm -it --name postgres-tests --publish 5433:5432 --tmpfs /var/lib/postgresql/data:rw -v "/home/servak/PostgreSQL/tests-postgres.conf":/etc/postgresql/postgresql.conf postgres-image-tests -c config_file=/etc/postgresql/postgresql.conf
+
+FROM postgres:12.1
+
+RUN unlink /etc/localtime
+RUN ln -s /usr/share/zoneinfo/Europe/Kiev /etc/localtime
+RUN date
+
+ENV POSTGRES_USER=postgres
+ENV POSTGRES_PASSWORD=tests
+ENV POSTGRES_DB=tests_db
+
+#COPY init.sql /docker-entrypoint-initdb.d/1_init.sql
+#COPY init_data.sql /docker-entrypoint-initdb.d/2_init_data.sql
