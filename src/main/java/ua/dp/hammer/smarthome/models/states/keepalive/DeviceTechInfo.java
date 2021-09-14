@@ -1,13 +1,12 @@
 package ua.dp.hammer.smarthome.models.states.keepalive;
 
-import ua.dp.hammer.smarthome.models.setup.DeviceType;
 import ua.dp.hammer.smarthome.models.states.CommonSate;
 
 public class DeviceTechInfo extends CommonSate {
    private Long lastDeviceRequestTimestamp;
    private Integer uptime;
    private String buildTimestamp;
-   private DeviceType deviceType;
+   private String deviceType;
 
    public Long getLastDeviceRequestTimestamp() {
       return lastDeviceRequestTimestamp;
@@ -33,11 +32,11 @@ public class DeviceTechInfo extends CommonSate {
       this.buildTimestamp = buildTimestamp;
    }
 
-   public DeviceType getDeviceType() {
+   public String getDeviceType() {
       return deviceType;
    }
 
-   public void setDeviceType(DeviceType deviceType) {
+   public void setDeviceType(String deviceType) {
       this.deviceType = deviceType;
    }
 }

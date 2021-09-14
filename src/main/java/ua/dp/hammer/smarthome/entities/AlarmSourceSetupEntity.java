@@ -6,7 +6,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
+import javax.persistence.OneToOne;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
@@ -24,8 +24,8 @@ public class AlarmSourceSetupEntity {
    private Integer id;
 
    @NotNull
-   @ManyToOne
-   @JoinColumn(name = "device_type_name", nullable = false)
+   @OneToOne(optional = false)
+   @JoinColumn(name = "device_type_name")
    private DeviceSetupEntity deviceSetup;
 
    @Column(name = "source")

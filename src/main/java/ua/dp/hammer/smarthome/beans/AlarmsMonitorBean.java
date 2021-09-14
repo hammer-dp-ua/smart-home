@@ -19,10 +19,13 @@ import ua.dp.hammer.smarthome.utils.Utils;
 import javax.annotation.PostConstruct;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import javax.persistence.TypedQuery;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Collectors;
 
 @Transactional
 @Component
@@ -55,7 +58,7 @@ public class AlarmsMonitorBean {
       MotionDetector motionDetector = new MotionDetector();
       motionDetector.setName(alarm.getDeviceName());
       motionDetector.setSource(alarm.getAlarmSource());
-      motionDetector.setTriggerTimestamp(Utils.jodaLocalDateTimeToMilli(LocalDateTime.now()));
+      motionDetector.setTriggerTimestamp(Utils.localDateTimeToMilli(LocalDateTime.now()));
 
       streetMotionDetectors.getMotionDetectors().add(motionDetector);
 
@@ -73,7 +76,7 @@ public class AlarmsMonitorBean {
       if (deviceSetupEntity != null && StringUtils.isNotEmpty(alarm.getAlarmSource())) {
          AlarmSensorEntity alarmSensorEntity = new AlarmSensorEntity();
 
-         alarmSensorEntity.setTypeName(deviceSetupEntity);
+         alarmSensorEntity.setDeviceSetup(deviceSetupEntity);
          alarmSensorEntity.setSource(alarmSourcesSetupRepository.getAlarmSource(alarm));
          alarmSensorEntity.setAlarmDateTime(LocalDateTime.now());
          entityManager.persist(alarmSensorEntity);
@@ -82,6 +85,44 @@ public class AlarmsMonitorBean {
             LOGGER.debug("Saved alarm state: " + alarm);
          }
       }
+   }
+
+   public List<MotionDetector> getHistory(Long fromMs, Long toMs) {
+      String wherePart = StringUtils.EMPTY;
+      LocalDateTime localDateTimeFrom = null;
+      LocalDateTime localDateTimeTo = null;
+
+      if (fromMs != null) {
+         wherePart = " where alarmDateTime >= :from ";
+         localDateTimeFrom = Utils.milliToLocalDateTime(fromMs);
+      }
+
+      if (toMs != null) {
+         if (StringUtils.isNotEmpty(wherePart)) {
+            wherePart += "and alarmDateTime <= :to";
+         } else {
+            wherePart = " where alarmDateTime <= :to";
+         }
+         localDateTimeTo = Utils.milliToLocalDateTime(toMs);
+      }
+
+      TypedQuery<AlarmSensorEntity> query =
+            entityManager.createQuery("from " + AlarmSensorEntity.class.getSimpleName() + wherePart +
+            " order by alarmDateTime desc",
+            AlarmSensorEntity.class);
+
+      if (localDateTimeFrom != null) {
+         query.setParameter("from", localDateTimeFrom);
+      }
+      if (localDateTimeTo != null) {
+         query.setParameter("to", localDateTimeTo);
+      }
+
+      List<AlarmSensorEntity> queryResult = query.getResultList();
+      return queryResult
+            .stream()
+            .map(e -> new MotionDetector(e.getDeviceSetup().getName(), e.getSource().getSource(), Utils.localDateTimeToMilli(e.getAlarmDateTime())))
+            .collect(Collectors.toList());
    }
 
    @Autowired

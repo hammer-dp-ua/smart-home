@@ -8,6 +8,15 @@ public class MotionDetector {
    private String source;
    private Long triggerTimestamp;
 
+   public MotionDetector() {
+   }
+
+   public MotionDetector(String name, String source, Long triggerTimestamp) {
+      this.name = name;
+      this.source = source;
+      this.triggerTimestamp = triggerTimestamp;
+   }
+
    public String getName() {
       return name;
    }

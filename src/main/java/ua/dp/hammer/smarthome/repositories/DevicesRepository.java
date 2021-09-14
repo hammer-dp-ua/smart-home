@@ -11,14 +11,16 @@ import ua.dp.hammer.smarthome.entities.TechnicalDeviceInfoEntity;
 import ua.dp.hammer.smarthome.exceptions.DeviceSetupException;
 import ua.dp.hammer.smarthome.models.DeviceInfo;
 import ua.dp.hammer.smarthome.models.setup.DeviceSetupInfo;
-import ua.dp.hammer.smarthome.models.setup.DeviceType;
+import ua.dp.hammer.smarthome.models.setup.DeviceTypeInfo;
 
 import javax.annotation.PostConstruct;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
+import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +36,7 @@ public class DevicesRepository {
    public static final String ALREADY_EXISTS_ERROR = "Such device already exists: ";
 
    // Something like second level cache
-   private final Map<DeviceType, DeviceTypeEntity> allDeviceTypeEntities = new HashMap<>();
+   private final Map<String, DeviceTypeEntity> allDeviceTypeEntities = new HashMap<>();
    private final Map<String, DeviceSetupEntity> allDeviceTypeNameEntities = new HashMap<>();
 
    @PersistenceContext
@@ -67,14 +69,23 @@ public class DevicesRepository {
       return result;
    }
 
+   public DeviceSetupEntity getDeviceTypeNameEntityOrThrowException(String deviceName) {
+      DeviceSetupEntity result = getDeviceTypeNameEntity(deviceName);
+
+      if (result == null) {
+         throw new DeviceSetupException(DEVICE_DOESNT_EXIST_ERROR);
+      }
+      return result;
+   }
+
    public Collection<DeviceSetupEntity> getAllDeviceTypeNameEntities() {
       return allDeviceTypeNameEntities.values();
    }
 
-   public List<DeviceSetupEntity> getDevicesByType(DeviceType type) {
+   public List<DeviceSetupEntity> getDevicesByType(String type) {
       return allDeviceTypeNameEntities.values()
             .stream()
-            .filter(device -> device.getType().getType() == type)
+            .filter(device -> device.getType().getType().equals(type))
             .collect(Collectors.toList());
    }
 
@@ -82,7 +93,7 @@ public class DevicesRepository {
       return deviceType != null && allDeviceTypeEntities.containsKey(deviceType.getType());
    }
 
-   private DeviceTypeEntity getDeviceTypeEntity(DeviceType deviceType) {
+   private DeviceTypeEntity getDeviceTypeEntity(String deviceType) {
       return allDeviceTypeEntities.get(deviceType);
    }
 
@@ -114,7 +125,7 @@ public class DevicesRepository {
    public void modifyDevice(DeviceSetupInfo device) {
       DeviceSetupEntity persistedDeviceEntity = findDevice(device.getId());
       String persistedName = persistedDeviceEntity.getName();
-      DeviceTypeEntity persistedDeviceTypeEntity = findDeviceType(device.getType());
+      DeviceTypeEntity persistedDeviceTypeEntity = findDeviceTypeOrThrowException(device.getType());
 
       persistedDeviceEntity.setName(device.getName());
       persistedDeviceEntity.setIp4Address(device.getIp4Address());
@@ -126,17 +137,75 @@ public class DevicesRepository {
       allDeviceTypeNameEntities.put(device.getName(), persistedDeviceEntity);
    }
 
-   private DeviceTypeEntity findDeviceType(DeviceType type) {
+   public void addDeviceType(@NotNull DeviceTypeInfo deviceTypeInfo) {
+      if (allDeviceTypeEntities.get(deviceTypeInfo.getType()) != null) {
+         return;
+      }
+
+      DeviceTypeEntity deviceTypeEntity = new DeviceTypeEntity();
+      deviceTypeEntity.setType(deviceTypeInfo.getType());
+      deviceTypeEntity.setKeepAliveIntervalSec(deviceTypeInfo.getKeepAliveIntervalSec());
+
+      entityManager.persist(deviceTypeEntity);
+      allDeviceTypeEntities.put(deviceTypeInfo.getType(), deviceTypeEntity);
+   }
+
+   public void deleteDeviceType(@NotNull DeviceTypeInfo deviceTypeInfo) {
+      if (allDeviceTypeEntities.get(deviceTypeInfo.getType()) == null) {
+         return;
+      }
+
       TypedQuery<DeviceTypeEntity> query =
             entityManager.createQuery("from " + DeviceTypeEntity.class.getSimpleName() + " where type = :type",
                   DeviceTypeEntity.class);
-      query.setParameter("type", type);
+      query.setParameter("type", deviceTypeInfo.getType());
       List<DeviceTypeEntity> result = query.getResultList();
 
-      if (result.isEmpty()) {
+      if (result.size() == 0) {
+         return;
+      }
+
+      DeviceTypeEntity foundEntity = result.get(0);
+      entityManager.remove(foundEntity);
+      allDeviceTypeEntities.remove(deviceTypeInfo.getType());
+   }
+
+   public void modifyDeviceType(@NotNull DeviceTypeInfo deviceTypeInfo) {
+      if (allDeviceTypeEntities.get(deviceTypeInfo.getType()) == null) {
+         return;
+      }
+
+      TypedQuery<DeviceTypeEntity> query =
+            entityManager.createQuery("from " + DeviceTypeEntity.class.getSimpleName() + " where type = :type",
+                  DeviceTypeEntity.class);
+      query.setParameter("type", deviceTypeInfo.getType());
+      List<DeviceTypeEntity> result = query.getResultList();
+
+      if (result.size() == 0) {
+         return;
+      }
+
+      DeviceTypeEntity foundEntity = result.get(0);
+      foundEntity.setKeepAliveIntervalSec(deviceTypeInfo.getKeepAliveIntervalSec());
+      entityManager.persist(foundEntity);
+      allDeviceTypeEntities.put(deviceTypeInfo.getType(), foundEntity);
+   }
+
+   public List<DeviceTypeInfo> getAllDeviceTypes() {
+      return allDeviceTypeEntities.values()
+            .stream()
+            .map(e -> new DeviceTypeInfo(e.getType(), e.getKeepAliveIntervalSec()))
+            .sorted(Comparator.comparing(DeviceTypeInfo::getType))
+            .collect(Collectors.toList());
+   }
+
+   private DeviceTypeEntity findDeviceTypeOrThrowException(String type) {
+      DeviceTypeEntity persistedDeviceTypeEntity = allDeviceTypeEntities.get(type);
+
+      if (persistedDeviceTypeEntity == null) {
          throw new DeviceSetupException(UNKNOWN_TYPE_ERROR + type);
       }
-      return result.get(0);
+      return persistedDeviceTypeEntity;
    }
 
    private DeviceSetupEntity findDevice(Integer id) {

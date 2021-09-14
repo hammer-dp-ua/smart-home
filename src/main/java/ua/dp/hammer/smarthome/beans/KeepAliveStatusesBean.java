@@ -54,7 +54,7 @@ public class KeepAliveStatusesBean {
          devicesRepository.getAllDeviceTypeNameEntities().forEach(deviceEntity -> {
             LocalDateTime lastStatusTime = devicesStatusesTimestamps.get(deviceEntity.getName());
             Long lastStatusTimeMs = lastStatusTime != null ?
-                  Utils.jodaLocalDateTimeToMilli(lastStatusTime) : null;
+                  Utils.localDateTimeToMilli(lastStatusTime) : null;
             DeviceTechInfo deviceTechInfo = null;
 
             if (lastStatusTimeMs == null) {

@@ -4,11 +4,13 @@ import org.springframework.web.context.request.NativeWebRequest;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotNull;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.TimeZone;
 
 public class Utils {
    private static final List<String> IP_HEADERS =
@@ -32,7 +34,14 @@ public class Utils {
             .orElse(null);
    }
 
-   public static long jodaLocalDateTimeToMilli(@NotNull LocalDateTime localDateTime) {
+   public static long localDateTimeToMilli(@NotNull LocalDateTime localDateTime) {
       return localDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+   }
+
+   public static LocalDateTime milliToLocalDateTime(Long ms) {
+      if (ms == null) {
+         return null;
+      }
+      return LocalDateTime.ofInstant(Instant.ofEpochMilli(ms), TimeZone.getDefault().toZoneId());
    }
 }

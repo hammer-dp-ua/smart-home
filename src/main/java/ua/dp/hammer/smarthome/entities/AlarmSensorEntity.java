@@ -27,7 +27,7 @@ public class AlarmSensorEntity {
    @NotNull
    @OneToOne(optional = false)
    @JoinColumn(name = "device_type_name")
-   private DeviceSetupEntity typeName;
+   private DeviceSetupEntity deviceSetup;
 
    @OneToOne(optional = true)
    @JoinColumn(name = "source")
@@ -41,12 +41,12 @@ public class AlarmSensorEntity {
       return id;
    }
 
-   public DeviceSetupEntity getTypeName() {
-      return typeName;
+   public DeviceSetupEntity getDeviceSetup() {
+      return deviceSetup;
    }
 
-   public void setTypeName(DeviceSetupEntity typeName) {
-      this.typeName = typeName;
+   public void setDeviceSetup(DeviceSetupEntity deviceSetup) {
+      this.deviceSetup = deviceSetup;
    }
 
    public AlarmSourceSetupEntity getSource() {

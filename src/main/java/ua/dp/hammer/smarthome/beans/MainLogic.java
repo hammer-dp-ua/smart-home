@@ -208,7 +208,7 @@ public class MainLogic {
    }
 
    private void sendProjectorsRequests(boolean turnOn) {
-      List<DeviceSetupEntity> projectors = devicesRepository.getDevicesByType(DeviceType.PROJECTOR);
+      List<DeviceSetupEntity> projectors = devicesRepository.getDevicesByType(DeviceType.PROJECTOR.toString());
 
       managerStatesBean.resetExpectedSequentialProjectorCounter();
       for (DeviceSetupEntity projector : projectors) {

@@ -2,7 +2,7 @@ package ua.dp.hammer.smarthome.models.setup;
 
 public class DeviceSetupInfo {
    private Integer id;
-   private DeviceType type;
+   private String type;
    private String name;
    private Integer keepAliveIntervalSec;
    private String ip4Address;
@@ -23,11 +23,11 @@ public class DeviceSetupInfo {
       this.name = name;
    }
 
-   public DeviceType getType() {
+   public String getType() {
       return type;
    }
 
-   public void setType(DeviceType type) {
+   public void setType(String type) {
       this.type = type;
    }
 

@@ -9,6 +9,7 @@ import org.springframework.test.context.ActiveProfiles;
 import ua.dp.hammer.smarthome.controllers.AlarmsMonitorRestController;
 import ua.dp.hammer.smarthome.controllers.Esp8266ExternalDevicesCommunicatorRestController;
 import ua.dp.hammer.smarthome.controllers.ManagerRestController;
+import ua.dp.hammer.smarthome.controllers.SettingsController;
 import ua.dp.hammer.smarthome.controllers.SetupController;
 import ua.dp.hammer.smarthome.models.FanRequestInfo;
 import ua.dp.hammer.smarthome.models.FanResponse;
@@ -18,20 +19,18 @@ import ua.dp.hammer.smarthome.models.StatusCodes;
 import ua.dp.hammer.smarthome.models.StatusResponse;
 import ua.dp.hammer.smarthome.models.alarms.AlarmInfo;
 import ua.dp.hammer.smarthome.models.alarms.MotionDetector;
-import ua.dp.hammer.smarthome.models.alarms.StreetMotionDetectors;
 import ua.dp.hammer.smarthome.models.setup.DeviceSetupInfo;
 import ua.dp.hammer.smarthome.models.setup.DeviceType;
+import ua.dp.hammer.smarthome.models.setup.DeviceTypeInfo;
 import ua.dp.hammer.smarthome.models.states.AlarmsState;
 import ua.dp.hammer.smarthome.models.states.AllManagerStates;
 import ua.dp.hammer.smarthome.models.states.FanState;
 import ua.dp.hammer.smarthome.repositories.DevicesRepository;
+import ua.dp.hammer.smarthome.utils.Utils;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,6 +49,7 @@ import static ua.dp.hammer.smarthome.controllers.Esp8266ExternalDevicesCommunica
 public class SpringBootTests {
 
    private final String FAN_NAME = "Bathroom fan";
+   private final String MOTION_DETECTOR_NAME = "Motion detector";
 
    @Test
    public void testGetAllDevices(@Autowired TestRestTemplate restTemplate) {
@@ -60,16 +60,102 @@ public class SpringBootTests {
    }
 
    @Test
+   public void testAddAndDeleteDeviceType(@Autowired TestRestTemplate restTemplate) {
+      DeviceTypeInfo[] allDeviceTypesResponse = restTemplate.getForObject(SetupController.CONTROLLER_PATH + SetupController.GET_ALL_DEVICE_TYPES_PATH,
+            DeviceTypeInfo[].class);
+
+      assertThat(allDeviceTypesResponse).isNotNull();
+      assertThat(allDeviceTypesResponse).isEmpty();
+
+      DeviceTypeInfo deviceTypeInfo = new DeviceTypeInfo();
+      StatusResponse addDeviceTypeResponse = restTemplate.postForObject(SetupController.CONTROLLER_PATH + SetupController.ADD_DEVICE_TYPE_PATH,
+            deviceTypeInfo, StatusResponse.class);
+
+      assertThat(addDeviceTypeResponse).isNotNull();
+      assertThat(addDeviceTypeResponse.getStatusCode()).isEqualTo(StatusCodes.ERROR);
+      assertThat(addDeviceTypeResponse.getErrorMessage()).isEqualTo(SetupController.EMPTY_TYPE_ERROR);
+
+      deviceTypeInfo.setType(DeviceType.PROJECTOR.toString());
+      addDeviceTypeResponse = restTemplate.postForObject(SetupController.CONTROLLER_PATH + SetupController.ADD_DEVICE_TYPE_PATH,
+            deviceTypeInfo, StatusResponse.class);
+      assertThat(addDeviceTypeResponse).isNotNull();
+      assertThat(addDeviceTypeResponse.getStatusCode()).isEqualTo(StatusCodes.OK);
+
+      allDeviceTypesResponse = restTemplate.getForObject(SetupController.CONTROLLER_PATH + SetupController.GET_ALL_DEVICE_TYPES_PATH,
+            DeviceTypeInfo[].class);
+      assertThat(allDeviceTypesResponse).isNotNull();
+      assertThat(allDeviceTypesResponse.length).isEqualTo(1);
+      assertThat(allDeviceTypesResponse[0].getType()).isEqualTo(deviceTypeInfo.getType());
+      assertThat(allDeviceTypesResponse[0].getKeepAliveIntervalSec()).isNull();
+
+      deviceTypeInfo.setKeepAliveIntervalSec(60);
+      addDeviceTypeResponse = restTemplate.postForObject(SetupController.CONTROLLER_PATH + SetupController.ADD_DEVICE_TYPE_PATH,
+            deviceTypeInfo, StatusResponse.class);
+      assertThat(addDeviceTypeResponse).isNotNull();
+      assertThat(addDeviceTypeResponse.getStatusCode()).isEqualTo(StatusCodes.OK);
+
+      allDeviceTypesResponse = restTemplate.getForObject(SetupController.CONTROLLER_PATH + SetupController.GET_ALL_DEVICE_TYPES_PATH,
+            DeviceTypeInfo[].class);
+      assertThat(allDeviceTypesResponse).isNotNull();
+      assertThat(allDeviceTypesResponse.length).isEqualTo(1);
+      assertThat(allDeviceTypesResponse[0].getType()).isEqualTo(deviceTypeInfo.getType());
+      assertThat(allDeviceTypesResponse[0].getKeepAliveIntervalSec()).isNull();
+
+      StatusResponse modifyDeviceTypeResponse = restTemplate.postForObject(SetupController.CONTROLLER_PATH + SetupController.MODIFY_DEVICE_TYPE_PATH,
+            deviceTypeInfo, StatusResponse.class);
+      assertThat(modifyDeviceTypeResponse).isNotNull();
+      assertThat(modifyDeviceTypeResponse.getStatusCode()).isEqualTo(StatusCodes.OK);
+
+      allDeviceTypesResponse = restTemplate.getForObject(SetupController.CONTROLLER_PATH + SetupController.GET_ALL_DEVICE_TYPES_PATH,
+            DeviceTypeInfo[].class);
+      assertThat(allDeviceTypesResponse).isNotNull();
+      assertThat(allDeviceTypesResponse.length).isEqualTo(1);
+      assertThat(allDeviceTypesResponse[0].getType()).isEqualTo(deviceTypeInfo.getType());
+      assertThat(allDeviceTypesResponse[0].getKeepAliveIntervalSec()).isEqualTo(deviceTypeInfo.getKeepAliveIntervalSec());
+
+      DeviceTypeInfo deviceTypeInfo2 = new DeviceTypeInfo();
+      deviceTypeInfo2.setType(DeviceType.ENV_SENSOR.toString());
+      deviceTypeInfo2.setKeepAliveIntervalSec(30);
+
+      addDeviceTypeResponse = restTemplate.postForObject(SetupController.CONTROLLER_PATH + SetupController.ADD_DEVICE_TYPE_PATH,
+            deviceTypeInfo2, StatusResponse.class);
+      assertThat(addDeviceTypeResponse).isNotNull();
+      assertThat(addDeviceTypeResponse.getStatusCode()).isEqualTo(StatusCodes.OK);
+
+      allDeviceTypesResponse = restTemplate.getForObject(SetupController.CONTROLLER_PATH + SetupController.GET_ALL_DEVICE_TYPES_PATH,
+            DeviceTypeInfo[].class);
+      assertThat(allDeviceTypesResponse).isNotNull();
+      assertThat(allDeviceTypesResponse.length).isEqualTo(2);
+
+      assertThat(allDeviceTypesResponse[0].getType()).isEqualTo(deviceTypeInfo2.getType());
+      assertThat(allDeviceTypesResponse[0].getKeepAliveIntervalSec()).isEqualTo(deviceTypeInfo2.getKeepAliveIntervalSec());
+      assertThat(allDeviceTypesResponse[1].getType()).isEqualTo(deviceTypeInfo.getType());
+      assertThat(allDeviceTypesResponse[1].getKeepAliveIntervalSec()).isEqualTo(deviceTypeInfo.getKeepAliveIntervalSec());
+
+      StatusResponse deleteDeviceTypeResponse = restTemplate.postForObject(SetupController.CONTROLLER_PATH + SetupController.DELETE_DEVICE_TYPE_PATH,
+            deviceTypeInfo, StatusResponse.class);
+
+      assertThat(deleteDeviceTypeResponse).isNotNull();
+      assertThat(deleteDeviceTypeResponse.getStatusCode()).isEqualTo(StatusCodes.OK);
+
+      allDeviceTypesResponse = restTemplate.getForObject(SetupController.CONTROLLER_PATH + SetupController.GET_ALL_DEVICE_TYPES_PATH,
+            DeviceTypeInfo[].class);
+      assertThat(allDeviceTypesResponse).isNotNull();
+      assertThat(allDeviceTypesResponse.length).isEqualTo(1);
+      assertThat(allDeviceTypesResponse[0].getType()).isEqualTo(deviceTypeInfo2.getType());
+      assertThat(allDeviceTypesResponse[0].getKeepAliveIntervalSec()).isEqualTo(deviceTypeInfo2.getKeepAliveIntervalSec());
+   }
+
+   @Test
    public void testAddAndDeleteDevice(@Autowired TestRestTemplate restTemplate) {
       DeviceSetupInfo newDevice = new DeviceSetupInfo();
       newDevice.setName(null); // skip
-      newDevice.setType(DeviceType.ENV_SENSOR);
+      newDevice.setType(DeviceType.ENV_SENSOR.toString());
 
       StatusResponse addDeviceSetupResponse = restTemplate.postForObject(getAddDeviceSetupUri(), newDevice, StatusResponse.class);
 
       assertThat(addDeviceSetupResponse).isNotNull();
       assertThat(addDeviceSetupResponse.getStatusCode()).isEqualTo(StatusCodes.ERROR);
-      assertThat(addDeviceSetupResponse.getErrorMessage()).isNotNull();
       assertThat(addDeviceSetupResponse.getErrorMessage()).isEqualTo(SetupController.EMPTY_NAME_ERROR);
 
       newDevice.setName("ABC");
@@ -78,10 +164,9 @@ public class SpringBootTests {
 
       assertThat(addDeviceSetupResponse).isNotNull();
       assertThat(addDeviceSetupResponse.getStatusCode()).isEqualTo(StatusCodes.ERROR);
-      assertThat(addDeviceSetupResponse.getErrorMessage()).isNotNull();
       assertThat(addDeviceSetupResponse.getErrorMessage()).isEqualTo(SetupController.EMPTY_TYPE_ERROR);
 
-      newDevice.setType(DeviceType.PROJECTOR);
+      newDevice.setType(DeviceType.PROJECTOR.toString());
       newDevice.setIp4Address("192.168.0.55");
       addDeviceSetupResponse = restTemplate.postForObject(getAddDeviceSetupUri(), newDevice, StatusResponse.class);
 
@@ -89,7 +174,15 @@ public class SpringBootTests {
       assertThat(addDeviceSetupResponse.getStatusCode()).isEqualTo(StatusCodes.ERROR);
       assertThat(addDeviceSetupResponse.getErrorMessage()).startsWith(DevicesRepository.UNKNOWN_TYPE_ERROR);
 
+      DeviceTypeInfo deviceTypeInfo = new DeviceTypeInfo();
+      deviceTypeInfo.setType(DeviceType.PROJECTOR.toString());
+      restTemplate.postForObject(SetupController.CONTROLLER_PATH + SetupController.ADD_DEVICE_TYPE_PATH,
+            deviceTypeInfo, StatusResponse.class);
 
+      addDeviceSetupResponse = restTemplate.postForObject(getAddDeviceSetupUri(), newDevice, StatusResponse.class);
+
+      assertThat(addDeviceSetupResponse).isNotNull();
+      assertThat(addDeviceSetupResponse.getStatusCode()).isEqualTo(StatusCodes.OK);
 
       DeviceSetupInfo[] allDevicesResponse = restTemplate.getForObject(getAllDevicesSetupUri(), DeviceSetupInfo[].class);
 
@@ -127,21 +220,19 @@ public class SpringBootTests {
       allDevicesResponse = restTemplate.getForObject(getAllDevicesSetupUri(), DeviceSetupInfo[].class);
 
       assertThat(allDevicesResponse).isNotNull();
-      assertThat(allDevicesResponse).isNotEmpty();
-
-      savedDevice = Arrays.stream(allDevicesResponse)
-            .filter(device -> device.getName().equals(newDevice.getName()))
-            .findFirst()
-            .orElse(null);
-
-      assertThat(savedDevice).isNull(); // Already deleted
+      assertThat(allDevicesResponse).isEmpty();
    }
 
-   //@Test
+   @Test
    public void testDeviceModification(@Autowired TestRestTemplate restTemplate) {
+      DeviceTypeInfo deviceTypeInfo = new DeviceTypeInfo();
+      deviceTypeInfo.setType(DeviceType.ENV_SENSOR.toString());
+      restTemplate.postForObject(SetupController.CONTROLLER_PATH + SetupController.ADD_DEVICE_TYPE_PATH,
+            deviceTypeInfo, StatusResponse.class);
+
       DeviceSetupInfo newDevice = new DeviceSetupInfo();
       newDevice.setName("ABCD");
-      newDevice.setType(DeviceType.ENV_SENSOR);
+      newDevice.setType(DeviceType.ENV_SENSOR.toString());
 
       restTemplate.postForObject(getAddDeviceSetupUri(), newDevice, StatusResponse.class);
       DeviceSetupInfo[] allDevicesResponse = restTemplate.getForObject(getAllDevicesSetupUri(), DeviceSetupInfo[].class);
@@ -181,8 +272,13 @@ public class SpringBootTests {
       assertThat(modifyDeviceResponse.getErrorMessage()).isEqualTo(SetupController.EMPTY_NAME_ERROR);
 
       modifiedDevice.setName("ABCDE");
-      modifiedDevice.setType(DeviceType.PROJECTOR);
+      modifiedDevice.setType(DeviceType.PROJECTOR.toString());
       modifiedDevice.setIp4Address("192.168.0.57");
+
+      deviceTypeInfo = new DeviceTypeInfo();
+      deviceTypeInfo.setType(DeviceType.PROJECTOR.toString());
+      restTemplate.postForObject(SetupController.CONTROLLER_PATH + SetupController.ADD_DEVICE_TYPE_PATH,
+            deviceTypeInfo, StatusResponse.class);
 
       modifyDeviceResponse = restTemplate.postForObject(getModifyDeviceUri(), modifiedDevice, StatusResponse.class);
 
@@ -205,8 +301,10 @@ public class SpringBootTests {
       assertThat(deleteDeviceResponse.getStatusCode()).isEqualTo(StatusCodes.OK);
    }
 
-   //@Test
+   @Test
    public void testFanTurnedOff(@Autowired TestRestTemplate restTemplate) {
+      saveFanSetup(restTemplate);
+
       FanRequestInfo fanRequestInfo = new FanRequestInfo();
       fanRequestInfo.setDeviceName(FAN_NAME);
       fanRequestInfo.setSwitchedOnManually(false);
@@ -227,8 +325,10 @@ public class SpringBootTests {
       assertThat(allStatesResponse.getFanState().isTurnedOn()).isNull();
    }
 
-   //@Test
+   @Test
    public void testFanTurnedOnByItsSwitcherAndThenHumidityThresholdDetected(@Autowired TestRestTemplate restTemplate) {
+      saveFanSetup(restTemplate);
+
       FanRequestInfo fanRequestInfo = new FanRequestInfo();
       fanRequestInfo.setDeviceName(FAN_NAME);
       fanRequestInfo.setSwitchedOnManually(true);
@@ -263,8 +363,10 @@ public class SpringBootTests {
       assertThat(allStatesResponse.getFanState().isTurnedOn()).isTrue();
    }
 
-   //@Test
+   @Test
    public void testFanTurnedOnByHumidityThreshold(@Autowired TestRestTemplate restTemplate) {
+      saveFanSetup(restTemplate);
+
       FanRequestInfo fanRequestInfo = new FanRequestInfo();
       fanRequestInfo.setDeviceName(FAN_NAME);
       fanRequestInfo.setSwitchedOnManually(false);
@@ -285,8 +387,10 @@ public class SpringBootTests {
       assertThat(allStatesResponse.getFanState().isTurnedOn()).isTrue();
    }
 
-   //@Test
+   @Test
    public void testFanTurnedOnBySmartphoneAndThenHumidityThresholdDetected(@Autowired TestRestTemplate restTemplate) {
+      saveFanSetup(restTemplate);
+
       FanState fanTurnOnResponse = restTemplate.getForObject(getFanTurnOnUri(), FanState.class);
 
       assertThat(fanTurnOnResponse).isNotNull();
@@ -327,8 +431,10 @@ public class SpringBootTests {
       assertThat(allStatesResponse.getFanState().isTurnedOn()).isTrue();
    }
 
-   //@Test
+   @Test
    public void testFanTurnedOnBySmartphoneWithTimeout(@Autowired TestRestTemplate restTemplate) throws InterruptedException {
+      saveFanSetup(restTemplate);
+
       FanSettingsInfo fanSettingsRequest = new FanSettingsInfo();
       fanSettingsRequest.setManuallyTurnedOnTimeoutMinutes(1);
       fanSettingsRequest.setAfterFallingThresholdWorkTimeoutMinutes(30);
@@ -379,8 +485,10 @@ public class SpringBootTests {
       assertThat(allStatesResponse.getFanState().getMinutesRemaining()).isEqualTo(0);
    }
 
-   //@Test
+   @Test
    public void testFanTurnedOnBySmartphoneWithTimeout2(@Autowired TestRestTemplate restTemplate) throws InterruptedException {
+      saveFanSetup(restTemplate);
+
       int timeout = 2;
       FanSettingsInfo fanSettingsRequest = new FanSettingsInfo();
       fanSettingsRequest.setManuallyTurnedOnTimeoutMinutes(timeout);
@@ -447,8 +555,10 @@ public class SpringBootTests {
       assertThat(allStatesResponse.getFanState().getMinutesRemaining()).isEqualTo(timeout - 2);
    }
 
-   //@Test
+   @Test
    public void testFanTurnedOnByHumidityThresholdWithTimeout(@Autowired TestRestTemplate restTemplate) throws InterruptedException {
+      saveFanSetup(restTemplate);
+
       int timeout = 2;
       FanSettingsInfo fanSettingsRequest = new FanSettingsInfo();
       fanSettingsRequest.setManuallyTurnedOnTimeoutMinutes(10);
@@ -527,11 +637,12 @@ public class SpringBootTests {
       assertThat(allStatesResponse.getFanState().getMinutesRemaining()).isEqualTo(timeout - 2);
    }
 
-   //@Test
-   public void testAlarmSources(@Autowired TestRestTemplate restTemplate) {
-      String deviceName = "Entrance Motion Detector";
-      AlarmInfo alarmInfo1 = new AlarmInfo("ALARM_SOURCE_1", deviceName);
-      AlarmInfo alarmInfo2 = new AlarmInfo("ALARM_SOURCE_2", deviceName);
+   @Test
+   public void testAlarmSourcesSetup(@Autowired TestRestTemplate restTemplate) {
+      saveAlarmsSetup(restTemplate);
+
+      AlarmInfo alarmInfo1 = new AlarmInfo("ALARM_SOURCE_1", MOTION_DETECTOR_NAME);
+      AlarmInfo alarmInfo2 = new AlarmInfo("ALARM_SOURCE_2", MOTION_DETECTOR_NAME);
 
       AlarmInfo[] allAlarmSourcesResponse = restTemplate.getForObject(SetupController.CONTROLLER_PATH +
             SetupController.GET_ALARM_SOURCES_PATH, AlarmInfo[].class);
@@ -579,15 +690,17 @@ public class SpringBootTests {
       assertThat(allAlarmSourcesResponse.length).isEqualTo(0);
    }
 
-   //@Test
-   public void testAlarms(@Autowired TestRestTemplate restTemplate) throws InterruptedException, ExecutionException, TimeoutException {
-      String deviceName = "Entrance Motion Detector";
-      AlarmInfo alarmInfo = new AlarmInfo("ALARM_SOURCE_1", deviceName);
+   @Test
+   public void testAlarmsAddAndHistory(@Autowired TestRestTemplate restTemplate) throws InterruptedException, ExecutionException, TimeoutException {
+      saveAlarmsSetup(restTemplate);
 
-      StatusResponse added = restTemplate.postForObject(SetupController.CONTROLLER_PATH +
-            SetupController.ADD_ALARM_SOURCE_PATH, alarmInfo, StatusResponse.class);
-      assertThat(added).isNotNull();
-      assertThat(added.getStatusCode()).isEqualTo(StatusCodes.OK);
+      AlarmInfo alarmInfo1 = new AlarmInfo("ALARM_SOURCE_1", MOTION_DETECTOR_NAME);
+      AlarmInfo alarmInfo2 = new AlarmInfo("ALARM_SOURCE_2", MOTION_DETECTOR_NAME);
+
+      restTemplate.postForObject(SetupController.CONTROLLER_PATH +
+            SetupController.ADD_ALARM_SOURCE_PATH, alarmInfo1, StatusResponse.class);
+      restTemplate.postForObject(SetupController.CONTROLLER_PATH +
+            SetupController.ADD_ALARM_SOURCE_PATH, alarmInfo2, StatusResponse.class);
 
       AlarmsState alarmsStateResponse = restTemplate.getForObject(ManagerRestController.CONTROLLER_PATH +
                   ManagerRestController.IGNORE_ALARMS_PATH + "?timeout=1&doNotTurnOnProjectors=true", AlarmsState.class);
@@ -595,32 +708,110 @@ public class SpringBootTests {
       assertThat(alarmsStateResponse.isIgnoring()).isTrue();
       assertThat(alarmsStateResponse.getMinutesRemaining()).isEqualTo(1);
 
-      ExecutorService executorService = Executors.newSingleThreadExecutor();
-      FutureTask<StreetMotionDetectors> futureStatesResponse = new FutureTask<>(() ->
-            restTemplate.getForObject(AlarmsMonitorRestController.CONTROLLER_PATH +
-            AlarmsMonitorRestController.GET_CURRENT_STATES_DEFERRED, StreetMotionDetectors.class));
-      executorService.execute(futureStatesResponse);
-
       ServerStatus alarmResponse = restTemplate.getForObject(Esp8266ExternalDevicesCommunicatorRestController.CONTROLLER_PATH +
-            Esp8266ExternalDevicesCommunicatorRestController.ALARM_PATH + "?alarmSource=" + alarmInfo.getAlarmSource() +
-                  "&deviceName=" + alarmInfo.getDeviceName(),
+            Esp8266ExternalDevicesCommunicatorRestController.ALARM_PATH + "?alarmSource=" + alarmInfo1.getAlarmSource() +
+                  "&deviceName=" + alarmInfo1.getDeviceName(),
             ServerStatus.class);
 
       assertThat(alarmResponse).isNotNull();
       assertThat(alarmResponse.getStatusCode()).isEqualTo(StatusCodes.OK);
 
-      StreetMotionDetectors statesResponse = futureStatesResponse.get(1, TimeUnit.SECONDS);
-      assertThat(statesResponse).isNotNull();
-      assertThat(statesResponse.getMotionDetectors().size()).isEqualTo(1);
+      MotionDetector[] historyResponse = restTemplate.getForObject(AlarmsMonitorRestController.CONTROLLER_PATH +
+            AlarmsMonitorRestController.GET_HISTORY,
+            MotionDetector[].class);
 
-      MotionDetector motionDetectorResponse = statesResponse.getMotionDetectors().iterator().next();
-      assertThat(motionDetectorResponse.getName()).isEqualTo(alarmInfo.getDeviceName());
-      assertThat(motionDetectorResponse.getSource()).isEqualTo(alarmInfo.getAlarmSource());
+      assertThat(historyResponse).isNotNull();
+      assertThat(historyResponse.length).isEqualTo(1);
 
-      StatusResponse deleted = restTemplate.postForObject(SetupController.CONTROLLER_PATH +
-            SetupController.DELETE_ALARM_SOURCE_PATH, alarmInfo, StatusResponse.class);
-      assertThat(deleted).isNotNull();
-      assertThat(deleted.getStatusCode()).isEqualTo(StatusCodes.OK);
+      Thread.sleep(100);
+
+      alarmResponse = restTemplate.getForObject(Esp8266ExternalDevicesCommunicatorRestController.CONTROLLER_PATH +
+            Esp8266ExternalDevicesCommunicatorRestController.ALARM_PATH + "?alarmSource=" + alarmInfo2.getAlarmSource() +
+            "&deviceName=" + alarmInfo2.getDeviceName(),
+            ServerStatus.class);
+
+      assertThat(alarmResponse).isNotNull();
+      assertThat(alarmResponse.getStatusCode()).isEqualTo(StatusCodes.OK);
+
+      historyResponse = restTemplate.getForObject(AlarmsMonitorRestController.CONTROLLER_PATH +
+                  AlarmsMonitorRestController.GET_HISTORY,
+            MotionDetector[].class);
+
+      assertThat(historyResponse).isNotNull();
+      assertThat(historyResponse.length).isEqualTo(2);
+      assertThat(historyResponse[0].getName()).isEqualTo(alarmInfo2.getDeviceName());
+      assertThat(historyResponse[0].getSource()).isEqualTo(alarmInfo2.getAlarmSource());
+      assertThat(historyResponse[1].getName()).isEqualTo(alarmInfo1.getDeviceName());
+      assertThat(historyResponse[1].getSource()).isEqualTo(alarmInfo1.getAlarmSource());
+
+      LocalDateTime currentTime = LocalDateTime.now();
+      long minus1Hour = Utils.localDateTimeToMilli(currentTime.minusHours(1));
+      long plus1Hour = Utils.localDateTimeToMilli(currentTime.plusHours(1));
+
+      historyResponse = restTemplate.getForObject(AlarmsMonitorRestController.CONTROLLER_PATH +
+                  AlarmsMonitorRestController.GET_HISTORY + "?fromMs=" + minus1Hour,
+            MotionDetector[].class);
+
+      assertThat(historyResponse.length).isEqualTo(2);
+
+      historyResponse = restTemplate.getForObject(AlarmsMonitorRestController.CONTROLLER_PATH +
+                  AlarmsMonitorRestController.GET_HISTORY + "?fromMs=" + plus1Hour,
+            MotionDetector[].class);
+
+      assertThat(historyResponse.length).isEqualTo(0);
+
+      historyResponse = restTemplate.getForObject(AlarmsMonitorRestController.CONTROLLER_PATH +
+                  AlarmsMonitorRestController.GET_HISTORY + "?toMs=" + minus1Hour,
+            MotionDetector[].class);
+
+      assertThat(historyResponse.length).isEqualTo(0);
+
+      historyResponse = restTemplate.getForObject(AlarmsMonitorRestController.CONTROLLER_PATH +
+                  AlarmsMonitorRestController.GET_HISTORY + "?toMs=" + plus1Hour,
+            MotionDetector[].class);
+
+      assertThat(historyResponse.length).isEqualTo(2);
+
+      historyResponse = restTemplate.getForObject(AlarmsMonitorRestController.CONTROLLER_PATH +
+                  AlarmsMonitorRestController.GET_HISTORY + "?fromMs=" + minus1Hour + "&toMs=" + plus1Hour,
+            MotionDetector[].class);
+
+      assertThat(historyResponse.length).isEqualTo(2);
+   }
+
+   private void saveFanSetup(TestRestTemplate restTemplate) {
+      DeviceTypeInfo deviceTypeInfo = new DeviceTypeInfo();
+      deviceTypeInfo.setType(DeviceType.ENV_SENSOR.toString());
+      restTemplate.postForObject(SetupController.CONTROLLER_PATH + SetupController.ADD_DEVICE_TYPE_PATH,
+            deviceTypeInfo, StatusResponse.class);
+
+      DeviceSetupInfo fanDevice = new DeviceSetupInfo();
+      fanDevice.setName(FAN_NAME);
+      fanDevice.setType(DeviceType.ENV_SENSOR.toString());
+
+      restTemplate.postForObject(getAddDeviceSetupUri(), fanDevice, StatusResponse.class);
+
+      FanSettingsInfo fanSettingsInfo = new FanSettingsInfo();
+      fanSettingsInfo.setName(FAN_NAME);
+      fanSettingsInfo.setTurnOnHumidityThreshold(85.0F);
+      fanSettingsInfo.setManuallyTurnedOnTimeoutMinutes(10);
+      fanSettingsInfo.setAfterFallingThresholdWorkTimeoutMinutes(10);
+
+      restTemplate.postForObject(SettingsController.CONTROLLER_PATH + SettingsController.SAVE_FAN_SETTINGS_PATH,
+            fanSettingsInfo, StatusResponse.class);
+   }
+
+   private void saveAlarmsSetup(TestRestTemplate restTemplate) {
+      DeviceTypeInfo deviceTypeInfo = new DeviceTypeInfo();
+      deviceTypeInfo.setType(DeviceType.MOTION_DETECTOR.toString());
+      restTemplate.postForObject(SetupController.CONTROLLER_PATH + SetupController.ADD_DEVICE_TYPE_PATH,
+            deviceTypeInfo, StatusResponse.class);
+
+      DeviceSetupInfo motionDetector = new DeviceSetupInfo();
+      motionDetector.setName(MOTION_DETECTOR_NAME);
+      motionDetector.setType(DeviceType.MOTION_DETECTOR.toString());
+
+      restTemplate.postForObject(getAddDeviceSetupUri(), motionDetector, StatusResponse.class);
    }
 
    private String getFanUri() {

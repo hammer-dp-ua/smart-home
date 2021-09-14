@@ -16,6 +16,7 @@ import ua.dp.hammer.smarthome.models.StatusCodes;
 import ua.dp.hammer.smarthome.models.StatusResponse;
 import ua.dp.hammer.smarthome.models.alarms.AlarmInfo;
 import ua.dp.hammer.smarthome.models.setup.DeviceSetupInfo;
+import ua.dp.hammer.smarthome.models.setup.DeviceTypeInfo;
 import ua.dp.hammer.smarthome.repositories.AlarmSourcesSetupRepository;
 import ua.dp.hammer.smarthome.repositories.DevicesRepository;
 
@@ -32,6 +33,10 @@ public class SetupController {
    public static final String ADD_DEVICE_PATH = "/addDevice";
    public static final String DELETE_DEVICE_PATH = "/deleteDevice";
    public static final String MODIFY_DEVICE_PATH = "/modifyDevice";
+   public static final String ADD_DEVICE_TYPE_PATH = "/addDeviceType";
+   public static final String DELETE_DEVICE_TYPE_PATH = "/deleteDeviceType";
+   public static final String MODIFY_DEVICE_TYPE_PATH = "/modifyDeviceType";
+   public static final String GET_ALL_DEVICE_TYPES_PATH = "/getAllDeviceTypes";
    public static final String ADD_ALARM_SOURCE_PATH = "/addAlarmSource";
    public static final String DELETE_ALARM_SOURCE_PATH = "/deleteAlarmSource";
    public static final String GET_ALARM_SOURCES_PATH = "/getAlarmSources";
@@ -49,7 +54,7 @@ public class SetupController {
    public List<DeviceSetupInfo> getAllDevices() {
       List<DeviceSetupEntity> entities = devicesRepository.getAllDeviceTypeNameEntities()
             .stream()
-            .sorted(Comparator.comparingInt(d -> d.getType().getType().ordinal()))
+            .sorted(Comparator.comparing(d -> d.getType().getType()))
             .collect(Collectors.toList());
       List<DeviceSetupInfo> result = new ArrayList<>(entities.size());
 
@@ -94,15 +99,42 @@ public class SetupController {
       if (device.getId() == null) {
          throw new DeviceSetupException(EMPTY_ID_ERROR);
       }
-      if (device.getType() == null) {
+      if (StringUtils.isEmpty(device.getType())) {
          throw new DeviceSetupException(EMPTY_TYPE_ERROR);
       }
-      if (device.getName() == null) {
+      if (StringUtils.isEmpty(device.getName())) {
          throw new DeviceSetupException(EMPTY_NAME_ERROR);
       }
 
       devicesRepository.modifyDevice(device);
       return new StatusResponse(StatusCodes.OK);
+   }
+
+   @PostMapping(path = ADD_DEVICE_TYPE_PATH)
+   public StatusResponse addDeviceType(@RequestBody DeviceTypeInfo deviceTypeInfo) {
+      if (StringUtils.isEmpty(deviceTypeInfo.getType())) {
+         throw new DeviceSetupException(EMPTY_TYPE_ERROR);
+      }
+
+      devicesRepository.addDeviceType(deviceTypeInfo);
+      return new StatusResponse(StatusCodes.OK);
+   }
+
+   @PostMapping(path = DELETE_DEVICE_TYPE_PATH)
+   public StatusResponse deleteDeviceType(@RequestBody DeviceTypeInfo deviceTypeInfo) {
+      devicesRepository.deleteDeviceType(deviceTypeInfo);
+      return new StatusResponse(StatusCodes.OK);
+   }
+
+   @PostMapping(path = MODIFY_DEVICE_TYPE_PATH)
+   public StatusResponse modifyDeviceType(@RequestBody DeviceTypeInfo deviceTypeInfo) {
+      devicesRepository.modifyDeviceType(deviceTypeInfo);
+      return new StatusResponse(StatusCodes.OK);
+   }
+
+   @GetMapping(path = GET_ALL_DEVICE_TYPES_PATH)
+   public List<DeviceTypeInfo> getAllDeviceTypes() {
+      return devicesRepository.getAllDeviceTypes();
    }
 
    @PostMapping(path = ADD_ALARM_SOURCE_PATH)

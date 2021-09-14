@@ -89,7 +89,7 @@ public class EnvSensorsBean {
    }
 
    public boolean setManualEnabledFanTime(FanRequestInfo fanRequest) {
-      FanSetupEntity fanSetting = settingsRepository.getFanSettingSetup(fanRequest.getDeviceName());
+      FanSetupEntity fanSetting = settingsRepository.getFanSettingSetupOrThrowException(fanRequest.getDeviceName());
       FanState currentFanState = managerStatesBean.getAllManagerStates().getFanState();
       FanState newFanState = new FanState();
       boolean currentTurnedOnState = currentFanState.isTurnedOnSafe();
@@ -231,7 +231,8 @@ public class EnvSensorsBean {
    }
 
    public int getManuallyTurnedOnFanTimeoutMinutes(String name) {
-      return settingsRepository.getFanSettingSetup(name).getManuallyTurnedOnTimeoutMinutes();
+      FanSetupEntity fanSetting = settingsRepository.getFanSettingSetupOrThrowException(name);
+      return fanSetting.getManuallyTurnedOnTimeoutMinutes();
    }
 
    public int getStreetLightValue() {
