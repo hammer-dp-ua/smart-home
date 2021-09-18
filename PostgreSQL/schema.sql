@@ -37,7 +37,8 @@ CREATE TEMPORARY TABLE env_sensors_data (
 CREATE TEMPORARY TABLE alarm_sources_setup (
    aa_id SERIAL PRIMARY KEY,
    device_type_name INTEGER NOT NULL REFERENCES device_type_names,
-   source VARCHAR(50) NOT NULL
+   source VARCHAR(50) NOT NULL,
+   ignore_alarms boolean
 );
 
 CREATE TEMPORARY TABLE alarm_sensors_data (

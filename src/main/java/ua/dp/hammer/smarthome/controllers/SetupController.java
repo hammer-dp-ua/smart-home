@@ -153,7 +153,7 @@ public class SetupController {
    public List<AlarmInfo> getAlarmSources() {
       return alarmSourcesSetupRepository.getAlarmSources()
             .stream()
-            .map(e -> new AlarmInfo(e.getSource(), e.getDeviceSetup().getName()))
+            .map(e -> new AlarmInfo(e.getSource(), e.getDeviceSetup().getName(), e.isIgnoreAlarms()))
             .collect(Collectors.toList());
    }
 

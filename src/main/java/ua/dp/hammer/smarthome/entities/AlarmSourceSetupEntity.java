@@ -31,6 +31,9 @@ public class AlarmSourceSetupEntity {
    @Column(name = "source")
    private String source;
 
+   @Column(name = "ignore_alarms")
+   private Boolean ignoreAlarms;
+
    public Integer getId() {
       return id;
    }
@@ -49,5 +52,13 @@ public class AlarmSourceSetupEntity {
 
    public void setSource(String source) {
       this.source = source;
+   }
+
+   public Boolean isIgnoreAlarms() {
+      return ignoreAlarms != null && ignoreAlarms;
+   }
+
+   public void setIgnoreAlarms(Boolean ignoreAlarms) {
+      this.ignoreAlarms = ignoreAlarms;
    }
 }

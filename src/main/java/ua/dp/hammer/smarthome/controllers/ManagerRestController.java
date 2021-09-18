@@ -39,7 +39,8 @@ public class ManagerRestController {
 
    @GetMapping(path = "/testAlarm")
    public ServerStatus receiveTestAlarm(HttpServletRequest request,
-                                        @RequestParam(value = "alarmSource", required = false) String alarmSource) {
+                                        @RequestParam(value = "alarmSource", required = false) String alarmSource,
+                                        @RequestParam(value = "deviceName", required = false) String deviceName) {
       String clientIp = getClientIpAddr(request);
       LOGGER.info("Test alarm: " + clientIp + ", source: " + alarmSource);
 

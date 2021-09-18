@@ -19,6 +19,7 @@ import ua.dp.hammer.smarthome.models.states.AlarmsState;
 import ua.dp.hammer.smarthome.models.states.ProjectorState;
 import ua.dp.hammer.smarthome.models.states.ShutterState;
 import ua.dp.hammer.smarthome.models.states.ShutterStates;
+import ua.dp.hammer.smarthome.repositories.AlarmSourcesSetupRepository;
 import ua.dp.hammer.smarthome.repositories.DevicesRepository;
 
 import javax.annotation.PostConstruct;
@@ -54,6 +55,7 @@ public class MainLogic {
    private EnvSensorsBean envSensorsBean;
    private ManagerStatesBean managerStatesBean;
    private DevicesRepository devicesRepository;
+   private AlarmSourcesSetupRepository alarmSourcesSetupRepository;
    private AlarmsMonitorBean alarmsMonitorBean;
 
    @PostConstruct
@@ -68,7 +70,8 @@ public class MainLogic {
 
       turnProjectorsOn();
 
-      if (alarmsAreBeingIgnored || "MOTION_SENSOR_2".equals(alarm.getAlarmSource())) {
+      if (alarmsAreBeingIgnored ||
+            alarmSourcesSetupRepository.getAlarmSource(alarm).isIgnoreAlarms()) {
          return;
       }
 
@@ -332,6 +335,11 @@ public class MainLogic {
    @Autowired
    public void setDevicesRepository(DevicesRepository devicesRepository) {
       this.devicesRepository = devicesRepository;
+   }
+
+   @Autowired
+   public void setAlarmSourcesSetupRepository(AlarmSourcesSetupRepository alarmSourcesSetupRepository) {
+      this.alarmSourcesSetupRepository = alarmSourcesSetupRepository;
    }
 
    @Autowired

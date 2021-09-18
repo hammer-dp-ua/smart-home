@@ -50,6 +50,19 @@ public class AlarmSourcesSetupRepository {
       return persistedAlarmSources.get(0);
    }
 
+   public List<AlarmSourceSetupEntity> getAlarmSources() {
+      TypedQuery<AlarmSourceSetupEntity> query =
+            entityManager.createQuery("from " + AlarmSourceSetupEntity.class.getSimpleName() + " e " +
+                        "order by e.deviceSetup.name, e.source",
+                  AlarmSourceSetupEntity.class);
+      List<AlarmSourceSetupEntity> result = query.getResultList();
+
+      if (LOGGER.isDebugEnabled()) {
+         LOGGER.debug("Found " + result.size() + " " + AlarmSourceSetupEntity.class.getSimpleName() + " entities");
+      }
+      return result;
+   }
+
    public void addAlarmSource(AlarmInfo alarmInfo) {
       if (isAlarmInfoEmpty(alarmInfo)) {
          return;
@@ -66,6 +79,7 @@ public class AlarmSourcesSetupRepository {
 
       alarmSourceSetupEntity.setDeviceSetup(deviceSetupEntity);
       alarmSourceSetupEntity.setSource(alarmInfo.getAlarmSource());
+      alarmSourceSetupEntity.setIgnoreAlarms(alarmInfo.isIgnoreAlarms());
       entityManager.persist(alarmSourceSetupEntity);
    }
 
@@ -80,19 +94,6 @@ public class AlarmSourcesSetupRepository {
       }
 
       entityManager.remove(alarmSourceSetupEntity);
-   }
-
-   public List<AlarmSourceSetupEntity> getAlarmSources() {
-      TypedQuery<AlarmSourceSetupEntity> query =
-            entityManager.createQuery("from " + AlarmSourceSetupEntity.class.getSimpleName() + " e " +
-               "order by e.deviceSetup.name, e.source",
-            AlarmSourceSetupEntity.class);
-      List<AlarmSourceSetupEntity> result = query.getResultList();
-
-      if (LOGGER.isDebugEnabled()) {
-         LOGGER.debug("Found " + result.size() + " " + AlarmSourceSetupEntity.class.getSimpleName() + " entities");
-      }
-      return result;
    }
 
    private boolean isAlarmInfoEmpty(AlarmInfo alarmInfo) {

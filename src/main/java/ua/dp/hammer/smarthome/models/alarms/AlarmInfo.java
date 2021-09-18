@@ -6,13 +6,15 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 public class AlarmInfo {
    private String alarmSource;
    private String deviceName;
+   private boolean ignoreAlarms;
 
    public AlarmInfo() {
    }
 
-   public AlarmInfo(String alarmSource, String deviceName) {
+   public AlarmInfo(String alarmSource, String deviceName, boolean ignoreAlarms) {
       this.alarmSource = alarmSource;
       this.deviceName = deviceName;
+      this.ignoreAlarms = ignoreAlarms;
    }
 
    public String getAlarmSource() {
@@ -31,6 +33,14 @@ public class AlarmInfo {
       this.deviceName = deviceName;
    }
 
+   public boolean isIgnoreAlarms() {
+      return ignoreAlarms;
+   }
+
+   public void setIgnoreAlarms(boolean ignoreAlarms) {
+      this.ignoreAlarms = ignoreAlarms;
+   }
+
    @Override
    public boolean equals(Object o) {
       if (this == o) return true;
@@ -39,12 +49,20 @@ public class AlarmInfo {
 
       AlarmInfo alarm = (AlarmInfo) o;
 
-      return new EqualsBuilder().append(alarmSource, alarm.alarmSource).append(deviceName, alarm.deviceName).isEquals();
+      return new EqualsBuilder()
+            .append(alarmSource, alarm.alarmSource)
+            .append(deviceName, alarm.deviceName)
+            .append(ignoreAlarms, alarm.ignoreAlarms)
+            .isEquals();
    }
 
    @Override
    public int hashCode() {
-      return new HashCodeBuilder(17, 37).append(alarmSource).append(deviceName).toHashCode();
+      return new HashCodeBuilder(17, 37)
+            .append(alarmSource)
+            .append(deviceName)
+            .append(ignoreAlarms)
+            .toHashCode();
    }
 
    @Override

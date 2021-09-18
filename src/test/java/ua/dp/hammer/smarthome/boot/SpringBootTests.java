@@ -641,8 +641,8 @@ public class SpringBootTests {
    public void testAlarmSourcesSetup(@Autowired TestRestTemplate restTemplate) {
       saveAlarmsSetup(restTemplate);
 
-      AlarmInfo alarmInfo1 = new AlarmInfo("ALARM_SOURCE_1", MOTION_DETECTOR_NAME);
-      AlarmInfo alarmInfo2 = new AlarmInfo("ALARM_SOURCE_2", MOTION_DETECTOR_NAME);
+      AlarmInfo alarmInfo1 = new AlarmInfo("ALARM_SOURCE_1", MOTION_DETECTOR_NAME, true);
+      AlarmInfo alarmInfo2 = new AlarmInfo("ALARM_SOURCE_2", MOTION_DETECTOR_NAME, false);
 
       AlarmInfo[] allAlarmSourcesResponse = restTemplate.getForObject(SetupController.CONTROLLER_PATH +
             SetupController.GET_ALARM_SOURCES_PATH, AlarmInfo[].class);
@@ -694,8 +694,8 @@ public class SpringBootTests {
    public void testAlarmsAddAndHistory(@Autowired TestRestTemplate restTemplate) throws InterruptedException, ExecutionException, TimeoutException {
       saveAlarmsSetup(restTemplate);
 
-      AlarmInfo alarmInfo1 = new AlarmInfo("ALARM_SOURCE_1", MOTION_DETECTOR_NAME);
-      AlarmInfo alarmInfo2 = new AlarmInfo("ALARM_SOURCE_2", MOTION_DETECTOR_NAME);
+      AlarmInfo alarmInfo1 = new AlarmInfo("ALARM_SOURCE_1", MOTION_DETECTOR_NAME, false);
+      AlarmInfo alarmInfo2 = new AlarmInfo("ALARM_SOURCE_2", MOTION_DETECTOR_NAME, false);
 
       restTemplate.postForObject(SetupController.CONTROLLER_PATH +
             SetupController.ADD_ALARM_SOURCE_PATH, alarmInfo1, StatusResponse.class);

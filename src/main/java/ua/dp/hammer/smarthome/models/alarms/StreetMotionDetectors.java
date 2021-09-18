@@ -4,7 +4,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class StreetMotionDetectors {
-   private Set<MotionDetector> motionDetectors = new HashSet<>();
+   private final Set<MotionDetector> motionDetectors = new HashSet<>();
 
    public Set<MotionDetector> getMotionDetectors() {
       return motionDetectors;
