@@ -34,3 +34,12 @@ VALUES (nextval('shutters_action_time_setup_aa_id_seq'), (SELECT aa_id FROM devi
 
 INSERT INTO fan_setup (aa_id, device_type_name, turn_on_humidity_threshold, manually_turned_on_timeout_minutes, after_falling_threshold_work_timeout_minutes)
 VALUES (nextval('fan_setup_aa_id_seq'), (SELECT aa_id FROM device_type_names WHERE device_name = 'Bathroom fan'), 85, 10, 30);
+
+INSERT INTO alarm_sources_setup (aa_id, device_type_name, source, ignore_alarms)
+VALUES (nextval('alarm_sources_setup_aa_id_seq'), (SELECT aa_id FROM device_type_names WHERE device_name = 'Entrance Motion Detector'), 'MOTION_SENSOR', false);
+INSERT INTO alarm_sources_setup (aa_id, device_type_name, source, ignore_alarms)
+VALUES (nextval('alarm_sources_setup_aa_id_seq'), (SELECT aa_id FROM device_type_names WHERE device_name = 'Motion Sensor with Immobilizer'), 'MOTION_SENSOR_1', false);
+INSERT INTO alarm_sources_setup (aa_id, device_type_name, source, ignore_alarms)
+VALUES (nextval('alarm_sources_setup_aa_id_seq'), (SELECT aa_id FROM device_type_names WHERE device_name = 'Motion Sensor with Immobilizer'), 'MOTION_SENSOR_2', true);
+INSERT INTO alarm_sources_setup (aa_id, device_type_name, source, ignore_alarms)
+VALUES (nextval('alarm_sources_setup_aa_id_seq'), (SELECT aa_id FROM device_type_names WHERE device_name = 'Motion Sensor with Immobilizer'), 'MOTION_SENSOR_3', false);
