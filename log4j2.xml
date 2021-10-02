@@ -29,10 +29,13 @@
          <AppenderRef ref="RollingFile" level="INFO"/>
          <AppenderRef ref="Console"/>
       </Logger>
-      <Logger name="org.springframework" level="INFO" additivity="false">
+      <Logger name="org.springframework" level="DEBUG" additivity="false">
+         <AppenderRef ref="RollingFile" level="WARN"/>
+         <AppenderRef ref="Console"/>
+      </Logger>
+      <Logger name="org.springframework.web.servlet.mvc.support.DefaultHandlerExceptionResolver" level="ERROR" additivity="false">
          <AppenderRef ref="RollingFile"/>
       </Logger>
-      
       <!-- Log everything in hibernate -->
       <Logger name="org.hibernate" level="WARN" additivity="false">
          <AppenderRef ref="SqlFile" />

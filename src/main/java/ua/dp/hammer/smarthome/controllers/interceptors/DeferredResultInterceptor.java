@@ -17,7 +17,7 @@ public class DeferredResultInterceptor implements DeferredResultProcessingInterc
 
    @Override
    public <T> boolean handleTimeout(NativeWebRequest request, DeferredResult<T> deferredResult) {
-      LOGGER.info("Deferred request timeout. Client: " + Utils.getClientIpAddr(request));
+      LOGGER.debug("Deferred request timeout. Client: " + Utils.getClientIpAddr(request));
       return true;
    }
 }
