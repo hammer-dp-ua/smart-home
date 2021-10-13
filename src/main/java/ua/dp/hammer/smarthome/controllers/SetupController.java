@@ -36,6 +36,7 @@ public class SetupController {
    public static final String ADD_DEVICE_TYPE_PATH = "/addDeviceType";
    public static final String DELETE_DEVICE_TYPE_PATH = "/deleteDeviceType";
    public static final String MODIFY_DEVICE_TYPE_PATH = "/modifyDeviceType";
+   public static final String SAVE_DEVICE_TYPE_PATH = "/saveDeviceType";
    public static final String GET_ALL_DEVICE_TYPES_PATH = "/getAllDeviceTypes";
    public static final String ADD_ALARM_SOURCE_PATH = "/addAlarmSource";
    public static final String DELETE_ALARM_SOURCE_PATH = "/deleteAlarmSource";
@@ -128,7 +129,21 @@ public class SetupController {
 
    @PostMapping(path = MODIFY_DEVICE_TYPE_PATH)
    public StatusResponse modifyDeviceType(@RequestBody DeviceTypeInfo deviceTypeInfo) {
+      if (StringUtils.isEmpty(deviceTypeInfo.getType())) {
+         throw new DeviceSetupException(EMPTY_TYPE_ERROR);
+      }
+
       devicesRepository.modifyDeviceType(deviceTypeInfo);
+      return new StatusResponse(StatusCodes.OK);
+   }
+
+   @PostMapping(path = SAVE_DEVICE_TYPE_PATH)
+   public StatusResponse saveDeviceType(@RequestBody DeviceTypeInfo deviceTypeInfo) {
+      if (StringUtils.isEmpty(deviceTypeInfo.getType())) {
+         throw new DeviceSetupException(EMPTY_TYPE_ERROR);
+      }
+
+      devicesRepository.saveDeviceType(deviceTypeInfo);
       return new StatusResponse(StatusCodes.OK);
    }
 

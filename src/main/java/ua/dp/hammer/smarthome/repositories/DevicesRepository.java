@@ -191,6 +191,14 @@ public class DevicesRepository {
       allDeviceTypeEntities.put(deviceTypeInfo.getType(), foundEntity);
    }
 
+   public void saveDeviceType(@NotNull DeviceTypeInfo deviceTypeInfo) {
+      if (allDeviceTypeEntities.get(deviceTypeInfo.getType()) != null) {
+         modifyDeviceType(deviceTypeInfo);
+      } else {
+         addDeviceType(deviceTypeInfo);
+      }
+   }
+
    public List<DeviceTypeInfo> getAllDeviceTypes() {
       return allDeviceTypeEntities.values()
             .stream()
