@@ -54,7 +54,7 @@ public class AlarmSourceSetupEntity {
       this.source = source;
    }
 
-   public Boolean isIgnoreAlarms() {
+   public boolean isIgnoreAlarms() {
       return ignoreAlarms != null && ignoreAlarms;
    }
 

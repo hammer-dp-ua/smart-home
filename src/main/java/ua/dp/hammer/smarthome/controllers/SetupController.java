@@ -14,7 +14,7 @@ import ua.dp.hammer.smarthome.entities.DeviceSetupEntity;
 import ua.dp.hammer.smarthome.exceptions.DeviceSetupException;
 import ua.dp.hammer.smarthome.models.StatusCodes;
 import ua.dp.hammer.smarthome.models.StatusResponse;
-import ua.dp.hammer.smarthome.models.alarms.AlarmInfo;
+import ua.dp.hammer.smarthome.models.setup.AlarmSourceSetupInfo;
 import ua.dp.hammer.smarthome.models.setup.DeviceSetupInfo;
 import ua.dp.hammer.smarthome.models.setup.DeviceTypeInfo;
 import ua.dp.hammer.smarthome.repositories.AlarmSourcesSetupRepository;
@@ -40,6 +40,7 @@ public class SetupController {
    public static final String GET_ALL_DEVICE_TYPES_PATH = "/getAllDeviceTypes";
    public static final String ADD_ALARM_SOURCE_PATH = "/addAlarmSource";
    public static final String DELETE_ALARM_SOURCE_PATH = "/deleteAlarmSource";
+   public static final String MODIFY_ALARM_SOURCE_PATH = "/modifyAlarmSource";
    public static final String GET_ALARM_SOURCES_PATH = "/getAlarmSources";
 
    public static final String EMPTY_NAME_ERROR = "Name shouldn't be empty";
@@ -153,22 +154,28 @@ public class SetupController {
    }
 
    @PostMapping(path = ADD_ALARM_SOURCE_PATH)
-   public StatusResponse addAlarmSource(@RequestBody AlarmInfo alarmInfo) {
-      alarmSourcesSetupRepository.addAlarmSource(alarmInfo);
+   public StatusResponse addAlarmSource(@RequestBody AlarmSourceSetupInfo alarmSourceSetupInfo) {
+      alarmSourcesSetupRepository.addAlarmSource(alarmSourceSetupInfo);
       return new StatusResponse(StatusCodes.OK);
    }
 
-   @PostMapping(path = DELETE_ALARM_SOURCE_PATH)
-   public StatusResponse deleteAlarmSource(@RequestBody AlarmInfo alarmInfo) {
-      alarmSourcesSetupRepository.deleteAlarmSource(alarmInfo);
+   @GetMapping(path = DELETE_ALARM_SOURCE_PATH)
+   public StatusResponse deleteAlarmSource(@RequestParam(name = "aaId") Integer aaId) {
+      alarmSourcesSetupRepository.deleteAlarmSource(aaId);
+      return new StatusResponse(StatusCodes.OK);
+   }
+
+   @PostMapping(path = MODIFY_ALARM_SOURCE_PATH)
+   public StatusResponse modifyAlarmSource(@RequestBody AlarmSourceSetupInfo alarmSourceSetupInfo) {
+      alarmSourcesSetupRepository.modifyAlarmSource(alarmSourceSetupInfo);
       return new StatusResponse(StatusCodes.OK);
    }
 
    @GetMapping(path = GET_ALARM_SOURCES_PATH)
-   public List<AlarmInfo> getAlarmSources() {
+   public List<AlarmSourceSetupInfo> getAlarmSources() {
       return alarmSourcesSetupRepository.getAlarmSources()
             .stream()
-            .map(e -> new AlarmInfo(e.getSource(), e.getDeviceSetup().getName(), e.isIgnoreAlarms()))
+            .map(e -> new AlarmSourceSetupInfo(e.getId(), e.getSource(), e.getDeviceSetup().getName(), e.isIgnoreAlarms()))
             .collect(Collectors.toList());
    }
 

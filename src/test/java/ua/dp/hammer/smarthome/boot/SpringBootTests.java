@@ -17,8 +17,8 @@ import ua.dp.hammer.smarthome.models.FanSettingsInfo;
 import ua.dp.hammer.smarthome.models.ServerStatus;
 import ua.dp.hammer.smarthome.models.StatusCodes;
 import ua.dp.hammer.smarthome.models.StatusResponse;
-import ua.dp.hammer.smarthome.models.alarms.AlarmInfo;
 import ua.dp.hammer.smarthome.models.alarms.MotionDetector;
+import ua.dp.hammer.smarthome.models.setup.AlarmSourceSetupInfo;
 import ua.dp.hammer.smarthome.models.setup.DeviceSetupInfo;
 import ua.dp.hammer.smarthome.models.setup.DeviceType;
 import ua.dp.hammer.smarthome.models.setup.DeviceTypeInfo;
@@ -641,11 +641,11 @@ public class SpringBootTests {
    public void testAlarmSourcesSetup(@Autowired TestRestTemplate restTemplate) {
       saveAlarmsSetup(restTemplate);
 
-      AlarmInfo alarmInfo1 = new AlarmInfo("ALARM_SOURCE_1", MOTION_DETECTOR_NAME, true);
-      AlarmInfo alarmInfo2 = new AlarmInfo("ALARM_SOURCE_2", MOTION_DETECTOR_NAME, false);
+      AlarmSourceSetupInfo alarmInfo1 = new AlarmSourceSetupInfo(null, "ALARM_SOURCE_1", MOTION_DETECTOR_NAME, true);
+      AlarmSourceSetupInfo alarmInfo2 = new AlarmSourceSetupInfo(null, "ALARM_SOURCE_2", MOTION_DETECTOR_NAME, false);
 
-      AlarmInfo[] allAlarmSourcesResponse = restTemplate.getForObject(SetupController.CONTROLLER_PATH +
-            SetupController.GET_ALARM_SOURCES_PATH, AlarmInfo[].class);
+      AlarmSourceSetupInfo[] allAlarmSourcesResponse = restTemplate.getForObject(SetupController.CONTROLLER_PATH +
+            SetupController.GET_ALARM_SOURCES_PATH, AlarmSourceSetupInfo[].class);
 
       assertThat(allAlarmSourcesResponse).isNotNull();
       assertThat(allAlarmSourcesResponse.length).isEqualTo(0);
@@ -661,31 +661,44 @@ public class SpringBootTests {
       assertThat(added.getStatusCode()).isEqualTo(StatusCodes.OK);
 
       allAlarmSourcesResponse = restTemplate.getForObject(SetupController.CONTROLLER_PATH +
-            SetupController.GET_ALARM_SOURCES_PATH, AlarmInfo[].class);
+            SetupController.GET_ALARM_SOURCES_PATH, AlarmSourceSetupInfo[].class);
 
       assertThat(allAlarmSourcesResponse).isNotNull();
       assertThat(allAlarmSourcesResponse.length).isEqualTo(2);
       assertThat(allAlarmSourcesResponse[0]).isEqualTo(alarmInfo1);
       assertThat(allAlarmSourcesResponse[1]).isEqualTo(alarmInfo2);
 
-      StatusResponse deleted = restTemplate.postForObject(SetupController.CONTROLLER_PATH +
-            SetupController.DELETE_ALARM_SOURCE_PATH, alarmInfo2, StatusResponse.class);
+      AlarmSourceSetupInfo toBeModifiedAlarmSource = allAlarmSourcesResponse[1];
+      toBeModifiedAlarmSource.setIgnoreAlarms(!toBeModifiedAlarmSource.isIgnoreAlarms());
+      StatusResponse modified = restTemplate.postForObject(SetupController.CONTROLLER_PATH +
+            SetupController.MODIFY_ALARM_SOURCE_PATH, toBeModifiedAlarmSource, StatusResponse.class);
+      assertThat(modified).isNotNull();
+      assertThat(modified.getStatusCode()).isEqualTo(StatusCodes.OK);
+
+      allAlarmSourcesResponse = restTemplate.getForObject(SetupController.CONTROLLER_PATH +
+            SetupController.GET_ALARM_SOURCES_PATH, AlarmSourceSetupInfo[].class);
+      assertThat(allAlarmSourcesResponse[1].isIgnoreAlarms()).isEqualTo(toBeModifiedAlarmSource.isIgnoreAlarms());
+
+      StatusResponse deleted = restTemplate.getForObject(SetupController.CONTROLLER_PATH +
+            SetupController.DELETE_ALARM_SOURCE_PATH + "?aaId=" + toBeModifiedAlarmSource.getAaId(),
+            StatusResponse.class);
       assertThat(deleted).isNotNull();
       assertThat(deleted.getStatusCode()).isEqualTo(StatusCodes.OK);
 
       allAlarmSourcesResponse = restTemplate.getForObject(SetupController.CONTROLLER_PATH +
-            SetupController.GET_ALARM_SOURCES_PATH, AlarmInfo[].class);
+            SetupController.GET_ALARM_SOURCES_PATH, AlarmSourceSetupInfo[].class);
       assertThat(allAlarmSourcesResponse).isNotNull();
       assertThat(allAlarmSourcesResponse.length).isEqualTo(1);
       assertThat(allAlarmSourcesResponse[0]).isEqualTo(alarmInfo1);
 
-      deleted = restTemplate.postForObject(SetupController.CONTROLLER_PATH +
-            SetupController.DELETE_ALARM_SOURCE_PATH, alarmInfo1, StatusResponse.class);
+      deleted = restTemplate.getForObject(SetupController.CONTROLLER_PATH +
+            SetupController.DELETE_ALARM_SOURCE_PATH + "?aaId=" + allAlarmSourcesResponse[0].getAaId(),
+            StatusResponse.class);
       assertThat(deleted).isNotNull();
       assertThat(deleted.getStatusCode()).isEqualTo(StatusCodes.OK);
 
       allAlarmSourcesResponse = restTemplate.getForObject(SetupController.CONTROLLER_PATH +
-            SetupController.GET_ALARM_SOURCES_PATH, AlarmInfo[].class);
+            SetupController.GET_ALARM_SOURCES_PATH, AlarmSourceSetupInfo[].class);
       assertThat(allAlarmSourcesResponse).isNotNull();
       assertThat(allAlarmSourcesResponse.length).isEqualTo(0);
    }
@@ -694,8 +707,8 @@ public class SpringBootTests {
    public void testAlarmsAddAndHistory(@Autowired TestRestTemplate restTemplate) throws InterruptedException, ExecutionException, TimeoutException {
       saveAlarmsSetup(restTemplate);
 
-      AlarmInfo alarmInfo1 = new AlarmInfo("ALARM_SOURCE_1", MOTION_DETECTOR_NAME, false);
-      AlarmInfo alarmInfo2 = new AlarmInfo("ALARM_SOURCE_2", MOTION_DETECTOR_NAME, false);
+      AlarmSourceSetupInfo alarmInfo1 = new AlarmSourceSetupInfo(null, "ALARM_SOURCE_1", MOTION_DETECTOR_NAME, false);
+      AlarmSourceSetupInfo alarmInfo2 = new AlarmSourceSetupInfo(null, "ALARM_SOURCE_2", MOTION_DETECTOR_NAME, false);
 
       restTemplate.postForObject(SetupController.CONTROLLER_PATH +
             SetupController.ADD_ALARM_SOURCE_PATH, alarmInfo1, StatusResponse.class);

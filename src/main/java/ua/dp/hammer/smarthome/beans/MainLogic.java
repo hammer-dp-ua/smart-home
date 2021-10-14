@@ -71,7 +71,7 @@ public class MainLogic {
       turnProjectorsOn();
 
       if (alarmsAreBeingIgnored ||
-            alarmSourcesSetupRepository.getAlarmSource(alarm).isIgnoreAlarms()) {
+            alarmSourcesSetupRepository.getDeviceTypeNameEntityOrThrowException(alarm).isIgnoreAlarms()) {
          return;
       }
 

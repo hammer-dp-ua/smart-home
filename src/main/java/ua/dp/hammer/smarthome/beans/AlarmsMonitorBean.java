@@ -77,7 +77,7 @@ public class AlarmsMonitorBean {
          AlarmSensorEntity alarmSensorEntity = new AlarmSensorEntity();
 
          alarmSensorEntity.setDeviceSetup(deviceSetupEntity);
-         alarmSensorEntity.setSource(alarmSourcesSetupRepository.getAlarmSource(alarm));
+         alarmSensorEntity.setSource(alarmSourcesSetupRepository.getDeviceTypeNameEntityOrThrowException(alarm));
          alarmSensorEntity.setAlarmDateTime(LocalDateTime.now());
          entityManager.persist(alarmSensorEntity);
 

@@ -8,7 +8,9 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import ua.dp.hammer.smarthome.entities.AlarmSourceSetupEntity;
 import ua.dp.hammer.smarthome.entities.DeviceSetupEntity;
+import ua.dp.hammer.smarthome.exceptions.DeviceSetupException;
 import ua.dp.hammer.smarthome.models.alarms.AlarmInfo;
+import ua.dp.hammer.smarthome.models.setup.AlarmSourceSetupInfo;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -25,7 +27,27 @@ public class AlarmSourcesSetupRepository {
    @PersistenceContext
    private EntityManager entityManager;
 
-   public AlarmSourceSetupEntity getAlarmSource(AlarmInfo alarmInfo) {
+   public AlarmSourceSetupEntity getAlarmSource(Integer aaId) {
+      if (aaId == null) {
+         return null;
+      }
+
+      TypedQuery<AlarmSourceSetupEntity> query =
+            entityManager.createQuery("from " + AlarmSourceSetupEntity.class.getSimpleName() + " where id = :aaId",
+            AlarmSourceSetupEntity.class);
+      query.setParameter("aaId", aaId);
+      List<AlarmSourceSetupEntity> persistedAlarmSources = query.getResultList();
+
+      if (persistedAlarmSources.isEmpty()) {
+         if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(AlarmSourceSetupEntity.class.getSimpleName() + " doesn't exist: " + aaId);
+         }
+         return null;
+      }
+      return persistedAlarmSources.get(0);
+   }
+
+   public AlarmSourceSetupEntity getDeviceTypeNameEntityOrThrowException(AlarmInfo alarmInfo) {
       if (isAlarmInfoEmpty(alarmInfo)) {
          return null;
       }
@@ -35,17 +57,19 @@ public class AlarmSourcesSetupRepository {
 
       TypedQuery<AlarmSourceSetupEntity> query =
             entityManager.createQuery("from " + AlarmSourceSetupEntity.class.getSimpleName() + " " +
-               "where source = :source and deviceSetup = :deviceSetup",
-            AlarmSourceSetupEntity.class);
+                        "where source = :source and deviceSetup = :deviceSetup",
+                  AlarmSourceSetupEntity.class);
       query.setParameter("source", alarmInfo.getAlarmSource());
       query.setParameter("deviceSetup", deviceSetupEntity);
       List<AlarmSourceSetupEntity> persistedAlarmSources = query.getResultList();
 
       if (persistedAlarmSources.isEmpty()) {
+         String errorMsg = AlarmSourceSetupEntity.class.getSimpleName() + " doesn't exist: " + alarmInfo;
+
          if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(AlarmSourceSetupEntity.class.getSimpleName() + " doesn't exist: " + alarmInfo);
+            LOGGER.debug(errorMsg);
          }
-         return null;
+         throw new DeviceSetupException(errorMsg);
       }
       return persistedAlarmSources.get(0);
    }
@@ -63,37 +87,57 @@ public class AlarmSourcesSetupRepository {
       return result;
    }
 
-   public void addAlarmSource(AlarmInfo alarmInfo) {
-      if (isAlarmInfoEmpty(alarmInfo)) {
-         return;
-      }
-
-      AlarmSourceSetupEntity alarmSourceSetupEntity = getAlarmSource(alarmInfo);
-      if (alarmSourceSetupEntity != null) {
+   public void addAlarmSource(AlarmSourceSetupInfo alarmSourceSetupInfo) {
+      if (alarmSourceSetupInfo.getAaId() != null || isAlarmInfoEmpty(alarmSourceSetupInfo)) {
          return;
       }
 
       DeviceSetupEntity deviceSetupEntity = devicesRepository
-            .getDeviceTypeNameEntityOrThrowException(alarmInfo.getDeviceName());
-      alarmSourceSetupEntity = new AlarmSourceSetupEntity();
+            .getDeviceTypeNameEntityOrThrowException(alarmSourceSetupInfo.getDeviceName());
+      AlarmSourceSetupEntity alarmSourceSetupEntity = new AlarmSourceSetupEntity();
 
       alarmSourceSetupEntity.setDeviceSetup(deviceSetupEntity);
-      alarmSourceSetupEntity.setSource(alarmInfo.getAlarmSource());
-      alarmSourceSetupEntity.setIgnoreAlarms(alarmInfo.isIgnoreAlarms());
+      alarmSourceSetupEntity.setSource(alarmSourceSetupInfo.getAlarmSource());
+      alarmSourceSetupEntity.setIgnoreAlarms(alarmSourceSetupInfo.isIgnoreAlarms());
       entityManager.persist(alarmSourceSetupEntity);
    }
 
-   public void deleteAlarmSource(AlarmInfo alarmInfo) {
-      if (isAlarmInfoEmpty(alarmInfo)) {
+   public void deleteAlarmSource(Integer aaId) {
+      if (aaId == null) {
          return;
       }
 
-      AlarmSourceSetupEntity alarmSourceSetupEntity = getAlarmSource(alarmInfo);
+      AlarmSourceSetupEntity alarmSourceSetupEntity = getAlarmSource(aaId);
       if (alarmSourceSetupEntity == null) {
          return;
       }
 
       entityManager.remove(alarmSourceSetupEntity);
+   }
+
+   public void modifyAlarmSource(AlarmSourceSetupInfo alarmSourceSetupInfo) {
+      if (isAlarmInfoEmpty(alarmSourceSetupInfo)) {
+         return;
+      }
+
+      AlarmSourceSetupEntity alarmSourceSetupEntity = getAlarmSource(alarmSourceSetupInfo.getAaId());
+      if (alarmSourceSetupEntity == null ||
+            alarmSourceSetupEntity.isIgnoreAlarms() == alarmSourceSetupInfo.isIgnoreAlarms()) {
+         return;
+      }
+
+      alarmSourceSetupEntity.setIgnoreAlarms(alarmSourceSetupInfo.isIgnoreAlarms());
+      entityManager.persist(alarmSourceSetupEntity);
+   }
+
+   private boolean isAlarmInfoEmpty(AlarmSourceSetupInfo alarmSourceSetupInfo) {
+      boolean empty = alarmSourceSetupInfo == null || StringUtils.isEmpty(alarmSourceSetupInfo.getAlarmSource()) ||
+            StringUtils.isEmpty(alarmSourceSetupInfo.getDeviceName());
+
+      if (empty && LOGGER.isDebugEnabled()) {
+         LOGGER.debug("Empty alarm info: " + alarmSourceSetupInfo);
+      }
+      return empty;
    }
 
    private boolean isAlarmInfoEmpty(AlarmInfo alarmInfo) {
